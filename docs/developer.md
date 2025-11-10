@@ -6,7 +6,7 @@ nav_order: 4
 
 # Developer Guide
 
-Welcome! This document explains the architecture, code structure, and development patterns for the WLED Inventory Manager.
+Welcome! This document explains the architecture, code structure, and development patterns for the WLEDger Inventory Manager.
 
 Contributions, bug reports, and feature requests are welcome! To contribute, submit a pull request. To file a bug report or a feature request, submit a new Issue.
 

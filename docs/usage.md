@@ -6,7 +6,7 @@ nav_order: 3
 
 # Full User Guide
 
-This guide provides a detailed walkthrough of all features available in the WLED Inventory Manager.
+This guide provides a detailed walkthrough of all features available in the WLEDger Inventory Manager.
 
 ## Table of Contents
 

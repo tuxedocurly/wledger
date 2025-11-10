@@ -6,7 +6,7 @@ nav_order: 1
 
 # Welcome to WLEDger
 
-This site is the official user guide for the WLED Inventory Manager, a tool for managing electronic parts inventory with visual location tracking.
+This site is the official user guide for the WLEDger Inventory Manager, a tool for managing hobby parts inventory with visual location tracking.
 
 This documentation is broken into three parts:
 
