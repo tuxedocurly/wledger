@@ -1,7 +1,7 @@
 remote_theme: just-the-docs/just-the-docs
 
 title: WLEDger
-description: A fast, lightweight, and robust web application for managing parts inventory and locating them using WLED.
+description: A fast, lightweight, and robust web application for managing and locating hobby parts inventory using WLED.
 
 color_scheme: "dark"
 
