@@ -1,4 +1,4 @@
-# WLEDger - The Inventory Manager With WLED Support
+# WLEDger - Inventory Management and Retrieval With WLED
 
 A fast, lightweight, and robust inventory "ledger" for electronic parts. Powered by WLED, Go, SQLite, and htmx.
 
