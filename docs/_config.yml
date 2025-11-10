@@ -1,6 +1,6 @@
 remote_theme: just-the-docs/just-the-docs
 
-title: WLEDger Inventory Manager
+title: WLEDger
 description: A fast, lightweight, and robust web application for managing parts inventory and locating them using WLED.
 
 color_scheme: "dark"
