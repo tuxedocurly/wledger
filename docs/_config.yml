@@ -1,3 +1,10 @@
-theme: jekyll-theme-minimal
+remote_theme: just-the-docs/just-the-docs
+
 title: WLEDger Inventory Manager
 description: A fast, lightweight, and robust web application for managing parts inventory and locating them using WLED.
+
+color_scheme: "dark"
+
+aux_links:
+  "WLEDger on GitHub":
+    - "https://github.com/tuxedocurly/wledger"

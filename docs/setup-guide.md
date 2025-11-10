@@ -1,5 +1,7 @@
 ---
-title: Full Setup & Quick Start
+title: WLEDger Quick Start
+layout: default
+nav_order: 2
 ---
 
 # Full Setup & Quick Start Guide
