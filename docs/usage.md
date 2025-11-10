@@ -1,5 +1,5 @@
 ---
-title: WLEDger User Guide
+title: WLEDger Usage Guide
 layout: default
 nav_order: 3
 ---

@@ -8,59 +8,62 @@ nav_order: 1
 
 This site is the official user guide for the WLEDger Inventory Manager, a tool for managing hobby parts inventory with visual location tracking.
 
-This documentation is broken into three parts:
+### Why Does WLEDger Exist?
+As an electronics hobbyist, parts storage, management, and retrieval are a pain. I never know what parts I have, where they are, or how many of them I have on hand. I lose track of manufacturers, datasheets, and implementation guides constantly.
+
+I built this app to solve a personal problem: managing a growing collection of electronic parts. It's difficult to remember which bin in my shop holds which component. WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller and RGB LEDs to illuminate the location of a given part. It's designed to be used with clear plastic bins such as [these](https://amzn.to/4nNp0bF), but works great with open shelf setup as well.
+
+Regardless of your hobby or industry, if you have lots of parts to manage, WLEDger can help.
+
+### Features at a Glance ###
+
+* Per-LED Tracking: Locate parts down to the exact LED.
+
+* Visual Stock Dashboard: See your entire inventory's status (Red/Yellow/Green) light up.
+
+* Rich Part Details: Add images, datasheets, supplier URLs, and documents to every part.
+
+* Fast & Minimal: Built with Go and htmx for a super-fast, lightweight experience.
+
+* Easy to deploy on anything: Deploy the app as a docker container, or run the Go server locally. It can run on most hardware (e.g. Raspberry Pi)
+
+
+**This documentation is broken into three parts:**
 
 ---
 
-1.  **[Full Setup & Quick Start](./setup-guide.md)** **Start here if you are a new user.** This is a complete, end-to-end tutorial that guides you from hardware setup and WLED installation to finding your first part in WLEDger.
+1.  **[Quick Start](./setup-guide.md)** **Start here if you are a new user.** This is a complete, end-to-end tutorial that guides you from hardware setup and WLED installation to finding your first part in WLEDger.
 
-2.  **[Full User Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, and more.
+2.  **[Usage Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, and more.
 
 3.  **[Developer Guide](./developer.md)** This guide is for developers. It explains the application's architecture, code structure, testing philosophy, and how to contribute.
 
-## 🚀 Quick Start Guide
+## 🚀 Setup Process Overview
 
-This guide will walk you through the "Aha!" moment of the app: adding your hardware, adding a part, and lighting up the LED to find it.
+Once WLEDger is running, setting it up to work with your physical hardware is simple.
+
+If you're new here, you'll want to reference the [full setup guide](./setup-guide.md) first.
 
 ### Prerequisites
 
 * You have a **WLED controller** (like an ESP32 or ESP8266) set up on your network.
 * You know its **IP Address**.
 * You have configured your LED preferences (like segment length) in the WLED interface.
-* You have the WLED Inventory Manager app running.
+* You have the WLEDger app running.
 
 ---
 
 ### Step 1: Add Your WLED Controller
 
-First, we need to tell the app how to contact your hardware.
-
-1.  Navigate to the **Settings** page.
-2.  Under the "Manage WLED Controllers" section, enter a **Name** (e.g., "Main Shelf") and the **IP Address** of your controller.
-3.  Click **"Add Controller"**.
-4.  Your controller will appear in the "Existing Controllers" list. Click the `🔄` refresh button to confirm its status is "● Online".
+*First, we need to tell WLEDger how to contact your WLED hardware so we can control the LEDs.*
 
 ### Step 2: Add Your Bins (LEDs)
 
-Next, we'll create the individual "bins" that correspond to each LED on your strip. We'll use the bulk-add tool.
+*"Bins" correspond to a single LED and storage location. This could be a plastic bin, a shelf, a drawer, or some other storage topology.*
 
-1.  On the **Settings** page, find the "Manage Bins" section.
-2.  Fill out the **"Bulk Add Segment Bins"** form:
-    * **WLED Controller:** Select the "Main Shelf" you just added.
-    * **Segment ID:** Enter the WLED segment you're using (usually `0`).
-    * **Number of LEDs:** Enter the total number of LEDs on that segment (e.g., `64`).
-    * **Bin Name Prefix:** Enter a name (e.g., `A1-`). This is crucial for identification.
-3.  Click **"Add Segment Bins"**.
-4.  The page will reload, and the "Existing Bins" table will now be populated with `A1-0`, `A1-1`, `A1-2`, ..., `A1-63`.
+### Step 3: Add a Part to Your Inventory
 
-### Step 3: Add a Part to Your Catalog
-
-Now, let's add a part to our inventory.
-
-1.  Navigate to the **Inventory** page.
-2.  Expand the **"Add New Part Type"** form.
-3.  Fill in the details for your part (e.g., Name: `220 Ohm Resistor`, Manufacturer: `Yageo`).
-4.  Click **"Add Part Type"**. Your new part will appear in the "My Parts Catalog" list.
+*Fill out the details for a part, such as it's name, part number, manufacturer, photo, datasheets, tags, and more!*
 
 ### Step 4: Add Stock to a Bin
 

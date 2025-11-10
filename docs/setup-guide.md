@@ -29,10 +29,14 @@ You'll need a compatible 5V addressable LED strip, such as:
 
 This is the most critical part of your hardware setup.
 
-* **DO NOT** power a long LED strip (more than 10-15 LEDs) directly from your computer's USB port or the microcontroller's 5V pin. This can damage your computer or your board.
+* **DO NOT** power a long LED strip (more than 10-15 LEDs) directly from your computer's USB port or the microcontroller's 5V pin. This could damage your computer or your board.
 * **ALWAYS** use a separate, external 5V power supply.
-* **Rule of Thumb:** A common rule is `60mA` (0.06A) per LED at full white brightness. For 64 LEDs, you would need `64 * 0.06A = 3.84A`. A **5V 4A** power supply would be a good choice.
-* **Wiring:** Connect your external 5V power supply to the LED strip's `+5V` and `GND` inputs directly. Then, connect the strip's `GND` pin to your microcontroller's `GND` pin. Finally, connect the strip's `Data` pin to your microcontroller's data pin (usually GPIO2 on ESP8266).
+* **ALWAYS use a fuse** of the appropriate size between your power supply and your LEDs to protect from shorts and excess current draw
+* **Rule of Thumb:** A common rule is `60mA` (0.06A) per LED at full white brightness (peak power draw scenario). For 64 LEDs, you would need `64 * 0.06A = 3.84A`. A **5V 4A** power supply would be a good choice.
+    * **Note:** This is probably a vast overbudgeting of the power requirement. The real world current draw for the "rainbow" effect on 128 LEDs in my testing setup is 1.8A. Peak current draw while using WLEDger was .5A with an idle draw of .2A.
+* **Wiring:** Connect your external 5V power supply to the LED strip's `+5V` and `GND` inputs directly. Then, connect the strip's `GND` pin to your microcontroller's `GND` pin. Finally, connect the strip's `Data` pin to your microcontroller's data pin.
+
+If LED power management isn't something you feel comfortable managing yourself, I highly recommend getting a microcontroller that is build with LED control in mind, such as the [Adafruit Sparkle Motion Mini](https://www.adafruit.com/product/6160). This board comes with an ESP32 for running WLED, and is capable of delivering 5v 4A to your project. It's an awesome board.
 
 ---
 
@@ -133,6 +137,6 @@ You're all set! Build out your inventory, impress your friends.
 
 From here, you might be interested in:
 
-* **[Full User Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, and more.
+* **[User Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, and more.
 
 * **[Developer Guide](./developer.md)** This guide is for developers. It explains the application's architecture, code structure, testing philosophy, and how to contribute.
