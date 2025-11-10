@@ -1,0 +1,92 @@
+{{ template "_header.html" . }}
+
+<details>
+    <summary role="button" class="outline">Add New Part Type</summary>
+    <article>
+        <form action="/parts" method="POST">
+            <div class="grid">
+                <label for="name">
+                    Part Name
+                    <input type="text" id="name" name="name" placeholder="e.g., 220 Ohm Resistor" required>
+                </label>
+                <label for="part_number">
+                    Part Number
+                    <input type="text" id="part_number" name="part_number" placeholder="e.g., CF14JT220R">
+                </label>
+                <label for="manufacturer">
+                    Manufacturer
+                    <input type="text" id="manufacturer" name="manufacturer" placeholder="e.g., Yageo">
+                </label>
+                <label for="supplier">
+                    Supplier
+                    <input type="text" id="supplier" name="supplier" placeholder="e.g., Digi-Key">
+                </label>
+            </div>
+
+            <div class="grid">
+                <label for="description">
+                    Description
+                    <textarea id="description" name="description" placeholder="e.g., 1/4W, 5% tolerance"></textarea>
+                </label>
+                <label for="status">
+                    Status
+                    <select id="status" name="status">
+                        <option value="active" selected>Active</option>
+                        <option value="obsolete">Obsolete</option>
+                        <option value="in-progress">In-Progress</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="grid">
+                <label for="unit_cost">
+                    Unit Cost
+                    <input type="number" id="unit_cost" name="unit_cost" step="0.01" value="0.00">
+                </label>
+                <label for="min_stock">
+                    Min Stock (Red)
+                    <input type="number" id="min_stock" name="min_stock" value="0">
+                </label>
+                <label for="reorder_point">
+                    Reorder (Yellow)
+                    <input type="number" id="reorder_point" name="reorder_point" value="0">
+                </label>
+                <label for="stock_tracking_enabled">
+                    Enable Stock Tracking
+                    <input type="checkbox" id="stock_tracking_enabled" name="stock_tracking_enabled" role="switch">
+                </label>
+            </div>
+
+            <button type="submit">Add Part Type</button>
+        </form>
+    </article>
+</details>
+
+<hgroup>
+    <h2>My Parts Catalog</h2>
+    <h3>A list of all part types in your inventory.</h3>
+</hgroup>
+
+<form>
+    <input type="search" name="search" placeholder="Search for parts..." hx-post="/parts/search"
+        hx-trigger="keyup changed delay:200ms, search" hx-target="#parts-table-body" hx-swap="innerHTML">
+</form>
+
+<figure>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Part Number</th>
+                <th scope="col">Description</th>
+                <th scope="col">Total Qty</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="parts-table-body" hx-trigger="resetLocateButtons from:body" hx-post="/parts/search">
+            {{ template "_parts-list.html" .Parts }}
+        </tbody>
+    </table>
+</figure>
+
+{{ template "_footer.html" . }}

@@ -1,0 +1,20 @@
+<tr id="location-{{.LocationID}}">
+    <td>{{ .BinName }}</td>
+    <td>{{ .Quantity }}</td>
+    <td>{{ .SegmentID }}</td>
+    <td>{{ .LEDIndex }}</td>
+    <td>
+        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end;">
+
+            <button class="secondary outline" hx-get="/part/location/{{.LocationID}}/edit"
+                hx-target="#location-{{.LocationID}}" hx-swap="outerHTML">
+                Update Qty
+            </button>
+
+            <button class="secondary" hx-delete="/part/location/{{.LocationID}}" hx-target="closest tr"
+                hx-swap="outerHTML" hx-confirm="Are you sure you want to remove this part from '{{.BinName}}'?">
+                Remove
+            </button>
+        </div>
+    </td>
+</tr>

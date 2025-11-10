@@ -1,0 +1,9 @@
+{{ if . }}
+{{ range . }}
+{{ template "_part-row.html" . }}
+{{ end }}
+{{ else }}
+<tr>
+    <td colspan="5" style="text-align: center;">No parts found.</td>
+</tr>
+{{ end }}

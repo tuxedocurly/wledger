@@ -1,0 +1,172 @@
+---
+title: Full User Guide
+---
+
+# Full User Guide
+
+This guide provides a detailed walkthrough of all features available in the WLED Inventory Manager.
+
+## Table of Contents
+
+1.  [The Settings Page](#1-the-settings-page)
+    * Managing WLED Controllers
+    * Managing Bins (Bulk & Manual)
+    * Maintenance
+2.  [The Inventory (Catalog) Page](#2-the-inventory-catalog-page)
+    * Searching Parts
+    * Adding a New Part Type
+    * Locating a Part
+    * Deleting a Part
+3.  [The Part Details Page](#3-the-part-details-page)
+    * Editing Part Properties
+    * Managing Stock (Inventory Locations)
+    * Managing Images
+    * Managing URLs
+    * Managing Documents
+    * Managing Categories (Tags)
+4.  [The Stock Dashboard](#4-the-stock-dashboard)
+    * Understanding the Logic
+    * Using the Controls
+
+---
+
+## 1. The Settings Page
+
+This page is for configuring the connection between the app and your physical hardware.
+
+### Managing WLED Controllers
+
+This section lists all your WLED devices.
+
+* **Add a Controller:** Enter a unique name and the IP address of the controller on your network.
+* **Refresh Status:** The `🔄` button next to the status will ping that specific controller and update its status to "Online" or "Offline".
+* **Delete a Controller:** The `Delete` button will remove the controller.
+    * **Warning:** The app will prevent you from deleting a controller that is currently being used by any bins.
+
+### Managing Bins
+
+This section is for defining your individual bins, which correspond to single LEDs.
+
+* **Bulk Add Segment Bins (Recommended):** This is the fastest way to set up your inventory.
+    * **WLED Controller:** Select the controller you added.
+    * **Segment ID:** The WLED segment these bins are on (usually `0` if you are using only one LED data pin).
+    * **Number of LEDs:** The total number of LEDs on this segment.
+    * **Bin Name Prefix:** A name to identify this set (e.g., `Shelf-A-`).
+    * The app will create bins for you named `Shelf-A-0`, `Shelf-A-1`, etc., up to your total count.
+    * **Note:** LED index starts from 0. For example, if you have an LED strip with 64 LEDs, the LED index will range from 0-63
+
+* **Add a Single Bin Manually:** This is for adding one-off bins or for more complex setups. You must provide a unique name and manually assign the Controller, Segment, and LED Index.
+    * **Note:** LED index starts from 0. For example, if you have an LED strip with 64 LEDs, the LED index will range from 0-63
+
+* **Deleting a Bin:**
+    * **Warning:** If a bin contains any stock, the app will show a popup warning. Confirming the deletion will **permanently delete all inventory records** for that bin.
+
+### Maintenance
+
+* **Clean Up Unused Tags:** This button will scan your database and delete any categories/tags that are no longer assigned to any part. This is useful for removing misspellings or old tags. Note that, by design, this could have unintended consequences if you like to create tags in bulk and use them later (e.g. your unused tags will get removed). If this is a problem for you, please file an Issue request.
+
+---
+
+## 2. The Inventory (Catalog) Page
+
+This is the main "at-a-glance" view of all *types* of parts you own.
+
+### Searching Parts
+
+Use the search bar at the top to instantly filter your parts list. The search will check the **Part Name**, **Part Number**, and **Description** fields.
+
+### Adding a New Part Type
+
+This form adds a new "catalog" entry for a type of part (e.g., "555 Timer IC").
+
+* **Part Name, Part Number, etc.:** Basic identifying information.
+* **Status:** The state of the part. "Active" is default, but you can set "Obsolete" for parts you no longer use.
+* **Stock Tracking:** This is a powerful feature.
+    * **Enable Stock Tracking:** Check this box if you want this part to appear on the Stock Dashboard.
+    * **Min Stock (Red):** The quantity at which a *single bin* is considered "critically low."
+    * **Reorder (Yellow):** The quantity at which a *single bin* is considered "low."
+
+### Locating a Part
+
+This is the magic that makes this whole application tick.
+
+Clicking the **`Locate`** button will light up *all* LEDs for all bins that contain that part.
+* The button will change to **`Stop`**.
+* Clicking **`Stop`** will turn off *only* the LEDs for that part.
+* Clicking the main **`Stop All LEDs`** button in the navigation bar will turn off all currently lit LEDs.
+
+### Deleting a Part
+
+* **Warning:** Deleting a part from this main list is a major action. It deletes the "catalog" entry and **permanently deletes all inventory records for that part across all bins**. The app will show a detailed warning before proceeding.
+
+---
+
+## 3. The Part Details Page
+
+This is the heart of the app. You get here by clicking any part's name on the main inventory list. This page lets you manage everything about a single part.
+
+### Editing Part Properties
+
+This form allows you to change all the core details of the part, such as its name, manufacturer, and stock tracking levels.
+
+### Managing Stock (Inventory Locations)
+
+This is where you manage the *actual stock* of the part.
+
+* **Add to New Bin:** Select an available bin from the dropdown, enter a quantity, and click "Add Stock."
+* **Update Qty:** Click "Update Qty" on an existing row to make the quantity field editable. Click "Save" to confirm.
+* **Remove:** This button removes the part's stock record from that *one bin*. It does not delete the bin itself.
+
+### Managing Images
+
+* **Upload Image:** Select an image (PNG, JPG, etc.) from your computer (max 5MB) and click "Upload."
+* If an image already exists, uploading a new one will **replace it** and delete the old file from the server.
+* The image will be displayed at the top of the page.
+
+### Managing URLs
+
+This section is for linking to external datasheets, supplier pages, or guides.
+* Enter a full URL (e.g., `https://www.sparkfun.com/products/1234`) and an optional description.
+* Click "Add URL" to add it to the list.
+* Click `Delete` to remove a link.
+
+### Managing Documents
+
+This section is for uploading local files (PDFs, schematics, notes) for offline access.
+* Select a file from your computer (max 5MB) and add an optional description.
+* Click "Upload Document."
+* Click **`Download`** to retrieve the file.
+* Click **`Delete`** to permanently remove the file from the server.
+
+### Managing Categories (Tags)
+
+This is for organizing your parts.
+* **Add a Category:** Type a name (e.g., "Sensor" or "MCU") into the text box and click "Add." If the tag already exists, it will just be assigned.
+* **Remove a Category:** Click the `x` button on any tag to remove it from the part. (This does not delete the tag from the system).
+
+---
+
+## 4. The Stock Dashboard
+
+This page provides a high-level, visual overview of your entire inventory's stock levels.
+
+### Understanding the Logic
+
+The dashboard uses the **Per-Bin** logic. It compares the quantity of a part in *each bin* against the "Min Stock" and "Reorder Point" values set for that part.
+
+* **Green `00FF00`:** `Bin Quantity > Reorder Point`
+* **Yellow `FFFF00`:** `Bin Quantity <= Reorder Point` (but > Min Stock)
+* **Red `FF0000`:** `Bin Quantity <= Min Stock`
+
+### Using the Controls
+
+* **View All Statuses (G/Y/R):** Lights up every tracked bin with its corresponding color (Green, Yellow, or Red).
+* **View Attention Needed (Y/R):** Lights up *only* the bins that are Yellow or Red.
+* **View Critical Stock (R):** Lights up *only* the bins that are Red.
+
+When you click a new button, the system will automatically turn off all previously lit LEDs before showing the new status.
+
+* **Example:** Lets assume you've added a "220 Ohm Resistor" part, and have assigned that part to 3 bins with some stock in them (A1-0, A1-1, and A1-2). You've set the stock levels for the part as follows: ```Min Stock = 5, Reorder = 10```. You've added some stock to each of the bin locations: ```A1-0: 5 parts, A1-1: 10 parts, A1-2: 20 parts```. Clicking "View All Statuses" on the Dashboard will exhibit the following LED behavior
+    * **A1-0 with 5 parts in it:** RED
+    * **A1-1 with 10 parts in it:** YELLOW
+    * **A1-2 with 20 parts in it:** GREEN

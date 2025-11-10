@@ -1,0 +1,22 @@
+# Exclude the local database and data folder
+inventory.db
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Exclude user-uploaded content
+uploads/
+
+# Exclude Git history
+.git
+.gitignore
+
+# Exclude this file
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Exclude build artifacts
+server
+server.exe

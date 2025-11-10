@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    container_name: wledger
+    ports:
+      - "3000:3000"
+    volumes:
+      # database volume
+      - inventory-data:/app/data
+      # uploaded files
+      - uploads-data:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  inventory-data:
+  uploads-data:

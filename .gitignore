@@ -1,0 +1,11 @@
+# Ignore local data and uploads
+/data/
+/uploads/
+
+# Ignore compiled binaries
+wledger
+wledger.exe
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
