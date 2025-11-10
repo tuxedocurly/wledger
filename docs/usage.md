@@ -1,5 +1,5 @@
 ---
-title: Full User Guide
+title: WLEDger Full User Guide
 ---
 
 # Full User Guide
