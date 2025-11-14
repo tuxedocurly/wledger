@@ -11,7 +11,7 @@ As an electronics hobbyist, parts storage, management, and retrieval are a huge 
 
 I built this app to solve a personal problem: managing a growing collection of electronic parts. It's difficult to remember which bin or drawer in my shop holds which component. WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller to light up the specific location where your part is located. It's designed to be used with clear plastic bins such as [these](https://amzn.to/47S11Cp), but works great with open shelf setup as well!
 
-## ✨ Core Features
+## Core Features
 
 * **Per-LED Bin Location:** Maps parts to individual LEDs on a WLED segment for precision locating.
 * **Visual Stock Dashboard:** A top-level dashboard that lights up all bins to show stock levels at a glance (Green for "OK," Yellow for "Low," Red for "Critical").
@@ -31,7 +31,7 @@ I built this app to solve a personal problem: managing a growing collection of e
     * **Pico.css** for a clean, class-less UI.
     * **Docker** for easy, reliable deployment.
 
-## 🚀 Getting Started (How to Run)
+## Getting Started (How to Run)
 
 You'll need **Go (1.25+)** and **Docker** (with Docker Compose) installed on your system.
 
