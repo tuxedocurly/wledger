@@ -29,15 +29,14 @@ All Go code lives in `package main`. The project is organized into files based o
 
 * **`main.go`**: The entrypoint. This file is responsible for:
     1.  Defining the core `App` struct.
-    2.  Defining the data `interfaces` (e.g., `PartStore`, `BinStore`).
-    3.  Initializing dependencies (Store, WLED Client, Templates).
-    4.  Registering all HTTP routes.
-    5.  Starting the background services and the web server.
+    2.  Initializing dependencies (Store, WLED Client, Templates).
+    3.  Registering all HTTP routes.
+    4.  Starting the background services and the web server.
 
 * **`models.go`**: Data structures only. This file defines *what* our data looks like (e.g., the `Part`, `Bin`, `WLEDState` structs). It contains no logic.
 
 * **`store.go`**: The "Data Layer." This is the **only** file that talks to the database.
-    * It defines the `Store` struct, which implements all our data interfaces.
+    * Defines the data `interfaces` (e.g., `PartStore`, `BinStore`).
     * It contains all SQL queries and database logic.
     * Handlers *never* write SQL; they call methods on the store (e.g., `a.partStore.GetPartByID(1)`).
 

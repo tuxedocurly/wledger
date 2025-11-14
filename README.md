@@ -15,6 +15,7 @@ I built this app to solve a personal problem: managing a growing collection of e
 
 * **Per-LED Bin Location:** Maps parts to individual LEDs on a WLED segment for precision locating.
 * **Visual Stock Dashboard:** A top-level dashboard that lights up all bins to show stock levels at a glance (Green for "OK," Yellow for "Low," Red for "Critical").
+* **Get Inspired With LLM Prompt Generation:** Creates custom prompts for LLMs (like ChatGPT/Gemini) to generate project ideas based on your in-stock parts. Copy the generated prompt into your favorite LLM to get project recommendations.
 * **Search Bar:** Easily search your parts using their name, description, part number, manufacturer, category/tag, and more.
 * **Rich Part Management:** Store detailed information for each part, including:
     * Images (File Uploads)

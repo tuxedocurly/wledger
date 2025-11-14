@@ -29,6 +29,7 @@ This guide provides a detailed walkthrough of all features available in the WLED
 4.  [The Stock Dashboard](#4-the-stock-dashboard)
     * Understanding the Logic
     * Using the Controls
+5.  [The Inspiration Page](#5-the-inspiration-page)
 
 ---
 
@@ -172,3 +173,21 @@ When you click a new button, the system will automatically turn off all previous
     * **A1-0 with 5 parts in it:** RED
     * **A1-1 with 10 parts in it:** YELLOW
     * **A1-2 with 20 parts in it:** GREEN
+
+---
+
+## 5. The Inspiration Page
+
+This page helps you answer the question, "What can I build with the parts I have?"
+
+It automatically scans your entire inventory, finds all parts that are in stock, and formats them into a detailed prompt you can use with your favorite LLM (Gemini, ChatGPT, Claude, etc).
+
+### How to Use It
+
+1.  Click the **"Inspiration"** link in the top navigation bar.
+2.  The page will display a large text box containing a prompt that is pre-engineered for a large language model (LLM) like ChatGPT, Gemini, or Claude.
+3.  Click the **"Copy Prompt to Clipboard"** button.
+4.  Go to your favorite LLM and paste the prompt.
+5.  The LLM will return a list of creative project ideas based on the parts you have on hand.
+
+**Note:** Customizing the base prompt in the app is not currently supported.
