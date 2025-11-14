@@ -423,3 +423,58 @@ func TestHandleLocatePart_Offline(t *testing.T) {
 		t.Errorf("response body *incorrectly* contains the 'Stop' button")
 	}
 }
+
+func TestHandleShowInspiration(t *testing.T) {
+	// 1. Setup
+	mockStore := &mockPartStore{}
+
+	// Configure the mock to return two parts
+	mockStore.GetPartsFunc = func() ([]Part, error) {
+		return []Part{
+			{
+				Name:          "Test Resistor",
+				PartNumber:    sql.NullString{String: "R-100", Valid: true},
+				TotalQuantity: 50,
+			},
+			{
+				Name:          "Test Capacitor",
+				TotalQuantity: 0, // This part is out of stock
+			},
+		}, nil
+	}
+
+	// Parse templates
+	templates, err := template.ParseGlob("templates/*.html")
+	if err != nil {
+		t.Fatalf("Failed to parse templates: %v", err)
+	}
+
+	app := &App{
+		partStore: mockStore,
+		templates: templates,
+	}
+
+	// 2. Create a test server and request
+	req := httptest.NewRequest("GET", "/inspiration", nil)
+	rr := httptest.NewRecorder()
+
+	// 3. Run the handler
+	app.handleShowInspiration(rr, req)
+
+	// 4. Assert
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	// Check that the IN-STOCK part is in the prompt
+	expectedInStock := "- Test Resistor (R-100): 50 in stock"
+	if !strings.Contains(rr.Body.String(), expectedInStock) {
+		t.Errorf("response body does not contain the in-stock part.\nWant: %s\nGot:\n%s", expectedInStock, rr.Body.String())
+	}
+
+	// Check that the OUT-OF-STOCK part is NOT in the prompt
+	unexpectedOutOfStock := "Test Capacitor"
+	if strings.Contains(rr.Body.String(), unexpectedOutOfStock) {
+		t.Errorf("response body *incorrectly* contains the out-of-stock part: %s", unexpectedOutOfStock)
+	}
+}

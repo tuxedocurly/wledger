@@ -89,6 +89,8 @@ func main() {
 	r.Get("/locate/button/{id}", app.handleGetLocateButton)
 	r.Post("/api/v1/stop-all", app.handleStopAll)
 
+	r.Get("/inspiration", app.handleShowInspiration)
+
 	log.Println("Starting server on :3000")
 	if err := http.ListenAndServe(":3000", r); err != nil {
 		log.Fatal("Failed to start server:", err)
