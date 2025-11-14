@@ -7,9 +7,9 @@ A fast, lightweight, and robust inventory "ledger" for electronic parts. Powered
 
 ## 💡 Why I Made This
 
-As an electronics hobbyist, parts storage, management, and retrieval are a huge pain. I never know what parts I have, where they are, or how many of them I have on hand. I lose track of manufacturers, datasheets, and implementation guides constantly.
+I built this app to solve a personal problem: managing a growing collection of small electronic parts. It's difficult to remember which bin or drawer in my shop holds which component.
 
-I built this app to solve a personal problem: managing a growing collection of electronic parts. It's difficult to remember which bin or drawer in my shop holds which component. WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller to light up the specific location where your part is located. It's designed to be used with clear plastic bins such as [these](https://amzn.to/47S11Cp), but works great with open shelf setup as well!
+WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller to light up the specific location where your part is located. It's designed to be used with clear plastic bins such as [these](https://amzn.to/47S11Cp), but works great with open shelf setup as well!
 
 ## Core Features
 
