@@ -20,9 +20,8 @@ WLEDger works with any microcontroller compatible with WLED. Here are some popul
 * **ESP32 Dev Kit:** A powerful and popular board with plenty of processing power.
 
 ### LED Strips
-You'll need a compatible 5V addressable LED strip, such as:
+You'll need a compatible addressable LED strip, such as:
 * WS2812B (also known as NeoPixel)
-* WS2811
 * SK6812
 
 ### 🚨 Power & Safety (Important!)
