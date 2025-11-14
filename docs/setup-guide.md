@@ -72,7 +72,7 @@ Now that your hardware is working, let's run the WLEDger software.
 
 ### 1. Install Dependencies
 You only need one piece of software:
-* **[Docker Desktop](httpss://www.docker.com/products/docker-desktop/)**
+* **[Docker Desktop](https://www.docker.com/get-started/)**
 
 ### 2. Run WLEDger
 1.  Download the WLEDger project files (e.g., as a ZIP from GitHub or using `git clone`).
