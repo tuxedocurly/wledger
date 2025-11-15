@@ -34,9 +34,11 @@ Regardless of your hobby or industry, if you have lots of parts to manage, WLEDg
 
 1.  **[Quick Start](./setup-guide.md)** **Start here if you are a new user.** This is a complete, end-to-end tutorial that guides you from hardware setup and WLED installation to finding your first part in WLEDger.
 
-2.  **[Usage Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, the new inspiration generator, and more.
+2.  **[Hardware Guide](./hardware-guide.md)**
 
-3.  **[Developer Guide](./developer.md)** This guide is for developers. It explains the application's architecture, code structure, testing philosophy, and how to contribute.
+3.  **[Usage Guide](./usage.md)** This is the detailed reference manual. It explains every feature on every page, including the Stock Dashboard, managing documents, adding categories, the new inspiration generator, and more.
+
+4.  **[Developer Guide](./developer.md)** This guide is for developers. It explains the application's architecture, code structure, testing philosophy, and how to contribute.
 
 ## 🚀 Setup Process Overview
 

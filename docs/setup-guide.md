@@ -12,6 +12,10 @@ Welcome to WLEDger! This guide will walk you through the entire process, from se
 
 Before you begin, you'll need a few pieces of hardware.
 
+> ℹ️ If you plan on only using the software component of WLEDger, you can skip this section - but where's the fun in that?
+
+**For a deep dive into all your options, see the [Full Hardware Guide](./hardware-guide.md).**
+
 ### Controllers
 WLEDger works with any microcontroller compatible with WLED. Here are some popular, easy-to-use options:
 
@@ -24,18 +28,18 @@ You'll need a compatible addressable LED strip, such as:
 * WS2812B (also known as NeoPixel)
 * SK6812
 
-### 🚨 Power & Safety (Important!)
+### ⚠️ Power & Safety ⚠️
 
 This is the most critical part of your hardware setup.
 
 * **DO NOT** power a long LED strip (more than 10-15 LEDs) directly from your computer's USB port or the microcontroller's 5V pin. This could damage your computer or your board.
-* **ALWAYS** use a separate, external 5V power supply.
+* **ALWAYS** use a separate, external 5V power supply if your WLED board does not have built-in power delivery.
 * **ALWAYS use a fuse** of the appropriate size between your power supply and your LEDs to protect from shorts and excess current draw
 * **Rule of Thumb:** A common rule is `60mA` (0.06A) per LED at full white brightness (peak power draw scenario). For 64 LEDs, you would need `64 * 0.06A = 3.84A`. A **5V 4A** power supply would be a good choice.
-    * **Note:** This is probably a vast overbudgeting of the power requirement. The real world current draw for the "rainbow" effect on 128 LEDs in my testing setup is 1.8A. Peak current draw while using WLEDger was .5A with an idle draw of .2A.
+    * **Note:** This is probably a vast overbudgeting of the power requirement. The real world current draw for the "rainbow" effect on 128 LEDs in my testing setup is 1.8A. Peak current draw while using WLEDger was .5A with an idle draw of .2A. Your mileage may vary.
 * **Wiring:** Connect your external 5V power supply to the LED strip's `+5V` and `GND` inputs directly. Then, connect the strip's `GND` pin to your microcontroller's `GND` pin. Finally, connect the strip's `Data` pin to your microcontroller's data pin.
 
-If LED power management isn't something you feel comfortable managing yourself, I highly recommend getting a microcontroller that is build with LED control in mind, such as the [Adafruit Sparkle Motion Mini](https://www.adafruit.com/product/6160). This board comes with an ESP32 for running WLED, and is capable of delivering 5v 4A to your project. It's an awesome board.
+If LED power management isn't something you feel comfortable managing yourself, I highly recommend getting a microcontroller that is built with LED control in mind, such as the [Adafruit Sparkle Motion Mini](https://www.adafruit.com/product/6160). This board comes with an ESP32 for running WLED, and is capable of delivering 5v 4A to your project. It's an *awesome* board.
 
 ---
 
@@ -58,7 +62,7 @@ The easiest method is using the web flasher.
 5.  Your controller will restart and connect to your network. Find its new IP address from your router's device list.
 
 ### 3. Testing Your Strip
-1.  Using any device on your network, go to the new **IP Address** of your controller (e.g., `http://192.168.1.50`).
+1.  Using any device on your network, go to the new **IP Address** of your controller (e.g., `http://192.168.1.69`).
 2.  Go to **Config > LED Preferences**.
 3.  Set the **"Length"** to the total number of LEDs on your strip (e.g., `64`).
 4.  Click "Save."
@@ -132,7 +136,7 @@ The first LED on your strip (`A1-0`) should instantly light up, showing you exac
 
 ## Next Steps
 
-You're all set! Build out your inventory, impress your friends.
+You're all set! Build out your inventory, light up the world, impress your friends.
 
 From here, you might be interested in:
 
