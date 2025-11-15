@@ -39,7 +39,7 @@ Other options, such as SK6812 (and many more), are available as well.
 
 ### Storage Bins (The "Inventory")
 
-WLEDger works by lighting up 1 or more bins. For this to work well, the storage bins you choose should be clear or semi-transparent. If you want to explore more creative storage solutions, read Path #3 below.
+WLEDger works by lighting up 1 or more bins when you need to locate a part. For this to work well, the storage bins you choose should be clear or semi-transparent.
 
 * **Recommended Bin:**
     * **[High Quality 8x8 Transparent Bin Organizer](https://amzn.to/43vlFGY)**
@@ -79,7 +79,7 @@ This is the fastest, cleanest, and most "plug-and-play" method. It's designed to
 * **Pros:** Looks professional, very fast to build, minimal wiring.
 * **Cons:** Highest cost, locked into the specific bin size.
 
-> Most of this cost is from sourcing the PCBs. If you are located **outside of the United States**, your cost will likely be significantly lower, depending on your country's import taxes and choice of PCB manufacturer.
+> Most of this cost is from sourcing the PCBs. If you're located **outside the United States**, your cost will likely be lower, depending on your country's import taxes and choice of PCB manufacturer.
 
 | Component | Recommendation |
 | :--- | :--- |
@@ -99,7 +99,7 @@ This is the classic DIY method. It's cheap to build, but requires the most time.
 * **Cost:** Low ($70 USD / 8x8 bin setup)
 * **Time:** High
 * **Pros:** Very cheap, great soldering practice, can fit any bin spacing requirement.
-* **Cons:** Extremely time-consuming and tedious.
+* **Cons:** Time-consuming and tedious.
 
 >**Fun Fact:** If using an 8x8 storage container and WS2812B LEDs, you'll need to cut, strip, and solder 384 wires and connection points. Weeeeeee!
 
@@ -130,10 +130,6 @@ The only rule is: **If WLED can control it, WLEDger can find it.**
 * **Garage Workshop:** Line your tool drawers with LED strips. Assign `Segment 0` to your screwdriver drawer and `Segment 1` to your wrench drawer.
 * **Pegboard:** Attach LED pixels behind your most-used tools.
 
-To do this, you just need to map your physical storage in WLEDger:
-1.  Go to **Settings -> Add Bins**.
-2.  Create a bin named "Wrench Drawer - Top".
-3.  Assign it to `Controller: Garage`, `Segment ID: 1`, `LED Index: 0`.
-4.  Add your "Wrench Set" part to that bin.
+The possibilities are endless.
 
-When you click "Locate," your whole wrench drawer will light up.
+Have questions? Want to show off your setup? Have a suggestion for a feature? Join the [TuxedoDevices Discord](https://discord.com/invite/HABg37gjrd) and come say hi!
