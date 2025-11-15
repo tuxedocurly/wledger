@@ -3,7 +3,7 @@
 A fast, lightweight, and robust inventory "ledger" for electronic parts. Powered by WLED, Go, SQLite, and htmx.
 
 
-> **Note:** For the full User Guide, Quick-Start, and Developer Documentation, please visit the **[Official GitHub Pages Site](https://tuxedocurly.github.io/wledger/)**.
+> **Note:** For the full User Guide, Build Guide, Quick-Start, and Developer Documentation, please visit the **[Official GitHub Pages Site](https://tuxedocurly.github.io/wledger/)**.
 
 ## 💡 Why I Made This
 
@@ -73,5 +73,7 @@ Your database and all uploaded files will be stored in persistent Docker volumes
 
 ## 📖 Documentation
 
-* **[Full User Guide (`usage.md`)](https://tuxedocurly.github.io/wledger/usage)**: A complete guide on how to use every feature of the app.
+* **[User Guide (`usage.md`)](https://tuxedocurly.github.io/wledger/usage)**: Explore every feature WLEDger has to offer.
+* **[Build Guide (`hardware-guide.md`)](https://tuxedocurly.github.io/wledger/hardware-guide)**: A complete guide on how to build a physical WLEDger storage solution.
+* **[Quick-Start Guide (`setup-guide.md`)](https://tuxedocurly.github.io/wledger/setup-guide)**: A complete guide on how to install WLED and set up WLEDger.
 * **[Developer Documentation (`developer.md`)](https://tuxedocurly.github.io/wledger/developer)**: An explanation of the architecture, code structure, and how to contribute.
