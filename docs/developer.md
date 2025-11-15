@@ -23,7 +23,7 @@ This application is built with a "minimal stack" philosophy, prioritizing simpli
 * **The Approach: Server-Side Rendered (SSR)**
     The server sends fully rendered **HTML**, not JSON. htmx intercepts clicks, makes a request, and then "swaps" a piece of the current page with the HTML response from the server. This keeps all application logic, state, and templating in one place (the Go backend).
 
-## Code Structure (Separation of Concerns)
+## Code Structure
 
 All Go code lives in `package main`. The project is organized into files based on their "concern" or responsibility:
 
