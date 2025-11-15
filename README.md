@@ -1,4 +1,4 @@
-# WLEDger - Your Inventory, Illuminated
+# WLEDger - The Inventory System That Finds Your Parts For You
 
 A fast, lightweight, and robust inventory "ledger" for electronic parts. Powered by WLED, Go, SQLite, and htmx.
 
