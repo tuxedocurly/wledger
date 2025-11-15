@@ -46,7 +46,7 @@ Now, let's flash the WLED software onto your controller.
 ### 1. Flashing WLED
 The easiest method is using the web flasher.
 1.  Plug your controller into your computer via USB.
-2.  Go to the official **[WLED Web Flasher](httpss://install.wled.me/)**.
+2.  Go to the official **[WLED Web Flasher](https://install.wled.me/)**.
 3.  Click "Connect" and select the serial port for your device.
 4.  Choose the latest stable version of WLED and click "Install."
 
