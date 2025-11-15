@@ -4,7 +4,13 @@ layout: default
 nav_order: 3
 ---
 
-TODO: Hardware build guide is a work in progress
+# Hardware build guide is a work in progress
+
+TODO: Add build steps for setup 1 and setup 2
+
+TODO: Add photos to step 1/2 guides
+
+TODO: Add resources for learning more about LED options, controllers, power delivery, and more (QuinLed website)
 
 # Hardware Guide
 
