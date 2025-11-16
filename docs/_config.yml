@@ -5,7 +5,8 @@ description: A fast, lightweight, and robust web application for managing and lo
 
 color_scheme: "dark"
 
-logo: "./assets/wledger-logo.png"
+# Uncomment tp replace the title text with a logo image
+# logo: "./assets/wledger-logo.png"
 
 aux_links:
   "WLEDger on GitHub":
