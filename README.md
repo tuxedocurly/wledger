@@ -1,6 +1,10 @@
-# WLEDger - The Inventory System That Finds Your Parts For You
+<p align="center">
+  <img src="docs/assets/wledger-logo.png" alt="WLEDger Logo" width="500">
+</p>
 
-A fast, lightweight, and robust inventory "ledger" for electronic parts. Powered by WLED, Go, SQLite, and htmx.
+# The Inventory System That Finds Your Parts For You
+
+A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating hobby parts. Powered by WLED, Go, SQLite, and htmx.
 
 
 > **Note:** For the full User Guide, Build Guide, Quick-Start, and Developer Documentation, please visit the **[Official GitHub Pages Site](https://tuxedocurly.github.io/wledger/)**.
