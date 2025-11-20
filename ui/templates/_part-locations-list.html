@@ -1,0 +1,22 @@
+<table>
+    <thead>
+        <tr>
+            <th scope="col">Bin Name</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Segment</th>
+            <th scope="col">LED</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ if . }}
+        {{ range . }}
+        {{ template "_part-location-row.html" . }}
+        {{ end }}
+        {{ else }}
+        <tr>
+            <td colspan="5" style="text-align: center;">This part is not in stock in any bins.</td>
+        </tr>
+        {{ end }}
+    </tbody>
+</table>

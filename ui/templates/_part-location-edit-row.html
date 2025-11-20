@@ -1,0 +1,22 @@
+<tr id="location-{{.LocationID}}">
+    <td>{{ .BinName }}</td>
+    <td>
+        <input type="number" name="quantity" value="{{.Quantity}}" min="0" required>
+    </td>
+    <td>{{ .SegmentID }}</td>
+    <td>{{ .LEDIndex }}</td>
+    <td>
+        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end;">
+
+            <button class="secondary" hx-put="/part/location/{{.LocationID}}" hx-include="closest tr"
+                hx-target="#location-{{.LocationID}}" hx-swap="outerHTML">
+                Save
+            </button>
+
+            <button type="button" class="secondary outline" hx-get="/part/location/{{.LocationID}}"
+                hx-target="#location-{{.LocationID}}" hx-swap="outerHTML">
+                Cancel
+            </button>
+        </div>
+    </td>
+</tr>

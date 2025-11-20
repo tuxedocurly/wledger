@@ -63,16 +63,11 @@ Your database and all uploaded files will be stored in persistent Docker volumes
     ```bash
     go mod tidy
     ```
-2.  **Create required directories** (the Docker container does this automatically, but you must do it locally):
+2.  **Run the server:**
     ```bash
-    mkdir data
-    mkdir uploads
+    go run ./cmd/server
     ```
-3.  **Run the server:**
-    ```bash
-    go run .
-    ```
-4.  **Access the app:**
+3.  **Access the app:**
     Open your browser to `http://localhost:3000`.
 
 ## 📖 Documentation

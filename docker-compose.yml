@@ -5,12 +5,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # database volume
-      - inventory-data:/app/data
-      # uploaded files
-      - uploads-data:/app/uploads
+      # ONE volume handles DB (/app/data) AND Uploads (/app/data/uploads)
+      - wledger-data:/app/data
     restart: unless-stopped
 
 volumes:
-  inventory-data:
-  uploads-data:
+  wledger-data:

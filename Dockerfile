@@ -1,39 +1,35 @@
-# Use the official Golang image. Using alpine makes this build stage smaller.
+# --- Stage 1: The Builder ---
 FROM golang:1.25-alpine AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the dependency files
+# Copy module files and download dependencies
 COPY go.mod go.sum ./
-# Download dependencies. This is cached by Docker.
 RUN go mod download
 
-# Copy the rest of the source code
+# Copy the source code
 COPY . .
 
-# Build the application, creating a static binary.
-# CGO_ENABLED=0 is CRITICAL: It ensures a pure-Go binary with no C dependencies.
-# -w -s strips debug info, making the binary smaller.
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-w -s" -o /app/server .
+# Build the application
+# UPDATED: Point to the new entrypoint in ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-w -s" -o /app/server ./cmd/server
 
-# Use a minimal 'base image'. alpine is tiny and secure.
+# --- Stage 2: The Final Image ---
 FROM alpine:latest
 
-# Set the working directory
 WORKDIR /app
 
-# Create the data directory for our database
-RUN mkdir /app/data
+# Create the data directory
+RUN mkdir -p /app/data/uploads
 
-# Copy the static binary from the 'builder' stage
+# Copy the binary
 COPY --from=builder /app/server .
 
-# Copy the templates
-COPY --from=builder /app/templates ./templates
+# UPDATED: Copy the 'ui' folder (templates & static)
+COPY --from=builder /app/ui ./ui
 
-# Expose port 3000 to the outside world
+# Expose the port
 EXPOSE 3000
 
-# The command to run when the container starts
+# Run the server
 CMD ["./server"]

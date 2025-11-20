@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WLEDger: {{ if .Title }}{{ .Title }}{{ else }}Inventory Manager{{ end }}</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+
+<body>
+    <nav class="container-fluid">
+        <ul>
+            <li><strong>WLEDger Inventory Manager</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">Inventory</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/inspiration">Inspiration</a></li>
+            <li><a href="/settings">Settings</a></li>
+
+            <li>
+                <button class="secondary outline" style="padding: 0.5rem 0.75rem;" hx-post="/api/v1/stop-all"
+                    hx-confirm="This will turn off all known LEDs. Are you sure?" hx-swap="none">
+                    Stop All LEDs
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="container">
