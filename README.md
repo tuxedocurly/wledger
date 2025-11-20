@@ -29,6 +29,7 @@ WLEDger to the rescue! This tool links your digital inventory directly to your p
     * Stock Tracking (Min/Reorder levels)
     * Supplier & Manufacturer Info
 * **Hardware Health Checks:** The app proactively pings your WLED controllers to show their "Online" or "Offline" status in the UI. Have unused or accidentally misspelled tags? A tag cleanup job removes any unused tags automatically.
+* **Backup & Restore:** Your data is *your* data. Export your entire database and image library to a standard ZIP file for safekeeping or migration.
 * **Minimal & Robust Stack:** Built with a simple, modern, and fast stack:
     * **Go (Golang)** backend for a single, fast binary.
     * **htmx** for a modern, dynamic UI *without* a heavy JavaScript framework.

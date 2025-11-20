@@ -102,3 +102,23 @@ type DashboardBinData struct {
 	BinSegmentID int
 	BinLEDIndex  int
 }
+
+// BackupData represents the complete state of the database
+type BackupData struct {
+	Version       int              `json:"version"`
+	GeneratedAt   time.Time        `json:"generated_at"`
+	Parts         []Part           `json:"parts"`
+	PartUrls      []PartURL        `json:"part_urls"`
+	PartDocs      []PartDocument   `json:"part_documents"`
+	Categories    []Category       `json:"categories"`
+	PartCats      []PartCategory   `json:"part_categories"` // struct for the join table
+	Controllers   []WLEDController `json:"controllers"`
+	Bins          []Bin            `json:"bins"`
+	PartLocations []PartLocation   `json:"part_locations"`
+}
+
+// Needed for the join table as part of the backup and restore process
+type PartCategory struct {
+	PartID     int `json:"part_id"`
+	CategoryID int `json:"category_id"`
+}

@@ -25,6 +25,8 @@ Regardless of your hobby or industry, if you have lots of parts to manage, WLEDg
 
 * Fast & Minimal: Built with Go and htmx for a super-fast, lightweight experience.
 
+* Backup & Restore: Your data is *yours*. Export your entire database and image library to a standard ZIP file for safekeeping or migration.
+
 * Easy to deploy on anything: Deploy the app as a docker container, or run the Go server locally. It can run on most hardware (e.g. Raspberry Pi)
 
 

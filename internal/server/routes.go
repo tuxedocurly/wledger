@@ -60,5 +60,9 @@ func (a *App) Routes() http.Handler {
 	r.Get("/locate/button/{id}", a.handleGetLocateButton)
 	r.Post("/api/v1/stop-all", a.handleStopAll)
 
+	// --- Backup Routes ---
+	r.Get("/settings/backup/download", a.handleDownloadBackup)
+	r.Post("/settings/backup/restore", a.handleRestoreBackup)
+
 	return r
 }

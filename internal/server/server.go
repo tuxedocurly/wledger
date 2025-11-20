@@ -10,7 +10,7 @@ import (
 	"wledger/internal/wled"
 )
 
-// --- Interfaces (Defined by the Consumer) ---
+// Interfaces (defined by the Consumer)
 
 type PartStore interface {
 	GetPartByID(id int) (models.Part, error)
@@ -84,33 +84,40 @@ type DashboardStore interface {
 	}, error)
 }
 
+type BackupStore interface {
+	GetAllDataForBackup() (models.BackupData, error)
+	RestoreFromBackup(data models.BackupData) error
+}
+
 type WLEDClientInterface interface {
 	SendCommand(ipAddress string, state models.WLEDState) error
 	Ping(ipAddress string) bool
 }
 
-// --- App Struct ---
+// App Struct
 
 type App struct {
 	Templates *template.Template
 	Wled      WLEDClientInterface
 
-	PartStore PartStore
-	LocStore  LocationStore
-	BinStore  BinStore
-	CtrlStore ControllerStore
-	DashStore DashboardStore
+	PartStore   PartStore
+	LocStore    LocationStore
+	BinStore    BinStore
+	CtrlStore   ControllerStore
+	DashStore   DashboardStore
+	BackupStore BackupStore
 }
 
 // NewApp creates a new server application
 func NewApp(t *template.Template, w *wled.WLEDClient, s *store.Store) *App {
 	return &App{
-		Templates: t,
-		Wled:      w,
-		PartStore: s,
-		LocStore:  s,
-		BinStore:  s,
-		CtrlStore: s,
-		DashStore: s,
+		Templates:   t,
+		Wled:        w,
+		PartStore:   s,
+		LocStore:    s,
+		BinStore:    s,
+		CtrlStore:   s,
+		DashStore:   s,
+		BackupStore: s,
 	}
 }

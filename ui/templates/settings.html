@@ -173,4 +173,33 @@
     </div>
 </article>
 
+<h2>EXPERIMENTAL FEATURES</h2>
+
+<article>
+    <h4>Backup & Restore</h4>
+    <p>Export your entire database including ploaded files to a single ZIP archive.</p>
+
+    <div class="grid">
+        <div>
+            <h5>Backup</h5>
+            <a href="/settings/backup/download" role="button" class="outline">
+                Download Full Backup (.zip)
+            </a>
+        </div>
+        <div>
+            <h5>Restore</h5>
+            <form action="/settings/backup/restore" method="POST" enctype="multipart/form-data">
+                <label for="backup_file">
+                    Select Backup File
+                    <input type="file" id="backup_file" name="backup_file" accept=".zip" required>
+                </label>
+                <button type="submit" class="secondary"
+                    hx-confirm="WARNING: This will completely wipe your current database and files and replace them with the backup. This cannot be undone. Are you sure?">
+                    Restore from Backup
+                </button>
+            </form>
+        </div>
+    </div>
+</article>
+
 {{ template "_footer.html" . }}
