@@ -1,5 +1,9 @@
 ## Hardware Designs for WLEDger
 
+**PCB Status:** Tested Working - 11/20/2025
+
+---
+
 This directory contains open-source hardware (KiCad) files for custom PCBs to help you save time building the physical side of your WLEDger inventory system. It is completely optional (but saves a LOT of assembly time).
 
 ### This is Completely Optional!
