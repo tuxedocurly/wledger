@@ -1,0 +1,42 @@
+<tr id="bin-{{.ID}}">
+    <td>{{ .Name }}</td>
+    <td>
+        {{ if .IsOrphaned }}
+            <span style="color: var(--pico-color-red-500);">⚠️ Unknown</span>
+        {{ else }}
+            {{ .WLEDControllerName.String }}
+        {{ end }}
+    </td>
+    <td>{{ .WLEDSegmentID }}</td>
+    <td>
+        {{ .LEDIndex }}
+        
+        {{ if .IsOrphaned }}
+             <span data-tooltip="Orphaned: This bin is assigned to a deleted controller. Edit it to re-assign." 
+                   style="cursor: help; margin-left: 0.5rem;">⚠️</span>
+        {{ else if .HasOverlap }}
+             <span data-tooltip="Overlap: Another bin uses this same LED." 
+                   style="cursor: help; margin-left: 0.5rem;">⚠️</span>
+        {{ end }}
+    </td>
+    <td>
+        <div style="display: flex; gap: 0.25rem;">
+            <button class="secondary outline"
+                hx-get="/settings/bins/{{.ID}}/edit"
+                hx-target="#bin-{{.ID}}"
+                hx-swap="outerHTML">
+                Edit
+            </button>
+            
+            <button class="secondary js-confirm-delete-bin"
+                style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"
+                data-hx-delete="/settings/bins/{{.ID}}"
+                data-bin-id="{{.ID}}"
+                data-bin-name="{{.Name}}"
+                data-hx-target="#bin-{{.ID}}"
+                data-hx-swap="outerHTML">
+                Delete
+            </button>
+        </div>
+    </td>
+</tr>

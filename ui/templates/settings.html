@@ -134,21 +134,9 @@
             </thead>
             <tbody>
                 {{ if .Bins }}
-                {{ range .Bins }}
-                <tr id="bin-{{.ID}}">
-                    <td>{{ .Name }}</td>
-                    <td>{{ .WLEDControllerName.String }}</td>
-                    <td>{{ .WLEDSegmentID }}</td>
-                    <td>{{ .LEDIndex }}</td>
-                    <td>
-                        <button class="secondary" hx-delete="/settings/bins/{{.ID}}" hx-target="#bin-{{.ID}}"
-                            hx-swap="outerHTML"
-                            hx-confirm="Are you sure you want to delete bin '{{.Name}}'? If any parts are stored here, they will need to be reassigned to a different bin. This action cannot be undone.">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-                {{ end }}
+                    {{ range .Bins }}
+                        {{ template "_bin-row.html" . }}
+                    {{ end }}
                 {{ else }}
                 <tr>
                     <td colspan="5" style="text-align: center;">No bins found. Add one above!</td>

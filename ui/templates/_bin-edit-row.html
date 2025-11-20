@@ -1,0 +1,38 @@
+<tr id="bin-{{.Bin.ID}}">
+    <td>
+        <input type="text" name="name" value="{{.Bin.Name}}" required>
+    </td>
+    <td>
+        <select name="controller_id" required>
+            <option value="" disabled>Select Controller</option>
+            {{ range .Controllers }}
+                <option value="{{.ID}}" {{if eq .ID $.Bin.WLEDControllerID}}selected{{end}}>
+                    {{.Name}} ({{.IPAddress}})
+                </option>
+            {{ end }}
+        </select>
+    </td>
+    <td>
+        <input type="number" name="segment_id" value="{{.Bin.WLEDSegmentID}}" min="0" required>
+    </td>
+    <td>
+        <input type="number" name="led_index" value="{{.Bin.LEDIndex}}" min="0" required>
+    </td>
+    <td>
+        <div style="display: flex; gap: 0.25rem;">
+            <button class="secondary"
+                hx-put="/settings/bins/{{.Bin.ID}}"
+                hx-include="closest tr"
+                hx-target="#bin-{{.Bin.ID}}"
+                hx-swap="outerHTML">
+                Save
+            </button>
+            <button class="secondary outline"
+                hx-get="/settings/bins/{{.Bin.ID}}"
+                hx-target="#bin-{{.Bin.ID}}"
+                hx-swap="outerHTML">
+                Cancel
+            </button>
+        </div>
+    </td>
+</tr>

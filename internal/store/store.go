@@ -464,12 +464,15 @@ func (s *Store) GetControllers() ([]models.WLEDController, error) {
 
 func (s *Store) GetControllerByID(id int) (models.WLEDController, error) {
 	var c models.WLEDController
-	row := s.db.QueryRow(`
-		SELECT id, name, ip_address, status, last_seen 
-		FROM wled_controllers 
-		WHERE id = ?;
-	`, id)
-	err := row.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen)
+	query := `
+		SELECT c.id, c.name, c.ip_address, c.status, c.last_seen, COUNT(b.id) as bin_count
+		FROM wled_controllers c
+		LEFT JOIN bins b ON c.id = b.wled_controller_id
+		WHERE c.id = ?
+		GROUP BY c.id;
+	`
+	row := s.db.QueryRow(query, id)
+	err := row.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen, &c.BinCount)
 	return c, err
 }
 
@@ -570,28 +573,85 @@ func (s *Store) MigrateBins(oldControllerID, newControllerID int) error {
 // Bin Methods
 
 func (s *Store) GetBins() ([]models.Bin, error) {
-	binRows, err := s.db.Query(`
+	// Fetch all bins
+	query := `
 		SELECT b.id, b.name, b.wled_controller_id, b.wled_segment_id, b.led_index, c.name
 		FROM bins b
 		LEFT JOIN wled_controllers c ON b.wled_controller_id = c.id
 		ORDER BY b.wled_segment_id ASC, b.led_index ASC;
-	`)
+	`
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer binRows.Close()
+	defer rows.Close()
 
-	bins := []models.Bin{}
-	for binRows.Next() {
+	var bins []models.Bin
+
+	// Map to track overlaps: "CtrlID-SegID-LEDIndex" -> Count
+	occurrenceMap := make(map[string]int)
+
+	for rows.Next() {
 		var b models.Bin
-		err := binRows.Scan(&b.ID, &b.Name, &b.WLEDControllerID, &b.WLEDSegmentID, &b.LEDIndex, &b.WLEDControllerName)
+		err := rows.Scan(&b.ID, &b.Name, &b.WLEDControllerID, &b.WLEDSegmentID, &b.LEDIndex, &b.WLEDControllerName)
 		if err != nil {
 			log.Println("Error scanning bin row:", err)
 			continue
 		}
+
+		// DETECT ORPHAN: If the LEFT JOIN returned NULL for the name, the controller doesn't exist
+		if !b.WLEDControllerName.Valid {
+			b.IsOrphaned = true
+		} else {
+			// Only count occurrences for valid controllers
+			key := strconv.Itoa(b.WLEDControllerID) + "-" + strconv.Itoa(b.WLEDSegmentID) + "-" + strconv.Itoa(b.LEDIndex)
+			occurrenceMap[key]++
+		}
+
 		bins = append(bins, b)
 	}
+
+	// Set flags
+	for i := range bins {
+		if bins[i].IsOrphaned {
+			continue // Orphans don't have overlap warnings, they have orphan warnings
+		}
+		key := strconv.Itoa(bins[i].WLEDControllerID) + "-" + strconv.Itoa(bins[i].WLEDSegmentID) + "-" + strconv.Itoa(bins[i].LEDIndex)
+		if occurrenceMap[key] > 1 {
+			bins[i].HasOverlap = true
+		}
+	}
+
 	return bins, nil
+}
+
+func (s *Store) GetBinByID(id int) (models.Bin, error) {
+	var b models.Bin
+	query := `
+		SELECT b.id, b.name, b.wled_controller_id, b.wled_segment_id, b.led_index, c.name
+		FROM bins b
+		LEFT JOIN wled_controllers c ON b.wled_controller_id = c.id
+		WHERE b.id = ?;
+	`
+	row := s.db.QueryRow(query, id)
+	err := row.Scan(&b.ID, &b.Name, &b.WLEDControllerID, &b.WLEDSegmentID, &b.LEDIndex, &b.WLEDControllerName)
+
+	// Re-run orphan/overlap logic for single item (simplified)
+	if !b.WLEDControllerName.Valid {
+		b.IsOrphaned = true
+	}
+	// Note: Detecting overlap for a single item requires querying all items,
+	// so we might skip the overlap check for the single-row return or accept it won't show until refresh.
+
+	return b, err
+}
+
+func (s *Store) UpdateBin(b *models.Bin) error {
+	_, err := s.db.Exec(
+		`UPDATE bins SET name = ?, wled_controller_id = ?, wled_segment_id = ?, led_index = ? WHERE id = ?`,
+		b.Name, b.WLEDControllerID, b.WLEDSegmentID, b.LEDIndex, b.ID,
+	)
+	return err
 }
 
 func (s *Store) GetAvailableBins(partID int) ([]models.Bin, error) {

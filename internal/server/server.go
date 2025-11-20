@@ -54,6 +54,8 @@ type BinStore interface {
 	CreateBinsBulk(controllerID, segmentID, ledCount int, namePrefix string) error
 	DeleteBin(id int) error
 	GetPartNamesInBin(binID int) ([]string, error)
+	UpdateBin(b *models.Bin) error
+	GetBinByID(id int) (models.Bin, error)
 }
 
 type ControllerStore interface {

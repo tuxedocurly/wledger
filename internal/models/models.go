@@ -43,6 +43,8 @@ type Bin struct {
 	WLEDSegmentID      int
 	LEDIndex           int
 	WLEDControllerName sql.NullString
+	HasOverlap         bool
+	IsOrphaned         bool
 }
 
 // PartLocation holds detailed info about a single part's inventory

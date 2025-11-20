@@ -660,6 +660,75 @@ func (a *App) handleMigrateController(w http.ResponseWriter, r *http.Request) {
 	a.Templates.ExecuteTemplate(w, "_controller-row.html", updatedSource)
 }
 
+// Bin Handlers
+
+func (a *App) handleGetBinRow(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	// NOTE: You need to add GetBinByID to your store! (See below)
+	bin, err := a.BinStore.GetBinByID(id)
+	if err != nil {
+		clientError(w, r, http.StatusNotFound, "Bin not found", err)
+		return
+	}
+	a.Templates.ExecuteTemplate(w, "_bin-row.html", bin)
+}
+
+func (a *App) handleGetBinEditRow(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	bin, err := a.BinStore.GetBinByID(id)
+	if err != nil {
+		clientError(w, r, http.StatusNotFound, "Bin not found", err)
+		return
+	}
+
+	// controllers for the dropdown
+	controllers, _ := a.CtrlStore.GetControllers()
+
+	data := map[string]interface{}{
+		"Bin":         bin,
+		"Controllers": controllers,
+	}
+	a.Templates.ExecuteTemplate(w, "_bin-edit-row.html", data)
+}
+
+func (a *App) handleUpdateBin(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := r.ParseForm(); err != nil {
+		clientError(w, r, http.StatusBadRequest, "Bad Request", err)
+		return
+	}
+
+	bin := &models.Bin{
+		ID:               id,
+		Name:             r.FormValue("name"),
+		WLEDControllerID: 0,
+		WLEDSegmentID:    0,
+		LEDIndex:         0,
+	}
+
+	bin.WLEDControllerID, _ = strconv.Atoi(r.FormValue("controller_id"))
+	bin.WLEDSegmentID, _ = strconv.Atoi(r.FormValue("segment_id"))
+	bin.LEDIndex, _ = strconv.Atoi(r.FormValue("led_index"))
+
+	if bin.Name == "" || bin.WLEDControllerID == 0 {
+		clientError(w, r, http.StatusBadRequest, "Name and Controller are required", nil)
+		return
+	}
+
+	if err := a.BinStore.UpdateBin(bin); err != nil {
+		if errors.Is(err, store.ErrUniqueConstraint) {
+			clientError(w, r, http.StatusConflict, "Bin name already exists", err)
+		} else {
+			serverError(w, r, err)
+		}
+		return
+	}
+
+	// Return updated row
+	updated, _ := a.BinStore.GetBinByID(id)
+	a.Templates.ExecuteTemplate(w, "_bin-row.html", updated)
+}
+
 // URL Handlers
 
 func (a *App) handleAddPartURL(w http.ResponseWriter, r *http.Request) {

@@ -204,6 +204,8 @@ type mockBinStore struct {
 	CreateBinsBulkFunc    func(controllerID, segmentID, ledCount int, namePrefix string) error
 	DeleteBinFunc         func(id int) error
 	GetPartNamesInBinFunc func(binID int) ([]string, error)
+	GetBinByIDFunc        func(id int) (models.Bin, error)
+	UpdateBinFunc         func(b *models.Bin) error
 }
 
 func (m *mockBinStore) GetBins() ([]models.Bin, error) { return m.GetBinsFunc() }
@@ -219,6 +221,18 @@ func (m *mockBinStore) CreateBinsBulk(controllerID, segmentID, ledCount int, nam
 func (m *mockBinStore) DeleteBin(id int) error { return m.DeleteBinFunc(id) }
 func (m *mockBinStore) GetPartNamesInBin(binID int) ([]string, error) {
 	return m.GetPartNamesInBinFunc(binID)
+}
+func (m *mockBinStore) GetBinByID(id int) (models.Bin, error) {
+	if m.GetBinByIDFunc != nil {
+		return m.GetBinByIDFunc(id)
+	}
+	return models.Bin{}, nil
+}
+func (m *mockBinStore) UpdateBin(b *models.Bin) error {
+	if m.UpdateBinFunc != nil {
+		return m.UpdateBinFunc(b)
+	}
+	return nil
 }
 
 // mockDashboardStore
@@ -504,7 +518,10 @@ func TestHandleMigrateController(t *testing.T) {
 		return models.WLEDController{ID: 1, Name: "Source", BinCount: 0}, nil
 	}
 
-	templates, _ := template.ParseGlob("../../ui/templates/*.html")
+	templates, err := template.ParseGlob("../../ui/templates/*.html")
+	if err != nil {
+		t.Fatalf("Failed to parse templates: %v", err)
+	}
 	app := &App{CtrlStore: mockStore, Templates: templates}
 
 	// Create request
@@ -514,7 +531,7 @@ func TestHandleMigrateController(t *testing.T) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
 
-	// use the router so chi.URLParam can parse "{id}"
+	// Use the router so chi.URLParam can parse "{id}"
 	r := chi.NewRouter()
 	r.Post("/settings/controllers/{id}/migrate", app.handleMigrateController)
 	r.ServeHTTP(rr, req)
@@ -525,5 +542,61 @@ func TestHandleMigrateController(t *testing.T) {
 	}
 	if !migrated {
 		t.Error("MigrateBins was not called with expected IDs")
+	}
+}
+
+func TestHandleUpdateBin(t *testing.T) {
+	// 1. Setup
+	mockStore := &mockBinStore{}
+
+	// We expect UpdateBin to be called
+	binUpdated := false
+	mockStore.UpdateBinFunc = func(b *models.Bin) error {
+		if b.ID == 1 && b.Name == "Updated Name" && b.WLEDControllerID == 2 {
+			binUpdated = true
+		}
+		return nil
+	}
+	// We need GetBinByID to return the *updated* row for the template
+	mockStore.GetBinByIDFunc = func(id int) (models.Bin, error) {
+		return models.Bin{ID: 1, Name: "Updated Name", WLEDControllerID: 2}, nil
+	}
+
+	// Use relative path for templates
+	templates, err := template.ParseGlob("../../ui/templates/*.html")
+	if err != nil {
+		t.Fatalf("Failed to parse templates: %v", err)
+	}
+
+	app := &App{
+		BinStore:  mockStore,
+		Templates: templates,
+	}
+
+	// 2. Create Request (Simulate form submission)
+	formData := url.Values{}
+	formData.Set("name", "Updated Name")
+	formData.Set("controller_id", "2") // Moving to Controller 2
+	formData.Set("segment_id", "0")
+	formData.Set("led_index", "5")
+
+	req := httptest.NewRequest("PUT", "/settings/bins/1", strings.NewReader(formData.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	// 3. Run Handler (via Router for URL params)
+	r := chi.NewRouter()
+	r.Put("/settings/bins/{id}", app.handleUpdateBin)
+	r.ServeHTTP(rr, req)
+
+	// 4. Assert
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
+	}
+	if !binUpdated {
+		t.Error("UpdateBin was not called with expected values")
+	}
+	if !strings.Contains(rr.Body.String(), "Updated Name") {
+		t.Errorf("response body does not contain updated bin name")
 	}
 }

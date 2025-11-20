@@ -49,6 +49,9 @@ func (a *App) Routes() http.Handler {
 	r.Post("/settings/bins", a.handleCreateBin)
 	r.Post("/settings/bins/bulk", a.handleCreateBinsBulk)
 	r.Delete("/settings/bins/{id}", a.handleDeleteBin)
+	r.Get("/settings/bins/{id}", a.handleGetBinRow)
+	r.Get("/settings/bins/{id}/edit", a.handleGetBinEditRow)
+	r.Put("/settings/bins/{id}", a.handleUpdateBin)
 	r.Post("/settings/categories/cleanup", a.handleCleanupCategories)
 
 	r.Get("/settings/controllers/{id}", a.handleGetControllerRow)
