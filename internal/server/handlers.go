@@ -19,6 +19,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// TODO: refactor this monolithic file into smaller files by feature area
+
 const maxUploadSize = 5 * 1024 * 1024 // 5 MB
 
 // Error Helpers
