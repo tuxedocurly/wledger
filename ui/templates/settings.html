@@ -120,40 +120,42 @@
     <hr>
 
     <h4>Existing Bins</h4>
-    <table>
-        <thead>
-            <tr>
-                <th scope="col">Bin Name</th>
-                <th scope="col">Controller</th>
-                <th scope="col">Segment ID</th>
-                <th scope="col">LED Index</th>
-                <th scope="col">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ if .Bins }}
-            {{ range .Bins }}
-            <tr id="bin-{{.ID}}">
-                <td>{{ .Name }}</td>
-                <td>{{ .WLEDControllerName.String }}</td>
-                <td>{{ .WLEDSegmentID }}</td>
-                <td>{{ .LEDIndex }}</td>
-                <td>
-                    <button class="secondary" hx-delete="/settings/bins/{{.ID}}" hx-target="#bin-{{.ID}}"
-                        hx-swap="outerHTML"
-                        hx-confirm="Are you sure you want to delete bin '{{.Name}}'? If any parts are stored here, they will need to be reassigned to a different bin. This action cannot be undone.">
-                        Delete
-                    </button>
-                </td>
-            </tr>
-            {{ end }}
-            {{ else }}
-            <tr>
-                <td colspan="5" style="text-align: center;">No bins found. Add one above!</td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+    <div class="scroll-table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Bin Name</th>
+                    <th scope="col">Controller</th>
+                    <th scope="col">Segment ID</th>
+                    <th scope="col">LED Index</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ if .Bins }}
+                {{ range .Bins }}
+                <tr id="bin-{{.ID}}">
+                    <td>{{ .Name }}</td>
+                    <td>{{ .WLEDControllerName.String }}</td>
+                    <td>{{ .WLEDSegmentID }}</td>
+                    <td>{{ .LEDIndex }}</td>
+                    <td>
+                        <button class="secondary" hx-delete="/settings/bins/{{.ID}}" hx-target="#bin-{{.ID}}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to delete bin '{{.Name}}'? If any parts are stored here, they will need to be reassigned to a different bin. This action cannot be undone.">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {{ end }}
+                {{ else }}
+                <tr>
+                    <td colspan="5" style="text-align: center;">No bins found. Add one above!</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
 </article>
 
 <article>

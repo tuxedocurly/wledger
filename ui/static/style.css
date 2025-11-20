@@ -1,0 +1,27 @@
+/* pico.css does not currently support some required features
+such as vertically scrolling tables. This file exists to
+implement those styling gaps. */
+
+/* Vertically Scrollable Table Component */
+.scroll-table {
+    overflow-y: auto;
+    max-height: 60vh;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+}
+
+/* Sticky header */
+.scroll-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    /* Use Pico's background variable so it adapts to Light/Dark mode */
+    background-color: var(--pico-background-color);
+    /* A subtle shadow to separate the header from scrolling rows */
+    box-shadow: 0 1px 0 var(--pico-muted-border-color);
+}
+
+/* Remove bottom margin from the table so it fits the container */
+.scroll-table table {
+    margin-bottom: 0;
+}
