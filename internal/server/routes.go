@@ -51,6 +51,12 @@ func (a *App) Routes() http.Handler {
 	r.Delete("/settings/bins/{id}", a.handleDeleteBin)
 	r.Post("/settings/categories/cleanup", a.handleCleanupCategories)
 
+	r.Get("/settings/controllers/{id}", a.handleGetControllerRow)
+	r.Get("/settings/controllers/{id}/edit", a.handleGetControllerEditRow)
+	r.Put("/settings/controllers/{id}", a.handleUpdateController)
+	r.Get("/settings/controllers/{id}/migrate", a.handleGetControllerMigrateRow)
+	r.Post("/settings/controllers/{id}/migrate", a.handleMigrateController)
+
 	// --- Dashboard & API Routes ---
 	r.Get("/dashboard", a.handleShowDashboard)
 	r.Get("/inspiration", a.handleShowInspiration)

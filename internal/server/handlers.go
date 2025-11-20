@@ -539,6 +539,127 @@ func (a *App) handleDeleteBin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Controller Handlers
+
+func (a *App) handleGetControllerRow(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	controller, err := a.CtrlStore.GetControllerByID(id)
+	if err != nil {
+		clientError(w, r, http.StatusNotFound, "Controller not found", err)
+		return
+	}
+	a.Templates.ExecuteTemplate(w, "_controller-row.html", controller)
+}
+
+func (a *App) handleGetControllerEditRow(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	controller, err := a.CtrlStore.GetControllerByID(id)
+	if err != nil {
+		clientError(w, r, http.StatusNotFound, "Controller not found", err)
+		return
+	}
+	a.Templates.ExecuteTemplate(w, "_controller-edit-row.html", controller)
+}
+
+func (a *App) handleUpdateController(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := r.ParseForm(); err != nil {
+		clientError(w, r, http.StatusBadRequest, "Bad Request", err)
+		return
+	}
+
+	controller := &models.WLEDController{
+		ID:        id,
+		Name:      r.FormValue("name"),
+		IPAddress: r.FormValue("ip_address"),
+	}
+
+	if controller.Name == "" || controller.IPAddress == "" {
+		clientError(w, r, http.StatusBadRequest, "Name and IP are required", nil)
+		return
+	}
+
+	if err := a.CtrlStore.UpdateController(controller); err != nil {
+		serverError(w, r, err)
+		return
+	}
+
+	// Return the updated normal row
+	updated, err := a.CtrlStore.GetControllerByID(id)
+	if err != nil {
+		serverError(w, r, err)
+		return
+	}
+	a.Templates.ExecuteTemplate(w, "_controller-row.html", updated)
+}
+
+func (a *App) handleGetControllerMigrateRow(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	// 1. Get the Source Controller
+	source, err := a.CtrlStore.GetControllerByID(id)
+	if err != nil {
+		clientError(w, r, http.StatusNotFound, "Controller not found", err)
+		return
+	}
+
+	// 2. Get All Controllers to find potential Targets
+	all, err := a.CtrlStore.GetControllers()
+	if err != nil {
+		serverError(w, r, err)
+		return
+	}
+
+	// 3. Filter list: Target cannot be Source
+	targets := []models.WLEDController{}
+	for _, c := range all {
+		if c.ID != source.ID {
+			targets = append(targets, c)
+		}
+	}
+
+	if len(targets) == 0 {
+		clientError(w, r, http.StatusConflict, "No other controllers available to migrate to.", nil)
+		return
+	}
+
+	// 4. Pass data to template
+	data := map[string]interface{}{
+		"Source":  source,
+		"Targets": targets,
+	}
+	a.Templates.ExecuteTemplate(w, "_controller-migrate-row.html", data)
+}
+
+func (a *App) handleMigrateController(w http.ResponseWriter, r *http.Request) {
+	oldID, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	if err := r.ParseForm(); err != nil {
+		clientError(w, r, http.StatusBadRequest, "Bad Request", err)
+		return
+	}
+
+	newID, _ := strconv.Atoi(r.FormValue("new_controller_id"))
+	if oldID == 0 || newID == 0 {
+		clientError(w, r, http.StatusBadRequest, "Invalid Controller IDs", nil)
+		return
+	}
+
+	// Execute Migration
+	if err := a.CtrlStore.MigrateBins(oldID, newID); err != nil {
+		serverError(w, r, err)
+		return
+	}
+
+	// Return the updated Source row (which should now have 0 bins)
+	updatedSource, err := a.CtrlStore.GetControllerByID(oldID)
+	if err != nil {
+		serverError(w, r, err)
+		return
+	}
+	a.Templates.ExecuteTemplate(w, "_controller-row.html", updatedSource)
+}
+
 // URL Handlers
 
 func (a *App) handleAddPartURL(w http.ResponseWriter, r *http.Request) {
@@ -913,14 +1034,14 @@ func (a *App) handleGetLocateButton(w http.ResponseWriter, r *http.Request) {
 
 // handleShowInspiration generates a prompt for an LLM
 func (a *App) handleShowInspiration(w http.ResponseWriter, r *http.Request) {
-	// 1. Get all parts from the store. This already has TotalQuantity!
+	// Get all parts from the store. This already has TotalQuantity
 	parts, err := a.PartStore.GetParts()
 	if err != nil {
 		serverError(w, r, err)
 		return
 	}
 
-	// 2. Build the inventory list string
+	// Build the inventory list string
 	var inventoryList strings.Builder
 	for _, part := range parts {
 		if part.TotalQuantity > 0 {
@@ -933,7 +1054,7 @@ func (a *App) handleShowInspiration(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Define the base prompt
+	// Define the base prompt
 	basePrompt := `### Project Idea Generator Prompt
 Generate 3 - 5 project ideas based on the provided [INVENTORY LIST] following all instructions.
 
@@ -968,10 +1089,10 @@ Do not suggest projects that require highly specialized or expensive components 
 #### INVENTORY LIST
 `
 
-	// 4. Combine the prompt and the list
+	// Combine the prompt and the list
 	finalPrompt := basePrompt + inventoryList.String()
 
-	// 5. Render the template
+	// Render the template
 	data := map[string]interface{}{
 		"Title":  "Project Inspiration",
 		"Prompt": finalPrompt,

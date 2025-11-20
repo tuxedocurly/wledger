@@ -32,6 +32,7 @@ type WLEDController struct {
 	IPAddress string
 	Status    string
 	LastSeen  sql.NullTime
+	BinCount  int
 }
 
 // Bin struct (a single LED)

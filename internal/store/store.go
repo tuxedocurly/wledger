@@ -434,11 +434,15 @@ func (s *Store) GetPartLocationsForStop(partID int) ([]struct {
 // Controller Methods
 
 func (s *Store) GetControllers() ([]models.WLEDController, error) {
-	rows, err := s.db.Query(`
-		SELECT id, name, ip_address, status, last_seen 
-		FROM wled_controllers 
-		ORDER BY name ASC;
-	`)
+	// We use a LEFT JOIN to count bins associated with each controller
+	query := `
+		SELECT c.id, c.name, c.ip_address, c.status, c.last_seen, COUNT(b.id) as bin_count
+		FROM wled_controllers c
+		LEFT JOIN bins b ON c.id = b.wled_controller_id
+		GROUP BY c.id
+		ORDER BY c.name ASC;
+	`
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +451,8 @@ func (s *Store) GetControllers() ([]models.WLEDController, error) {
 	controllers := []models.WLEDController{}
 	for rows.Next() {
 		var c models.WLEDController
-		err := rows.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen)
+		// Updated Scan to include BinCount
+		err := rows.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen, &c.BinCount)
 		if err != nil {
 			log.Println("Error scanning controller row:", err)
 			continue
@@ -524,6 +529,42 @@ func (s *Store) UpdateControllerStatus(id int, status string, lastSeen sql.NullT
 		status, id,
 	)
 	return err
+}
+
+func (s *Store) UpdateController(c *models.WLEDController) error {
+	_, err := s.db.Exec(
+		`UPDATE wled_controllers SET name = ?, ip_address = ? WHERE id = ?`,
+		c.Name, c.IPAddress, c.ID,
+	)
+	return err
+}
+
+func (s *Store) MigrateBins(oldControllerID, newControllerID int) error {
+	// We use a transaction to ensure safety
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// 1. Verify the new controller exists (to prevent stranding bins)
+	var exists int
+	err = tx.QueryRow("SELECT 1 FROM wled_controllers WHERE id = ?", newControllerID).Scan(&exists)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("target controller does not exist")
+	}
+
+	// 2. Move the bins
+	_, err = tx.Exec(
+		`UPDATE bins SET wled_controller_id = ? WHERE wled_controller_id = ?`,
+		newControllerID, oldControllerID,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Bin Methods

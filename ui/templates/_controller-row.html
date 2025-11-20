@@ -3,35 +3,59 @@
     <td>{{ .IPAddress }}</td>
     <td>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-
             <span>
                 {{ if eq .Status "online" }}
-                <span style="color: #43a047;">● Online</span>
+                    <span style="color: #43a047;">● Online</span>
                 {{ else if eq .Status "offline" }}
-                <span style="color: #d32f2f;">● Offline</span>
+                    <span style="color: #d32f2f;">● Offline</span>
                 {{ else }}
-                <span style="color: #757575;">● Unknown</span>
+                    <span style="color: #757575;">● Unknown</span>
                 {{ end }}
             </span>
-
-            <button class="secondary outline" style="padding: 0.2rem 0.5rem; line-height: 1; font-size: 0.75rem;"
-                hx-post="/settings/controllers/{{.ID}}/refresh" hx-target="closest tr" hx-swap="outerHTML">
+            <button class="secondary outline" 
+                    style="padding: 0.2rem 0.5rem; line-height: 1; font-size: 0.75rem;"
+                    hx-post="/settings/controllers/{{.ID}}/refresh"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML">
                 🔄
-
             </button>
         </div>
     </td>
+    <td>{{ .BinCount }}</td> 
+    
     <td>
         {{ if .LastSeen.Valid }}
-        {{ .LastSeen.Time.Format "Jan 02, 3:04 PM" }}
+            {{ .LastSeen.Time.Format "Jan 02, 3:04 PM" }}
         {{ else }}
-        Never
+            Never
         {{ end }}
     </td>
     <td>
-        <button class="secondary" hx-delete="/settings/controllers/{{.ID}}" hx-target="closest tr" hx-swap="outerHTML"
-            hx-confirm="Are you sure you want to delete '{{.Name}}'?">
-            Delete
-        </button>
+        <div style="display: flex; gap: 0.25rem;">
+            <button class="secondary outline"
+                hx-get="/settings/controllers/{{.ID}}/edit"
+                hx-target="#controller-{{.ID}}"
+                hx-swap="outerHTML">
+                Edit
+            </button>
+
+            {{ if gt .BinCount 0 }}
+            <button class="secondary outline"
+                hx-get="/settings/controllers/{{.ID}}/migrate"
+                hx-target="#controller-{{.ID}}"
+                hx-swap="outerHTML"
+                title="Move bins to another controller">
+                Migrate
+            </button>
+            {{ end }}
+
+            <button class="secondary js-confirm-delete"
+                data-confirm-text="Are you sure you want to delete '{{.Name}}'?"
+                data-hx-delete="/settings/controllers/{{.ID}}"
+                data-hx-target="#controller-{{.ID}}"
+                data-hx-swap="outerHTML">
+                Delete
+            </button>
+        </div>
     </td>
 </tr>

@@ -163,6 +163,8 @@ type mockControllerStore struct {
 	DeleteControllerFunc                func(id int) error
 	GetAllControllersForHealthCheckFunc func() ([]models.WLEDController, error)
 	UpdateControllerStatusFunc          func(id int, status string, lastSeen sql.NullTime) error
+	UpdateControllerFunc                func(c *models.WLEDController) error
+	MigrateBinsFunc                     func(oldID, newID int) error
 }
 
 func (m *mockControllerStore) GetControllers() ([]models.WLEDController, error) {
@@ -180,6 +182,18 @@ func (m *mockControllerStore) GetAllControllersForHealthCheck() ([]models.WLEDCo
 }
 func (m *mockControllerStore) UpdateControllerStatus(id int, status string, lastSeen sql.NullTime) error {
 	return m.UpdateControllerStatusFunc(id, status, lastSeen)
+}
+func (m *mockControllerStore) UpdateController(c *models.WLEDController) error {
+	if m.UpdateControllerFunc != nil {
+		return m.UpdateControllerFunc(c)
+	}
+	return nil
+}
+func (m *mockControllerStore) MigrateBins(oldID, newID int) error {
+	if m.MigrateBinsFunc != nil {
+		return m.MigrateBinsFunc(oldID, newID)
+	}
+	return nil
 }
 
 // mockBinStore
@@ -472,5 +486,44 @@ func TestHandleShowInspiration(t *testing.T) {
 	unexpectedOutOfStock := "Test Capacitor"
 	if strings.Contains(rr.Body.String(), unexpectedOutOfStock) {
 		t.Errorf("response body *incorrectly* contains the out-of-stock part: %s", unexpectedOutOfStock)
+	}
+}
+
+func TestHandleMigrateController(t *testing.T) {
+	mockStore := &mockControllerStore{}
+
+	migrated := false
+	mockStore.MigrateBinsFunc = func(oldID, newID int) error {
+		if oldID == 1 && newID == 2 {
+			migrated = true
+		}
+		return nil
+	}
+	// Need GetControllerByID to return the updated row
+	mockStore.GetControllerByIDFunc = func(id int) (models.WLEDController, error) {
+		return models.WLEDController{ID: 1, Name: "Source", BinCount: 0}, nil
+	}
+
+	templates, _ := template.ParseGlob("../../ui/templates/*.html")
+	app := &App{CtrlStore: mockStore, Templates: templates}
+
+	// Create request
+	formData := url.Values{}
+	formData.Set("new_controller_id", "2")
+	req := httptest.NewRequest("POST", "/settings/controllers/1/migrate", strings.NewReader(formData.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	// use the router so chi.URLParam can parse "{id}"
+	r := chi.NewRouter()
+	r.Post("/settings/controllers/{id}/migrate", app.handleMigrateController)
+	r.ServeHTTP(rr, req)
+
+	// Assert
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
+	}
+	if !migrated {
+		t.Error("MigrateBins was not called with expected IDs")
 	}
 }

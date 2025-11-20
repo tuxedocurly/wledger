@@ -63,6 +63,8 @@ type ControllerStore interface {
 	DeleteController(id int) error
 	GetAllControllersForHealthCheck() ([]models.WLEDController, error)
 	UpdateControllerStatus(id int, status string, lastSeen sql.NullTime) error
+	UpdateController(c *models.WLEDController) error
+	MigrateBins(oldControllerID, newControllerID int) error
 }
 
 type DashboardStore interface {

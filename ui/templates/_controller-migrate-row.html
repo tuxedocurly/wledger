@@ -1,0 +1,34 @@
+<tr id="controller-{{.Source.ID}}">
+    <td>
+        <strong>{{.Source.Name}}</strong>
+    </td>
+    <td>
+        {{.Source.IPAddress}}
+    </td>
+    <td colspan="2">
+        <form hx-post="/settings/controllers/{{.Source.ID}}/migrate" 
+              hx-target="#controller-{{.Source.ID}}" 
+              hx-swap="outerHTML"
+              style="margin-bottom: 0; display: flex; gap: 0.5rem; align-items: center;">
+            
+            <span style="white-space: nowrap;">Move {{.Source.BinCount}} bins to:</span>
+            
+            <select name="new_controller_id" required style="margin-bottom: 0;">
+                <option value="" disabled selected>Select Target Controller</option>
+                {{ range .Targets }}
+                    <option value="{{.ID}}">{{.Name}} ({{.IPAddress}})</option>
+                {{ end }}
+            </select>
+
+            <button type="submit" style="width: auto; margin-bottom: 0;">Confirm</button>
+            <button type="button" class="secondary outline" style="width: auto; margin-bottom: 0;"
+                hx-get="/settings/controllers/{{.Source.ID}}"
+                hx-target="#controller-{{.Source.ID}}"
+                hx-swap="outerHTML">
+                Cancel
+            </button>
+        </form>
+    </td>
+    <td>
+        </td>
+</tr>

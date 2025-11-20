@@ -1,0 +1,34 @@
+<tr id="controller-{{.ID}}">
+    <td>
+        <input type="text" name="name" value="{{.Name}}" required>
+    </td>
+    <td>
+        <input type="text" name="ip_address" value="{{.IPAddress}}" required>
+    </td>
+    <td>
+        <span style="color: #757575;">...</span>
+    </td>
+    <td>
+        {{ .BinCount }}
+    </td>
+    <td>
+        -
+    </td>
+    <td>
+        <div style="display: flex; gap: 0.25rem;">
+            <button class="secondary"
+                hx-put="/settings/controllers/{{.ID}}"
+                hx-include="closest tr"
+                hx-target="#controller-{{.ID}}"
+                hx-swap="outerHTML">
+                Save
+            </button>
+            <button class="secondary outline"
+                hx-get="/settings/controllers/{{.ID}}"
+                hx-target="#controller-{{.ID}}"
+                hx-swap="outerHTML">
+                Cancel
+            </button>
+        </div>
+    </td>
+</tr>
