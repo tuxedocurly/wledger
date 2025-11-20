@@ -1,4 +1,4 @@
-package main
+package wled
 
 import (
 	"io"
@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"wledger/internal/models"
 )
 
 func TestWLEDClient_SendCommand(t *testing.T) {
@@ -26,8 +28,8 @@ func TestWLEDClient_SendCommand(t *testing.T) {
 
 	client := NewWLEDClient()
 
-	state := WLEDState{
-		Segments: []WLEDSegment{
+	state := models.WLEDState{
+		Segments: []models.WLEDSegment{
 			{
 				ID: 0,
 				On: true,
@@ -45,7 +47,6 @@ func TestWLEDClient_SendCommand(t *testing.T) {
 
 func TestWLEDClient_Ping(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if r.URL.Path != "/json/info" {
 			t.Errorf("got path %s, want /json/info", r.URL.Path)
 		}

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"database/sql"
@@ -11,16 +11,18 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+
+	"wledger/internal/models"
+	"wledger/internal/store"
 )
 
-// MockWLEDClient implements WLEDClientInterface
+// Mock WLED Client
 type MockWLEDClient struct {
-	SendCommandFunc func(ipAddress string, state WLEDState) error
+	SendCommandFunc func(ipAddress string, state models.WLEDState) error
 	PingFunc        func(ipAddress string) bool
 }
 
-// Implement WLEDClient interface
-func (m *MockWLEDClient) SendCommand(ipAddress string, state WLEDState) error {
+func (m *MockWLEDClient) SendCommand(ipAddress string, state models.WLEDState) error {
 	if m.SendCommandFunc != nil {
 		return m.SendCommandFunc(ipAddress, state)
 	}
@@ -33,63 +35,64 @@ func (m *MockWLEDClient) Ping(ipAddress string) bool {
 	return false
 }
 
-// mockPartStore implements PartStore interface
+// Mock Stores
+
+// mockPartStore
 type mockPartStore struct {
-	GetPartByIDFunc               func(id int) (Part, error)
-	GetPartsFunc                  func() ([]Part, error)
-	SearchPartsFunc               func(searchTerm string) ([]Part, error)
-	CreatePartFunc                func(p *Part) error
-	UpdatePartFunc                func(p *Part) error
+	GetPartByIDFunc               func(id int) (models.Part, error)
+	GetPartsFunc                  func() ([]models.Part, error)
+	SearchPartsFunc               func(searchTerm string) ([]models.Part, error)
+	CreatePartFunc                func(p *models.Part) error
+	UpdatePartFunc                func(p *models.Part) error
 	DeletePartFunc                func(id int) error
 	UpdatePartImagePathFunc       func(partID int, imagePath string) error
 	GetBinLocationCountFunc       func(partID int) (int, error)
-	GetCategoriesFunc             func() ([]Category, error)
-	GetCategoriesByPartIDFunc     func(partID int) ([]Category, error)
-	CreateCategoryFunc            func(name string) (Category, error)
+	GetCategoriesFunc             func() ([]models.Category, error)
+	GetCategoriesByPartIDFunc     func(partID int) ([]models.Category, error)
+	CreateCategoryFunc            func(name string) (models.Category, error)
 	AssignCategoryToPartFunc      func(partID int, categoryID int) error
 	RemoveCategoryFromPartFunc    func(partID int, categoryID int) error
 	CleanupOrphanedCategoriesFunc func() error
-	GetURLsByPartIDFunc           func(partID int) ([]PartURL, error)
+	GetURLsByPartIDFunc           func(partID int) ([]models.PartURL, error)
 	CreatePartURLFunc             func(partID int, url string, description string) error
 	DeletePartURLFunc             func(urlID int) error
-	GetDocumentsByPartIDFunc      func(partID int) ([]PartDocument, error)
-	GetDocumentByIDFunc           func(docID int) (PartDocument, error)
-	CreatePartDocumentFunc        func(doc *PartDocument) error
+	GetDocumentsByPartIDFunc      func(partID int) ([]models.PartDocument, error)
+	GetDocumentByIDFunc           func(docID int) (models.PartDocument, error)
+	CreatePartDocumentFunc        func(doc *models.PartDocument) error
 	DeletePartDocumentFunc        func(docID int) error
 }
 
-// Implement the PartStore interface
-func (m *mockPartStore) GetPartByID(id int) (Part, error) { return m.GetPartByIDFunc(id) }
-func (m *mockPartStore) GetParts() ([]Part, error)        { return m.GetPartsFunc() }
-func (m *mockPartStore) SearchParts(searchTerm string) ([]Part, error) {
+func (m *mockPartStore) GetPartByID(id int) (models.Part, error) { return m.GetPartByIDFunc(id) }
+func (m *mockPartStore) GetParts() ([]models.Part, error)        { return m.GetPartsFunc() }
+func (m *mockPartStore) SearchParts(searchTerm string) ([]models.Part, error) {
 	return m.SearchPartsFunc(searchTerm)
 }
-func (m *mockPartStore) CreatePart(p *Part) error { return m.CreatePartFunc(p) }
-func (m *mockPartStore) UpdatePart(p *Part) error { return m.UpdatePartFunc(p) }
-func (m *mockPartStore) DeletePart(id int) error  { return m.DeletePartFunc(id) }
+func (m *mockPartStore) CreatePart(p *models.Part) error { return m.CreatePartFunc(p) }
+func (m *mockPartStore) UpdatePart(p *models.Part) error { return m.UpdatePartFunc(p) }
+func (m *mockPartStore) DeletePart(id int) error         { return m.DeletePartFunc(id) }
 func (m *mockPartStore) UpdatePartImagePath(partID int, imagePath string) error {
 	return m.UpdatePartImagePathFunc(partID, imagePath)
 }
 func (m *mockPartStore) GetBinLocationCount(partID int) (int, error) {
 	return m.GetBinLocationCountFunc(partID)
 }
-func (m *mockPartStore) GetCategories() ([]Category, error) {
+func (m *mockPartStore) GetCategories() ([]models.Category, error) {
 	if m.GetCategoriesFunc != nil {
 		return m.GetCategoriesFunc()
 	}
 	return nil, nil
 }
-func (m *mockPartStore) GetCategoriesByPartID(partID int) ([]Category, error) {
+func (m *mockPartStore) GetCategoriesByPartID(partID int) ([]models.Category, error) {
 	if m.GetCategoriesByPartIDFunc != nil {
 		return m.GetCategoriesByPartIDFunc(partID)
 	}
 	return nil, nil
 }
-func (m *mockPartStore) CreateCategory(name string) (Category, error) {
+func (m *mockPartStore) CreateCategory(name string) (models.Category, error) {
 	if m.CreateCategoryFunc != nil {
 		return m.CreateCategoryFunc(name)
 	}
-	return Category{}, nil
+	return models.Category{}, nil
 }
 func (m *mockPartStore) AssignCategoryToPart(partID int, categoryID int) error {
 	if m.AssignCategoryToPartFunc != nil {
@@ -109,7 +112,7 @@ func (m *mockPartStore) CleanupOrphanedCategories() error {
 	}
 	return nil
 }
-func (m *mockPartStore) GetURLsByPartID(partID int) ([]PartURL, error) {
+func (m *mockPartStore) GetURLsByPartID(partID int) ([]models.PartURL, error) {
 	if m.GetURLsByPartIDFunc != nil {
 		return m.GetURLsByPartIDFunc(partID)
 	}
@@ -127,19 +130,19 @@ func (m *mockPartStore) DeletePartURL(urlID int) error {
 	}
 	return nil
 }
-func (m *mockPartStore) GetDocumentsByPartID(partID int) ([]PartDocument, error) {
+func (m *mockPartStore) GetDocumentsByPartID(partID int) ([]models.PartDocument, error) {
 	if m.GetDocumentsByPartIDFunc != nil {
 		return m.GetDocumentsByPartIDFunc(partID)
 	}
 	return nil, nil
 }
-func (m *mockPartStore) GetDocumentByID(docID int) (PartDocument, error) {
+func (m *mockPartStore) GetDocumentByID(docID int) (models.PartDocument, error) {
 	if m.GetDocumentByIDFunc != nil {
 		return m.GetDocumentByIDFunc(docID)
 	}
-	return PartDocument{}, nil
+	return models.PartDocument{}, nil
 }
-func (m *mockPartStore) CreatePartDocument(doc *PartDocument) error {
+func (m *mockPartStore) CreatePartDocument(doc *models.PartDocument) error {
 	if m.CreatePartDocumentFunc != nil {
 		return m.CreatePartDocumentFunc(doc)
 	}
@@ -152,47 +155,45 @@ func (m *mockPartStore) DeletePartDocument(docID int) error {
 	return nil
 }
 
-// mockControllerStore implements ControllerStore interface
+// mockControllerStore
 type mockControllerStore struct {
-	GetControllersFunc                  func() ([]WLEDController, error)
-	GetControllerByIDFunc               func(id int) (WLEDController, error)
+	GetControllersFunc                  func() ([]models.WLEDController, error)
+	GetControllerByIDFunc               func(id int) (models.WLEDController, error)
 	CreateControllerFunc                func(name, ipAddress string) error
 	DeleteControllerFunc                func(id int) error
-	GetAllControllersForHealthCheckFunc func() ([]WLEDController, error)
+	GetAllControllersForHealthCheckFunc func() ([]models.WLEDController, error)
 	UpdateControllerStatusFunc          func(id int, status string, lastSeen sql.NullTime) error
 }
 
-// Implement the ControllerStore interface
-func (m *mockControllerStore) GetControllers() ([]WLEDController, error) {
+func (m *mockControllerStore) GetControllers() ([]models.WLEDController, error) {
 	return m.GetControllersFunc()
 }
-func (m *mockControllerStore) GetControllerByID(id int) (WLEDController, error) {
+func (m *mockControllerStore) GetControllerByID(id int) (models.WLEDController, error) {
 	return m.GetControllerByIDFunc(id)
 }
 func (m *mockControllerStore) CreateController(name, ipAddress string) error {
 	return m.CreateControllerFunc(name, ipAddress)
 }
 func (m *mockControllerStore) DeleteController(id int) error { return m.DeleteControllerFunc(id) }
-func (m *mockControllerStore) GetAllControllersForHealthCheck() ([]WLEDController, error) {
+func (m *mockControllerStore) GetAllControllersForHealthCheck() ([]models.WLEDController, error) {
 	return m.GetAllControllersForHealthCheckFunc()
 }
 func (m *mockControllerStore) UpdateControllerStatus(id int, status string, lastSeen sql.NullTime) error {
 	return m.UpdateControllerStatusFunc(id, status, lastSeen)
 }
 
-// mockBinStore implements BinStore interface
+// mockBinStore
 type mockBinStore struct {
-	GetBinsFunc           func() ([]Bin, error)
-	GetAvailableBinsFunc  func(partID int) ([]Bin, error)
+	GetBinsFunc           func() ([]models.Bin, error)
+	GetAvailableBinsFunc  func(partID int) ([]models.Bin, error)
 	CreateBinFunc         func(name string, controllerID, segmentID, ledIndex int) error
 	CreateBinsBulkFunc    func(controllerID, segmentID, ledCount int, namePrefix string) error
 	DeleteBinFunc         func(id int) error
 	GetPartNamesInBinFunc func(binID int) ([]string, error)
 }
 
-// Implement the BinStore interface
-func (m *mockBinStore) GetBins() ([]Bin, error) { return m.GetBinsFunc() }
-func (m *mockBinStore) GetAvailableBins(partID int) ([]Bin, error) {
+func (m *mockBinStore) GetBins() ([]models.Bin, error) { return m.GetBinsFunc() }
+func (m *mockBinStore) GetAvailableBins(partID int) ([]models.Bin, error) {
 	return m.GetAvailableBinsFunc(partID)
 }
 func (m *mockBinStore) CreateBin(name string, controllerID, segmentID, ledIndex int) error {
@@ -206,9 +207,9 @@ func (m *mockBinStore) GetPartNamesInBin(binID int) ([]string, error) {
 	return m.GetPartNamesInBinFunc(binID)
 }
 
-// mockDashboardStore implements DashboardStore interface
+// mockDashboardStore
 type mockDashboardStore struct {
-	GetDashboardBinDataFunc       func() ([]DashboardBinData, error)
+	GetDashboardBinDataFunc       func() ([]models.DashboardBinData, error)
 	GetPartLocationsForLocateFunc func(partID int) ([]struct {
 		IP       string
 		SegID    int
@@ -226,8 +227,7 @@ type mockDashboardStore struct {
 	}, error)
 }
 
-// Implement the DashboardStore interface
-func (m *mockDashboardStore) GetDashboardBinData() ([]DashboardBinData, error) {
+func (m *mockDashboardStore) GetDashboardBinData() ([]models.DashboardBinData, error) {
 	if m.GetDashboardBinDataFunc != nil {
 		return m.GetDashboardBinDataFunc()
 	}
@@ -264,20 +264,22 @@ func (m *mockDashboardStore) GetAllBinLocationsForStopAll() ([]struct {
 	return nil, nil
 }
 
+// TESTS
+
 func TestHandleShowParts(t *testing.T) {
 	mockStore := &mockPartStore{}
-	mockStore.GetPartsFunc = func() ([]Part, error) {
-		return []Part{{Name: "Fake Part", TotalQuantity: 10}}, nil
+	mockStore.GetPartsFunc = func() ([]models.Part, error) {
+		return []models.Part{{Name: "Fake Part", TotalQuantity: 10}}, nil
 	}
 
-	templates, err := template.ParseGlob("templates/*.html")
+	templates, err := template.ParseGlob("../../ui/templates/*.html")
 	if err != nil {
 		t.Fatalf("Failed to parse templates: %v", err)
 	}
 
 	app := &App{
-		partStore: mockStore,
-		templates: templates,
+		PartStore: mockStore,
+		Templates: templates,
 	}
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -303,7 +305,7 @@ func TestHandleDeletePart(t *testing.T) {
 	}
 
 	app := &App{
-		partStore: mockStore,
+		PartStore: mockStore,
 	}
 
 	req := httptest.NewRequest("DELETE", "/parts/5", nil)
@@ -324,11 +326,12 @@ func TestHandleDeletePart(t *testing.T) {
 func TestHandleDeleteController_InUse(t *testing.T) {
 	mockStore := &mockControllerStore{}
 	mockStore.DeleteControllerFunc = func(id int) error {
-		return ErrForeignKeyConstraint
+		// Use the store package error
+		return store.ErrForeignKeyConstraint
 	}
 
 	app := &App{
-		ctrlStore: mockStore,
+		CtrlStore: mockStore,
 	}
 
 	req := httptest.NewRequest("DELETE", "/settings/controllers/1", nil)
@@ -349,11 +352,12 @@ func TestHandleDeleteController_InUse(t *testing.T) {
 func TestHandleCreateBin_Duplicate(t *testing.T) {
 	mockStore := &mockBinStore{}
 	mockStore.CreateBinFunc = func(name string, controllerID, segmentID, ledIndex int) error {
-		return ErrUniqueConstraint
+		// Use the store package error
+		return store.ErrUniqueConstraint
 	}
 
 	app := &App{
-		binStore: mockStore,
+		BinStore: mockStore,
 	}
 
 	formData := url.Values{}
@@ -391,19 +395,19 @@ func TestHandleLocatePart_Offline(t *testing.T) {
 			LEDIndex int
 		}{{IP: "1.2.3.4", SegID: 0, LEDIndex: 1}}, nil
 	}
-	mockWLED.SendCommandFunc = func(ipAddress string, state WLEDState) error {
+	mockWLED.SendCommandFunc = func(ipAddress string, state models.WLEDState) error {
 		return errors.New("timeout: controller is offline")
 	}
 
-	templates, err := template.ParseGlob("templates/*.html")
+	templates, err := template.ParseGlob("../../ui/templates/*.html")
 	if err != nil {
 		t.Fatalf("Failed to parse templates: %v", err)
 	}
 
 	app := &App{
-		dashStore: mockStore,
-		wled:      mockWLED,
-		templates: templates,
+		DashStore: mockStore,
+		Wled:      mockWLED,
+		Templates: templates,
 	}
 
 	req := httptest.NewRequest("POST", "/locate/part/1", nil)
@@ -425,12 +429,10 @@ func TestHandleLocatePart_Offline(t *testing.T) {
 }
 
 func TestHandleShowInspiration(t *testing.T) {
-	// 1. Setup
 	mockStore := &mockPartStore{}
 
-	// Configure the mock to return two parts
-	mockStore.GetPartsFunc = func() ([]Part, error) {
-		return []Part{
+	mockStore.GetPartsFunc = func() ([]models.Part, error) {
+		return []models.Part{
 			{
 				Name:          "Test Resistor",
 				PartNumber:    sql.NullString{String: "R-100", Valid: true},
@@ -438,41 +440,35 @@ func TestHandleShowInspiration(t *testing.T) {
 			},
 			{
 				Name:          "Test Capacitor",
-				TotalQuantity: 0, // This part is out of stock
+				TotalQuantity: 0,
 			},
 		}, nil
 	}
 
-	// Parse templates
-	templates, err := template.ParseGlob("templates/*.html")
+	templates, err := template.ParseGlob("../../ui/templates/*.html")
 	if err != nil {
 		t.Fatalf("Failed to parse templates: %v", err)
 	}
 
 	app := &App{
-		partStore: mockStore,
-		templates: templates,
+		PartStore: mockStore,
+		Templates: templates,
 	}
 
-	// 2. Create a test server and request
 	req := httptest.NewRequest("GET", "/inspiration", nil)
 	rr := httptest.NewRecorder()
 
-	// 3. Run the handler
 	app.handleShowInspiration(rr, req)
 
-	// 4. Assert
 	if rr.Code != http.StatusOK {
 		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
 	}
 
-	// Check that the IN-STOCK part is in the prompt
 	expectedInStock := "- Test Resistor (R-100): 50 in stock"
 	if !strings.Contains(rr.Body.String(), expectedInStock) {
 		t.Errorf("response body does not contain the in-stock part.\nWant: %s\nGot:\n%s", expectedInStock, rr.Body.String())
 	}
 
-	// Check that the OUT-OF-STOCK part is NOT in the prompt
 	unexpectedOutOfStock := "Test Capacitor"
 	if strings.Contains(rr.Body.String(), unexpectedOutOfStock) {
 		t.Errorf("response body *incorrectly* contains the out-of-stock part: %s", unexpectedOutOfStock)
