@@ -59,10 +59,15 @@ type Store interface {
 type Handler struct {
 	store     Store
 	templates core.TemplateExecutor
+	uploadDir string
 }
 
-func New(s Store, t core.TemplateExecutor) *Handler {
-	return &Handler{store: s, templates: t}
+func New(s Store, t core.TemplateExecutor, uploadDir string) *Handler {
+	return &Handler{
+		store:     s,
+		templates: t,
+		uploadDir: uploadDir,
+	}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -328,7 +333,7 @@ func (h *Handler) handlePartImageUpload(w http.ResponseWriter, r *http.Request) 
 	filename := fmt.Sprintf("%d-%d%s", partID, time.Now().UnixNano(), ext)
 
 	relPath := path.Join("images", filename)
-	absDir := filepath.Join("data", "uploads", "images")
+	absDir := filepath.Join(h.uploadDir, "images")
 	absPath := filepath.Join(absDir, filename)
 
 	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
@@ -348,7 +353,7 @@ func (h *Handler) handlePartImageUpload(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if part.ImagePath.Valid && part.ImagePath.String != "" {
-		oldPath := filepath.Join("data", "uploads", part.ImagePath.String)
+		oldPath := filepath.Join(h.uploadDir, part.ImagePath.String)
 		if err := os.Remove(oldPath); err != nil {
 			fmt.Printf("Warning: failed to delete old image file %s: %v\n", oldPath, err)
 		}
@@ -413,7 +418,7 @@ func (h *Handler) handleUploadDocument(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	filename := fmt.Sprintf("%d-%d-%s", partID, time.Now().UnixNano(), header.Filename)
 	relPath := path.Join("documents", filename)
-	absDir := filepath.Join("data", "uploads", "documents")
+	absDir := filepath.Join(h.uploadDir, "documents")
 	absPath := filepath.Join(absDir, filename)
 
 	if err := os.MkdirAll(absDir, os.ModePerm); err != nil {
@@ -458,7 +463,7 @@ func (h *Handler) handleDownloadDocument(w http.ResponseWriter, r *http.Request)
 	}
 	w.Header().Set("Content-Type", doc.Mimetype)
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+doc.Filename+"\"")
-	http.ServeFile(w, r, filepath.Join("data", "uploads", doc.Filepath))
+	http.ServeFile(w, r, filepath.Join(h.uploadDir, doc.Filepath))
 }
 
 func (h *Handler) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
@@ -476,7 +481,7 @@ func (h *Handler) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 		core.ServerError(w, r, err)
 		return
 	}
-	if err := os.Remove(filepath.Join("data", "uploads", doc.Filepath)); err != nil {
+	if err := os.Remove(filepath.Join(h.uploadDir, doc.Filepath)); err != nil {
 		fmt.Printf("Warning: failed to delete document file %s: %v\n", doc.Filepath, err)
 	}
 	w.WriteHeader(http.StatusOK)

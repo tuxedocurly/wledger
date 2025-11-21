@@ -38,7 +38,8 @@ func (m *mockStore) CleanupOrphanedCategories() error {
 func setupTest(t *testing.T) (*Handler, *mockStore) {
 	t.Helper()
 	ms := &mockStore{}
-	h := New(ms)
+	tempDir := t.TempDir()
+	h := New(ms, tempDir)
 	return h, ms
 }
 

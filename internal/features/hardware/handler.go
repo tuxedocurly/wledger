@@ -1,8 +1,8 @@
-// internal/features/hardware/handler.go
 package hardware
 
 import (
 	"database/sql"
+	"log" // Ensure this is imported
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +13,7 @@ import (
 	"wledger/internal/models"
 )
 
-// Store defines the database methods this module needs
+// ... (Interfaces and Structs unchanged) ...
 type Store interface {
 	GetControllerByID(id int) (models.WLEDController, error)
 	GetControllers() ([]models.WLEDController, error)
@@ -22,9 +22,9 @@ type Store interface {
 	DeleteController(id int) error
 	UpdateControllerStatus(id int, status string, lastSeen sql.NullTime) error
 	MigrateBins(oldControllerID, newControllerID int) error
+	GetBins() ([]models.Bin, error)
 }
 
-// WLEDClient defines the hardware communication methods this module needs
 type WLEDClient interface {
 	Ping(ipAddress string) bool
 }
@@ -32,22 +32,19 @@ type WLEDClient interface {
 type Handler struct {
 	store     Store
 	wled      WLEDClient
-	templates core.TemplateExecutor // We use an interface for templates if we want, or just *template.Template
+	templates core.TemplateExecutor
 }
 
-// New creates a new Hardware handler
-// We pass the standard template library here, assuming it matches the interface used in core or standard lib
 func New(s Store, w WLEDClient, t core.TemplateExecutor) *Handler {
 	return &Handler{store: s, wled: w, templates: t}
 }
 
-// RegisterRoutes registers this module's URLs
 func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/settings", h.handleShowSettings)
 	r.Post("/settings/controllers", h.handleCreateController)
 	r.Delete("/settings/controllers/{id}", h.handleDeleteController)
 	r.Post("/settings/controllers/{id}/refresh", h.handleRefreshControllerStatus)
 
-	// Edit & Migrate Routes
 	r.Get("/settings/controllers/{id}", h.handleGetControllerRow)
 	r.Get("/settings/controllers/{id}/edit", h.handleGetControllerEditRow)
 	r.Put("/settings/controllers/{id}", h.handleUpdateController)
@@ -55,7 +52,29 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Post("/settings/controllers/{id}/migrate", h.handleMigrateController)
 }
 
-// --- Handlers ---
+// Handlers
+
+func (h *Handler) handleShowSettings(w http.ResponseWriter, r *http.Request) {
+	controllers, err := h.store.GetControllers()
+	if err != nil {
+		core.ServerError(w, r, err)
+		return
+	}
+	bins, err := h.store.GetBins()
+	if err != nil {
+		core.ServerError(w, r, err)
+		return
+	}
+	data := map[string]interface{}{
+		"Title":       "Settings",
+		"Controllers": controllers,
+		"Bins":        bins,
+	}
+	err = h.templates.ExecuteTemplate(w, "settings.html", data)
+	if err != nil {
+		core.ServerError(w, r, err)
+	}
+}
 
 func (h *Handler) handleCreateController(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
@@ -87,14 +106,6 @@ func (h *Handler) handleDeleteController(w http.ResponseWriter, r *http.Request)
 
 	err := h.store.DeleteController(id)
 	if err != nil {
-		// Note: We rely on the store package export for this error check,
-		// or we can check the error string if we want to fully decouple.
-		// ideally, we import 'store' package just for the error variable, or rely on core.
-		// For now, we assume standard error handling.
-		// Since we cannot easily import "wledger/internal/store" here without circular deps if store imports models...
-		// Actually store imports models, models does not import store. So it's safe to import store for the Error variable.
-
-		// However, checking error strings is safer for decoupling.
 		if err.Error() == "foreign key constraint violation" {
 			core.ClientError(w, r, http.StatusConflict, "Cannot delete controller: It is in use by one or more bins.", err)
 		} else {
@@ -132,8 +143,8 @@ func (h *Handler) handleRefreshControllerStatus(w http.ResponseWriter, r *http.R
 	}
 
 	if err := h.store.UpdateControllerStatus(id, status, lastSeen); err != nil {
-		// Log only
-		core.ServerError(w, r, err) // Or just log
+		// Log error but do NOT return 500 response
+		log.Printf("Error updating controller status: %v", err)
 	}
 
 	updatedController, err := h.store.GetControllerByID(id)

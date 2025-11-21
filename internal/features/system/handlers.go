@@ -24,12 +24,17 @@ type Store interface {
 }
 
 type Handler struct {
-	store Store
+	store     Store
+	uploadDir string
 }
 
 // New creates a new System handler
-func New(s Store) *Handler {
-	return &Handler{store: s}
+func New(s Store, uploadDir string) *Handler {
+	return &Handler{
+		store:     s,
+		uploadDir: uploadDir,
+	}
+
 }
 
 // RegisterRoutes defines the URLs for this module
@@ -76,7 +81,7 @@ func (h *Handler) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Walk the data/uploads folder
-	uploadsDir := "data/uploads"
+	uploadsDir := h.uploadDir
 	// Ensure dir exists to avoid walk error if empty
 	os.MkdirAll(uploadsDir, 0755)
 
@@ -178,8 +183,8 @@ func (h *Handler) handleRestoreBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear existing uploads and restore new ones
-	os.RemoveAll("data/uploads")
-	os.MkdirAll("data/uploads", 0755)
+	os.RemoveAll(h.uploadDir)
+	os.MkdirAll(h.uploadDir, 0755)
 
 	for _, f := range zr.File {
 		if filepath.Dir(f.Name) == "." {
@@ -188,7 +193,7 @@ func (h *Handler) handleRestoreBackup(w http.ResponseWriter, r *http.Request) {
 
 		if len(f.Name) > 7 && f.Name[0:7] == "assets/" {
 			relPath := f.Name[7:]
-			destPath := filepath.Join("data", "uploads", relPath)
+			destPath := filepath.Join(h.uploadDir, relPath)
 
 			os.MkdirAll(filepath.Dir(destPath), 0755)
 

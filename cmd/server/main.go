@@ -44,11 +44,11 @@ func main() {
 	wledClient := wled.NewWLEDClient()
 
 	// Initialize feature modules
-	systemHandler := system.New(db)
+	systemHandler := system.New(db, "./data/uploads")
 	hwHandler := hardware.New(db, wledClient, templates)
 	settingsHandler := settings.New(db, templates)
 	invHandler := inventory.New(db, templates)
-	partsHandler := parts.New(db, templates)
+	partsHandler := parts.New(db, templates, "./data/uploads")
 	dashHandler := dashboard.New(db, wledClient, templates)
 	inspHandler := inspiration.New(db, templates)
 	bgService := background.New(db, wledClient)
