@@ -1,4 +1,22 @@
 <tr id="part-{{.ID}}">
+    <td>
+        {{ if .ImagePath.Valid }}
+            <div class="img-preview-container">
+                <img src="/uploads/{{.ImagePath.String}}" 
+                     alt="{{.Name}}" 
+                     style="max-height: 40px; max-width: 50px; width: auto; height: auto; border-radius: 4px; cursor: zoom-in;">
+                
+                <div class="img-preview-large">
+                    <img src="/uploads/{{.ImagePath.String}}" alt="{{.Name}}">
+                </div>
+            </div>
+        {{ else }}
+            <div style="width: 40px; height: 40px; background-color: var(--pico-card-background-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--pico-muted-color);">
+                <small>📷</small>
+            </div>
+        {{ end }}
+    </td>
+
     <td><a href="/part/{{.ID}}">{{ .Name }}</a></td>
     <td>{{ .PartNumber.String }}</td>
     <td>{{ .Description.String }}</td>

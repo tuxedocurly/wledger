@@ -1,6 +1,5 @@
-/* pico.css does not currently support some required features
-such as vertically scrolling tables. This file exists to
-implement those styling gaps. */
+/* pico.css does not currently support some required features.
+This file exists to implement those styling gaps. */
 
 /* Vertically Scrollable Table Component */
 .scroll-table {
@@ -24,4 +23,43 @@ implement those styling gaps. */
 /* Remove bottom margin from the table so it fits the container */
 .scroll-table table {
     margin-bottom: 0;
+}
+
+/* Preview Image On Hover*/
+
+.img-preview-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* The larger image, hidden by default */
+.img-preview-large {
+    display: none;
+    position: absolute;
+    z-index: 1000; /* Ensure it floats above table rows */
+    
+    /* Position it just to the right of the thumbnail */
+    top: -20px;
+    left: 55px; 
+    
+    /* Styling */
+    width: 400px; /* Set a reasonable max width for the popup */
+    background-color: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Show the large image when hovering the container */
+.img-preview-container:hover .img-preview-large {
+    display: block;
+}
+
+/* Ensure the image inside fills the popup box */
+.img-preview-large img {
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+    display: block;
 }
