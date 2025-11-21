@@ -31,7 +31,7 @@ func setupIntegrationDB(t *testing.T) *Store {
 	}
 
 	// Create Part
-	// We use the helper from parts_test.go to ensure all constraints are met
+	// use the helper from parts_test.go to ensure all constraints are met
 	part := getValidPart("Generic Resistor")
 	if err := s.CreatePart(part); err != nil { // ID 1
 		t.Fatalf("Setup failed: CreatePart: %v", err)
@@ -96,8 +96,8 @@ func TestIntegration_ControllerMigration_Lifecycle(t *testing.T) {
 	// Setup
 	s := setupIntegrationDB(t)
 
-	// 2. Attempt to Delete Controller 1 (Should Fail)
-	// Controller 1 has Bin 1 assigned to it.
+	// Attempt to Delete Controller 1 (Should Fail)
+	// Controller 1 has Bin 1 assigned to it
 	err := s.DeleteController(1)
 	if err != ErrForeignKeyConstraint {
 		t.Errorf("Expected ErrForeignKeyConstraint when deleting active controller, got %v", err)

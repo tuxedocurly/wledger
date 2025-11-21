@@ -12,7 +12,7 @@ import (
 
 // Controller Methods
 func (s *Store) GetControllers() ([]models.WLEDController, error) {
-	// We use a LEFT JOIN to count bins associated with each controller
+	// LEFT JOIN to count bins associated with each controller
 	query := `
 		SELECT c.id, c.name, c.ip_address, c.status, c.last_seen, COUNT(b.id) as bin_count
 		FROM wled_controllers c
@@ -81,7 +81,7 @@ func (s *Store) DeleteController(id int) error {
 				return ErrForeignKeyConstraint
 			}
 		}
-		// Return other errors normally
+		// Return other errors
 		return err
 	}
 	return nil
@@ -127,7 +127,7 @@ func (s *Store) MigrateBins(oldControllerID, newControllerID int) error {
 		return err
 	}
 
-	// 1. Verify the new controller exists (to prevent stranding bins)
+	// Verify the new controller exists (to prevent stranding bins)
 	var exists int
 	err = tx.QueryRow("SELECT 1 FROM wled_controllers WHERE id = ?", newControllerID).Scan(&exists)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *Store) MigrateBins(oldControllerID, newControllerID int) error {
 		return errors.New("target controller does not exist")
 	}
 
-	// 2. Move the bins
+	// Move the bins
 	_, err = tx.Exec(
 		`UPDATE bins SET wled_controller_id = ? WHERE wled_controller_id = ?`,
 		newControllerID, oldControllerID,

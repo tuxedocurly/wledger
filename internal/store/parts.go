@@ -5,7 +5,7 @@ import (
 	"wledger/internal/models"
 )
 
-// PART METHODS
+// Part methods
 func (s *Store) GetPartByID(id int) (models.Part, error) {
 	var p models.Part
 	query := `
@@ -163,7 +163,7 @@ func (s *Store) GetBinLocationCount(partID int) (int, error) {
 	return count, err
 }
 
-// CATEGORY METHODS
+// Category methods
 func (s *Store) GetCategories() ([]models.Category, error) {
 	query := `SELECT id, name FROM categories ORDER BY name`
 	rows, err := s.db.Query(query)
@@ -254,7 +254,7 @@ func (s *Store) CleanupOrphanedCategories() error {
 	return err
 }
 
-// URL METHODS
+// URL methods
 func (s *Store) GetURLsByPartID(partID int) ([]models.PartURL, error) {
 	query := `SELECT id, part_id, url, description FROM part_urls WHERE part_id = ? ORDER BY id`
 	rows, err := s.db.Query(query, partID)
@@ -287,7 +287,7 @@ func (s *Store) DeletePartURL(urlID int) error {
 	return err
 }
 
-// DOCUMENT METHODS
+// Document methods
 func (s *Store) GetDocumentsByPartID(partID int) ([]models.PartDocument, error) {
 	query := `SELECT id, part_id, filename, filepath, description, mimetype FROM part_documents WHERE part_id = ? ORDER BY filename`
 	rows, err := s.db.Query(query, partID)

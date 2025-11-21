@@ -79,7 +79,6 @@ func createTables(db *sql.DB) error {
 			min_stock       INTEGER NOT NULL DEFAULT 0
 		);`,
 
-		// --- THIS IS THE CRITICAL TABLE ---
 		`CREATE TABLE IF NOT EXISTS part_locations (
 			id            INTEGER PRIMARY KEY AUTOINCREMENT,
 			part_id       INTEGER NOT NULL,
@@ -127,11 +126,3 @@ func createTables(db *sql.DB) error {
 	}
 	return nil
 }
-
-// Part Methods
-
-// PartLocation Methods
-
-// Controller Methods
-
-// Dashboard Method

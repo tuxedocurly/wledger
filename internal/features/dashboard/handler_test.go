@@ -1,4 +1,3 @@
-// internal/features/dashboard/handler_test.go
 package dashboard
 
 import (
@@ -15,7 +14,7 @@ import (
 	"wledger/internal/models"
 )
 
-// 1. Local Mocks
+// Local Mocks
 type mockStore struct {
 	FailOps bool
 
@@ -99,7 +98,7 @@ func (m *mockWLED) SendCommand(ip string, state models.WLEDState) error {
 	return nil
 }
 
-// 2. Setup
+// Setup
 func setupTest(t *testing.T) (*Handler, *mockStore, *mockWLED) {
 	t.Helper()
 	ms := &mockStore{}
@@ -117,7 +116,7 @@ func setupTest(t *testing.T) (*Handler, *mockStore, *mockWLED) {
 	return h, ms, mw
 }
 
-// --- TESTS ---
+// Tests
 
 func TestHandleShowDashboard(t *testing.T) {
 	h, _, _ := setupTest(t)
@@ -227,7 +226,7 @@ func TestHandleLocatePart(t *testing.T) {
 		}{{IP: "1.1", SegID: 0, LEDIndex: 0}}, nil
 	}
 
-	// --- Happy Path ---
+	// happy path
 	mw.SendCommandFunc = func(ip string, s models.WLEDState) error { return nil }
 
 	req := httptest.NewRequest("POST", "/locate/part/1", nil)
@@ -241,7 +240,7 @@ func TestHandleLocatePart(t *testing.T) {
 		t.Errorf("Happy: got %d", rr.Code)
 	}
 
-	// --- Offline (WLED Error) ---
+	// Offline (WLED Error)
 	mw.SendCommandFunc = func(ip string, s models.WLEDState) error { return errors.New("offline") }
 
 	// Create a FRESH request/recorder
@@ -255,7 +254,7 @@ func TestHandleLocatePart(t *testing.T) {
 		t.Errorf("Did not return start button on failure. Got: %s", rr.Body.String())
 	}
 
-	// --- DB Error ---
+	// DB Error
 	ms.FailOps = true
 	req = httptest.NewRequest("POST", "/locate/part/1", nil)
 	rr = httptest.NewRecorder()

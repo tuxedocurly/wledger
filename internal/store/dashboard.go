@@ -4,7 +4,6 @@ import (
 	"wledger/internal/models"
 )
 
-// Dashboard Methods
 func (s *Store) GetDashboardBinData() ([]models.DashboardBinData, error) {
 	// This query gets the individual quantity for every bin
 	// that belongs to a part with stock tracking enabled.

@@ -23,6 +23,48 @@ This application is built with a minimal stack philosophy, prioritizing simplici
 
 ## Code Structure
 
+<details>
+  <summary>
+  <strong> Structure Visualization</strong> (Click to expand)</summary>
+
+```
+    .
+    ├── cmd/
+    │   └── server/
+    │       └── main.go          # Application Entrypoint
+    ├── data/                    # Uploads (Images, Documents)
+    ├── internal/
+    │   ├── background/          # Background Services
+    │   │   └── service.go       # (Health, Tag cleanup)
+    │   ├── core/                # Shared Application Utilities
+    │   │   ├── errors_test.go   # Unit tests
+    │   │   ├── errors.go        # ServerError/ClientError helpers
+    │   │   └── templates.go     # Template execution interfaces
+    │   ├── features/            # Web Layer (Feature Modules)
+    │   │   ├── dashboard/       # Stock Dashboard logic
+    │   │   ├── hardware/        # Controller management
+    │   │   ├── inspiration/     # AI Prompt Generator
+    │   │   ├── inventory/       # Bin & Stock management
+    │   │   ├── parts/           # Part CRUD & Uploads
+    │   │   ├── settings/        # Main settings page
+    │   │   └── system/          # Backup/Restore logic
+    │   ├── models/
+    │   │   └── models.go        # Pure Data Structs
+    │   ├── store/               # Data Layer (SQLite)
+    │   │   ├── *_test.go        # Integration tests
+    │   │   ├── store.go         # DB Init & Transactions
+    │   │   └── ...              # Entity-specific queries
+    │   └── wled/                # Hardware Client
+    │       └── wled.go          # WLED JSON API interaction
+    ├── ui/
+    │   ├── static/              # CSS Assets
+    │   └── templates/           # HTML Templates
+    ├── docs/                    # Documentation
+    ├── docker-compose.yml       # Production Runtime Config
+    └── Dockerfile               # Multi-stage build definition
+```
+</details>
+
 * **`cmd/server/main.go`**: The **Entrypoint**.
     * Initializes dependencies (Database, Templates, WLED Client).
     * Wires up the Feature Modules.

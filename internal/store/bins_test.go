@@ -1,4 +1,3 @@
-// internal/store/bins_test.go
 package store
 
 import (

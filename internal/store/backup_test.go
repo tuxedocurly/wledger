@@ -25,7 +25,7 @@ func TestStore_BackupRestore(t *testing.T) {
 		t.Errorf("Backup data missing")
 	}
 
-	// Nuke DB (Simulate by creating a fresh store)
+	// Nuke DB (Simulated by creating a fresh store)
 	s2 := newTestStore(t)
 
 	// Import

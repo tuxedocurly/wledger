@@ -109,7 +109,7 @@ func (s *Store) RestoreFromBackup(data models.BackupData) error {
 	}
 
 	// NUKE EVERYTHING >:)
-	// Delete children first, then parents weeeeeee
+	// Delete children first, then parents
 	tables := []string{
 		"part_locations", "part_categories", "part_documents", "part_urls",
 		"parts", "bins", "wled_controllers", "categories",

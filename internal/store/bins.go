@@ -9,7 +9,6 @@ import (
 	sqlitelib "modernc.org/sqlite/lib"
 )
 
-// BIN METHODS
 func (s *Store) GetBins() ([]models.Bin, error) {
 	// Fetch all bins
 	query := `
@@ -99,12 +98,12 @@ func (s *Store) GetBinByID(id int) (models.Bin, error) {
 	row := s.db.QueryRow(query, id)
 	err := row.Scan(&b.ID, &b.Name, &b.WLEDControllerID, &b.WLEDSegmentID, &b.LEDIndex, &b.WLEDControllerName)
 
-	// Re-run orphan/overlap logic for single item (simplified)
+	// Re-run orphan/overlap logic for single item
 	if !b.WLEDControllerName.Valid {
 		b.IsOrphaned = true
 	}
 	// Note: Detecting overlap for a single item requires querying all items,
-	// so we might skip the overlap check for the single-row return or accept it won't show until refresh.
+	// it won't show until refresh.
 
 	return b, err
 }
@@ -238,7 +237,7 @@ func (s *Store) GetPartNamesInBin(binID int) ([]string, error) {
 	return names, nil
 }
 
-// LOCATION METHODS
+// Location methods
 
 func (s *Store) GetPartLocationByID(locationID int) (models.PartLocation, error) {
 	var loc models.PartLocation

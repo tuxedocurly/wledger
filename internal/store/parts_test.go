@@ -1,4 +1,3 @@
-// internal/store/parts_test.go
 package store
 
 import (

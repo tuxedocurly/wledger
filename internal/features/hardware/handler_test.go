@@ -223,7 +223,7 @@ func TestHandleRefreshControllerStatus(t *testing.T) {
 	}
 
 	// Test Offline Logic: "Update fails but flow continues"
-	// We simulate update returning an error. Logic should LOG it, then continue
+	// Simulate update returning an error. Logic should LOG it, then continue
 	ms.UpdateControllerStatusFunc = func(id int, s string, l sql.NullTime) error { return errors.New("fail") }
 
 	// need GetControllerByID to succeed so the handler finishes

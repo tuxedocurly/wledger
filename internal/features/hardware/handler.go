@@ -2,7 +2,7 @@ package hardware
 
 import (
 	"database/sql"
-	"log" // Ensure this is imported
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +13,6 @@ import (
 	"wledger/internal/models"
 )
 
-// ... (Interfaces and Structs unchanged) ...
 type Store interface {
 	GetControllerByID(id int) (models.WLEDController, error)
 	GetControllers() ([]models.WLEDController, error)

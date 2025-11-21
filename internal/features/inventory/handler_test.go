@@ -110,7 +110,7 @@ func (m *mockStore) DeletePartLocation(id int) error {
 	return m.retErr()
 }
 
-// Test etup Helper
+// Test setup Helper
 func setupTest(t *testing.T) (*Handler, *mockStore) {
 	t.Helper()
 	ms := &mockStore{}
@@ -138,7 +138,7 @@ func TestHandleCreateBin(t *testing.T) {
 		t.Errorf("Happy: got %d", rr.Code)
 	}
 
-	// Duplicate Error (Specific Logic)
+	// Duplicate Error (Specific)
 	ms.CreateBinFunc = func(n string, c, s, l int) error { return store.ErrUniqueConstraint }
 	req = httptest.NewRequest("POST", "/settings/bins", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

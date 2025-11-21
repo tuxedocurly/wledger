@@ -17,7 +17,7 @@ func TestStore_UpdateController(t *testing.T) {
 		t.Fatalf("CreateController failed: %v", err)
 	}
 
-	// Update it (ID is likely 1)
+	// Update it
 	updated := &models.WLEDController{
 		ID:        1,
 		Name:      "New Name",
@@ -44,14 +44,14 @@ func TestStore_UpdateController(t *testing.T) {
 func TestStore_DeleteController_InUse(t *testing.T) {
 	s := newTestStore(t)
 
-	// 1. Create Controller and Bin that uses it
+	// Create Controller and Bin that uses it
 	s.CreateController("C1", "1.1.1.1")
 	s.CreateBin("B1", 1, 0, 0)
 
-	// 2. Attempt Delete
+	// Attempt Delete
 	err := s.DeleteController(1)
 
-	// 3. Assert Foreign Key Error
+	// Assert Foreign Key Error
 	if err != ErrForeignKeyConstraint {
 		t.Errorf("Expected ErrForeignKeyConstraint, got %v", err)
 	}
