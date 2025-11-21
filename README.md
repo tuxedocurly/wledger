@@ -4,7 +4,7 @@
 
 # The Inventory System That Finds Your Parts For You
 
-A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating hobby parts. Powered by WLED, Go, SQLite, and htmx.
+A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating parts. Powered by WLED, Go, SQLite, and htmx.
 
 
 > **Note:** For the full User Guide, Build Guide, Quick-Start, and Developer Documentation, please visit the **[Official GitHub Pages Site](https://tuxedocurly.github.io/wledger/)**.

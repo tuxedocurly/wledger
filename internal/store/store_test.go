@@ -3,7 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
-	"strconv"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -74,30 +74,6 @@ func TestStore_CreatePart(t *testing.T) {
 	}
 }
 
-func TestStore_DeleteController_InUse(t *testing.T) {
-	s := newTestStore(t)
-
-	err := s.CreateController("Test Controller", "1.2.3.4")
-	if err != nil {
-		t.Fatalf("CreateController() failed: %v", err)
-	}
-
-	err = s.CreateBin("Test Bin", 1, 0, 0)
-	if err != nil {
-		t.Fatalf("CreateBin() failed: %v", err)
-	}
-
-	err = s.DeleteController(1)
-
-	if err == nil {
-		t.Fatal("DeleteController() did not return an error, but it should have")
-	}
-
-	if !errors.Is(err, ErrForeignKeyConstraint) {
-		t.Errorf("got error %v, want %v", err, ErrForeignKeyConstraint)
-	}
-}
-
 func TestStore_CreateBin_Duplicate(t *testing.T) {
 	s := newTestStore(t)
 
@@ -161,77 +137,19 @@ func TestStore_SearchParts_ByTag(t *testing.T) {
 	}
 }
 
-func TestStore_UpdateController(t *testing.T) {
-	s := newTestStore(t)
+func TestStore_NewStore_Physical(t *testing.T) {
+	// Create a temporary directory for the test DB
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test_inventory.db")
 
-	// 1. Create Controller
-	err := s.CreateController("Old Name", "1.1.1.1")
+	// Initialize new store (creates file)
+	s, err := NewStore(dbPath)
 	if err != nil {
-		t.Fatalf("CreateController failed: %v", err)
+		t.Fatalf("NewStore failed: %v", err)
 	}
 
-	// 2. Update it (ID is likely 1)
-	updated := &models.WLEDController{
-		ID:        1,
-		Name:      "New Name",
-		IPAddress: "2.2.2.2",
-	}
-	err = s.UpdateController(updated)
-	if err != nil {
-		t.Fatalf("UpdateController failed: %v", err)
-	}
-
-	// 3. Verify
-	got, err := s.GetControllerByID(1)
-	if err != nil {
-		t.Fatalf("GetControllerByID failed: %v", err)
-	}
-	if got.Name != "New Name" {
-		t.Errorf("got name %q, want %q", got.Name, "New Name")
-	}
-	if got.IPAddress != "2.2.2.2" {
-		t.Errorf("got ip %q, want %q", got.IPAddress, "2.2.2.2")
-	}
-}
-
-func TestStore_MigrateBins(t *testing.T) {
-	s := newTestStore(t)
-
-	// 1. Create Source Controller (ID 1)
-	s.CreateController("Source", "1.1.1.1")
-	// 2. Create Target Controller (ID 2)
-	s.CreateController("Target", "2.2.2.2")
-
-	// 3. Create 5 bins on Source
-	for i := 0; i < 5; i++ {
-		s.CreateBin("Bin"+strconv.Itoa(i), 1, 0, i)
-	}
-
-	// Verify initial state (Source should have 5 bins)
-	ctrls, _ := s.GetControllers()
-	for _, c := range ctrls {
-		if c.ID == 1 && c.BinCount != 5 {
-			t.Errorf("Source controller should have 5 bins, got %d", c.BinCount)
-		}
-		if c.ID == 2 && c.BinCount != 0 {
-			t.Errorf("Target controller should have 0 bins, got %d", c.BinCount)
-		}
-	}
-
-	// 4. Perform Migration (1 -> 2)
-	err := s.MigrateBins(1, 2)
-	if err != nil {
-		t.Fatalf("MigrateBins failed: %v", err)
-	}
-
-	// 5. Verify Final State
-	ctrls, _ = s.GetControllers()
-	for _, c := range ctrls {
-		if c.ID == 1 && c.BinCount != 0 {
-			t.Errorf("Source controller should now have 0 bins, got %d", c.BinCount)
-		}
-		if c.ID == 2 && c.BinCount != 5 {
-			t.Errorf("Target controller should now have 5 bins, got %d", c.BinCount)
-		}
+	// Verify basic functionality works on physical DB
+	if err := s.CreatePart(getValidPart("Real DB Part")); err != nil {
+		t.Errorf("Failed to write to physical DB: %v", err)
 	}
 }

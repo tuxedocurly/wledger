@@ -93,7 +93,6 @@ func (s *Store) GetAllDataForBackup() (models.BackupData, error) {
 	return data, nil
 }
 
-// TODO: Implement a user facing warning that this will DELETE ALL DATA and cannot be undone
 // TODO: Implement a dry-run mode or validator that checks for data validity before deleting/restoring data
 // TODO: Consider wrapping in a transaction for safety
 // TODO: Consider backing up existing data before restoring new data

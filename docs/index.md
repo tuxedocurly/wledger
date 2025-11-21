@@ -6,7 +6,7 @@ nav_order: 1
 
 # Welcome to WLEDger
 
-This site is the official user guide for the WLEDger Inventory Manager, a tool for managing hobby parts inventory with visual location tracking.
+This site is the official user guide for the WLEDger Inventory Manager, a tool for managing parts inventory with visual location tracking.
 
 ### Why Does WLEDger Exist?
 I built this app to solve a personal problem: managing a growing collection of small electronic parts. It's difficult to remember which bin or drawer in my shop holds which component.
