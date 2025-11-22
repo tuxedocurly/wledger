@@ -22,19 +22,26 @@
     <td>{{ .Description.String }}</td>
     <td>{{ .TotalQuantity }}</td>
     <td>
-        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end;">
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
 
-            <div id="locate-swap-{{.ID}}" class="table-actions-single-button">
+            <div id="locate-swap-{{.ID}}">
                 {{ template "_locate-start-button.html" . }}
             </div>
 
-            <a href="/part/{{.ID}}" role="button" class="secondary outline">
-                Manage
+            <a href="/part/{{.ID}}" 
+               role="button" 
+               class="secondary outline btn-icon"
+               data-tooltip="Manage Details">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
             </a>
 
-            <button class="secondary" hx-delete="/parts/{{.ID}}" hx-target="closest tr" hx-swap="outerHTML"
+            <button class="secondary btn-icon"
+                data-tooltip="Delete Part"
+                hx-delete="/parts/{{.ID}}" 
+                hx-target="closest tr" 
+                hx-swap="outerHTML"
                 hx-confirm="Are you sure you want to delete '{{.Name}}'? This will also delete all associated location data and inventory counts. This action cannot be undone.">
-                Delete
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
         </div>
     </td>

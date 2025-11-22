@@ -1,7 +1,7 @@
 /* pico.css does not currently support some required features.
 This file exists to implement those styling gaps. */
 
-/* Vertically Scrollable Table Component */
+/* --- Vertically Scrollable Table Component --- */
 .scroll-table {
     overflow-y: auto;
     max-height: 60vh;
@@ -25,7 +25,7 @@ This file exists to implement those styling gaps. */
     margin-bottom: 0;
 }
 
-/* Preview Image On Hover*/
+/* --- Preview Image On Hover --- */
 
 .img-preview-container {
     position: relative;
@@ -62,4 +62,29 @@ This file exists to implement those styling gaps. */
     height: auto;
     border-radius: 2px;
     display: block;
+}
+
+/* --- Icon Buttons --- */
+
+.btn-icon {
+    padding: 0.5rem !important; /* Override Pico padding */
+    width: auto;
+    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0; /* Fix alignment in tables */
+}
+
+.btn-icon svg {
+    width: 1.25rem;  /* Icon size */
+    height: 1.25rem;
+    stroke-width: 2px;
+}
+
+/* Adjust grid gap in action column */
+td .actions-group {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }

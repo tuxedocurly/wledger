@@ -1,6 +1,8 @@
-<button class="secondary"
+<button class="primary btn-icon"
+    data-tooltip="Stop Locating"
+    style="background-color: var(--pico-del-color); border-color: var(--pico-del-color);"
     hx-post="/locate/stop/{{.ID}}"
     hx-target="#locate-swap-{{.ID}}"
     hx-swap="innerHTML">
-    Stop
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6"/></svg>
 </button>
