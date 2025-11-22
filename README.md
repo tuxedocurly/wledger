@@ -17,12 +17,10 @@ WLEDger to the rescue! This tool links your digital inventory directly to your p
 
 
 
-<div style="text-align: center;">
-    <h1>Pages UI</h1>
-    <img src="docs/assets/wledger-pages-demo.gif" alt="WLEDger Pages Demo GIF" width="700">
-</div>
-<div style="text-align: center;">
-    <h1>Part Managemen UI</h1>
+<div align="center">
+    <h2>Pages UI</h2>
+    <img src="docs/assets/wledger-pages-demo.gif" alt="WLEDger Pages Demo GIF" width="700" align:>
+    <h2>Part Managemen UI</h2>
     <img src="docs/assets/wledger-part-demo.gif" alt="WLEDger Part Management Demo GIF" width="692">
 </div>
 
