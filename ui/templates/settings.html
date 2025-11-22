@@ -134,9 +134,9 @@
             </thead>
             <tbody>
                 {{ if .Bins }}
-                    {{ range .Bins }}
-                        {{ template "_bin-row.html" . }}
-                    {{ end }}
+                {{ range .Bins }}
+                {{ template "_bin-row.html" . }}
+                {{ end }}
                 {{ else }}
                 <tr>
                     <td colspan="5" style="text-align: center;">No bins found. Add one above!</td>
@@ -154,12 +154,11 @@
             <p>Remove any categories/tags that are no longer assigned to any part.</p>
         </div>
         <div>
-            <form action="/settings/categories/cleanup" method="POST">
-                <button type="submit" class="secondary"
-                    hx-confirm="This will permanently delete all unused tags. Are you sure?">
-                    Clean Up Unused Tags
-                </button>
-            </form>
+            <button type="button" class="secondary" data-tooltip="Remove unused tags" hx-post="
+                /settings/categories/cleanup" hx-swap="none"
+                hx-confirm="This will permanently delete all unused tags. Are you sure?">
+                Clean Up Unused Tags
+            </button>
         </div>
     </div>
 </article>

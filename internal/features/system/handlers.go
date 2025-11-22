@@ -51,7 +51,9 @@ func (h *Handler) handleCleanupCategories(w http.ResponseWriter, r *http.Request
 		core.ServerError(w, r, err)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	// Just return OK. Don't write any body.
+	// This ensure the page doesn't reload/redirect when clicking this button
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) handleDownloadBackup(w http.ResponseWriter, r *http.Request) {
