@@ -1,3 +1,4 @@
+// internal/features/dashboard/handler_test.go
 package dashboard
 
 import (
@@ -85,7 +86,6 @@ func (m *mockStore) GetAllBinLocationsForStopAll() ([]struct {
 	}
 	return nil, nil
 }
-func (m *mockStore) GetParts() ([]models.Part, error) { return nil, nil } // Stub
 
 type mockWLED struct {
 	SendCommandFunc func(ipAddress string, state models.WLEDState) error
