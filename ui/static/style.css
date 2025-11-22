@@ -88,3 +88,17 @@ td .actions-group {
     gap: 0.5rem;
     justify-content: flex-end;
 }
+
+/* --- Description Truncation --- */
+
+/* Limit text to 2 lines with an ellipsis (...) */
+.desc-truncate {
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Ensure long words wrap so they don't break the table layout */
+    word-break: break-word; 
+}

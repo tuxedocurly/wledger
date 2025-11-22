@@ -19,7 +19,15 @@
 
     <td><a href="/part/{{.ID}}">{{ .Name }}</a></td>
     <td>{{ .PartNumber.String }}</td>
-    <td>{{ .Description.String }}</td>
+    <td>
+        {{ if .Description.String }}
+            <div class="desc-truncate" title="{{ .Description.String }}">
+                {{ .Description.String }}
+            </div>
+        {{ else }}
+            <span style="color: var(--pico-muted-color);">-</span>
+        {{ end }}
+    </td>
     <td>{{ .TotalQuantity }}</td>
     <td>
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
