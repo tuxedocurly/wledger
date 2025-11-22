@@ -35,7 +35,6 @@ type mockStore struct {
 		SegID    int
 		LEDIndex int
 	}, error)
-	GetPartsFunc func() ([]models.Part, error) // Not used here anymore, but safe to keep stubbed if interface requires it? No, interface doesn't require it here anymore.
 }
 
 func (m *mockStore) GetDashboardBinData() ([]models.DashboardBinData, error) {
