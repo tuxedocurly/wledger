@@ -108,3 +108,52 @@ td .actions-group {
     /* Ensure long words wrap so they don't break the table layout */
     word-break: break-word; 
 }
+
+/* --- Sticky Footer --- */
+
+/* Sticky Footer Layout */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex-grow: 1; /* Takes up all available space, pushing footer down */
+    width: 100%;  /* Ensure full width container */
+}
+
+/* Footer Styling */
+.app-footer {
+    margin-top: 3rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--pico-muted-border-color);
+    background-color: var(--pico-background-color); /* Opaque to cover scroll */
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.footer-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--pico-secondary);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-link:hover {
+    color: var(--pico-primary);
+    text-decoration: underline;
+}
+
+.footer-link svg {
+    width: 1.2rem;
+    height: 1.2rem;
+}
