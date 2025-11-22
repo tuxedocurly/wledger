@@ -29,12 +29,22 @@ func (s *Store) GetControllers() ([]models.WLEDController, error) {
 	controllers := []models.WLEDController{}
 	for rows.Next() {
 		var c models.WLEDController
-		// Updated Scan to include BinCount
+		var lastSeenStr sql.NullString
+
 		err := rows.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen, &c.BinCount)
 		if err != nil {
 			log.Println("Error scanning controller row:", err)
 			continue
 		}
+		// Manually convert the string to sql.NullTime
+		// fixes an issue with SQLite driver crash after .zip restoration
+		if lastSeenStr.Valid {
+			c.LastSeen.Time = parseTime(lastSeenStr.String)
+			c.LastSeen.Valid = true
+		} else {
+			c.LastSeen.Valid = false
+		}
+
 		controllers = append(controllers, c)
 	}
 	return controllers, nil
@@ -42,6 +52,8 @@ func (s *Store) GetControllers() ([]models.WLEDController, error) {
 
 func (s *Store) GetControllerByID(id int) (models.WLEDController, error) {
 	var c models.WLEDController
+	var lastSeenStr sql.NullString
+
 	query := `
 		SELECT c.id, c.name, c.ip_address, c.status, c.last_seen, COUNT(b.id) as bin_count
 		FROM wled_controllers c
@@ -50,8 +62,22 @@ func (s *Store) GetControllerByID(id int) (models.WLEDController, error) {
 		GROUP BY c.id;
 	`
 	row := s.db.QueryRow(query, id)
-	err := row.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen, &c.BinCount)
-	return c, err
+
+	err := row.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &lastSeenStr, &c.BinCount)
+	if err != nil {
+		return c, err
+	}
+
+	// Manually convert the string to sql.NullTime
+	// fixes an issue with SQLite driver crash after .zip restore
+	if lastSeenStr.Valid {
+		c.LastSeen.Time = parseTime(lastSeenStr.String)
+		c.LastSeen.Valid = true
+	} else {
+		c.LastSeen.Valid = false
+	}
+
+	return c, nil
 }
 
 func (s *Store) CreateController(name, ipAddress string) error {

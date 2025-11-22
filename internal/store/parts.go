@@ -8,6 +8,8 @@ import (
 // Part methods
 func (s *Store) GetPartByID(id int) (models.Part, error) {
 	var p models.Part
+	var createdStr, updatedStr string // Temp vars
+
 	query := `
 		SELECT 
 			id, name, description, part_number, datasheet_url, created_at, updated_at,
@@ -17,16 +19,22 @@ func (s *Store) GetPartByID(id int) (models.Part, error) {
 		WHERE id = ?;
 	`
 	row := s.db.QueryRow(query, id)
+
+	// Scan into strings for dates
 	err := row.Scan(
 		&p.ID, &p.Name, &p.Description,
 		&p.PartNumber, &p.DatasheetURL,
-		&p.CreatedAt, &p.UpdatedAt,
+		&createdStr, &updatedStr, // <--- CHANGED
 		&p.ImagePath, &p.Manufacturer, &p.Supplier, &p.UnitCost, &p.Status,
 		&p.StockTracking, &p.ReorderPoint, &p.MinStock,
 	)
 	if err != nil {
 		return p, err
 	}
+
+	// Parse safely
+	p.CreatedAt = parseTime(createdStr)
+	p.UpdatedAt = parseTime(updatedStr)
 
 	qtyQuery := `SELECT IFNULL(SUM(quantity), 0) FROM part_locations WHERE part_id = ?`
 	err = s.db.QueryRow(qtyQuery, id).Scan(&p.TotalQuantity)
@@ -54,9 +62,11 @@ func (s *Store) GetParts() ([]models.Part, error) {
 	parts := []models.Part{}
 	for rows.Next() {
 		var p models.Part
+		var createdStr, updatedStr string // Temp vars
+
 		err := rows.Scan(
 			&p.ID, &p.Name, &p.Description, &p.PartNumber, &p.DatasheetURL,
-			&p.CreatedAt, &p.UpdatedAt,
+			&createdStr, &updatedStr, // <--- CHANGED
 			&p.ImagePath, &p.Manufacturer, &p.Supplier, &p.UnitCost, &p.Status,
 			&p.StockTracking, &p.ReorderPoint, &p.MinStock,
 			&p.TotalQuantity,
@@ -65,6 +75,10 @@ func (s *Store) GetParts() ([]models.Part, error) {
 			log.Println("Error scanning part row:", err)
 			continue
 		}
+
+		p.CreatedAt = parseTime(createdStr)
+		p.UpdatedAt = parseTime(updatedStr)
+
 		parts = append(parts, p)
 	}
 	return parts, nil
@@ -81,13 +95,13 @@ func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 			IFNULL(SUM(pl.quantity), 0) AS total_quantity
 		FROM parts p
 		LEFT JOIN part_locations pl ON p.id = pl.part_id
-		LEFT JOIN part_categories pc ON p.id = pc.part_id  -- NEW
-		LEFT JOIN categories c ON pc.category_id = c.id -- NEW
+		LEFT JOIN part_categories pc ON p.id = pc.part_id
+		LEFT JOIN categories c ON pc.category_id = c.id
 		WHERE 
 			p.name LIKE ? OR 
 			p.description LIKE ? OR 
 			p.part_number LIKE ? OR
-			c.name LIKE ? -- NEW
+			c.name LIKE ?
 		GROUP BY p.id
 		ORDER BY p.name ASC;
 	`
@@ -100,9 +114,11 @@ func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 	parts := []models.Part{}
 	for rows.Next() {
 		var p models.Part
+		var createdStr, updatedStr string // Temp vars
+
 		err := rows.Scan(
 			&p.ID, &p.Name, &p.Description, &p.PartNumber, &p.DatasheetURL,
-			&p.CreatedAt, &p.UpdatedAt,
+			&createdStr, &updatedStr, // <--- CHANGED
 			&p.ImagePath, &p.Manufacturer, &p.Supplier, &p.UnitCost, &p.Status,
 			&p.StockTracking, &p.ReorderPoint, &p.MinStock,
 			&p.TotalQuantity,
@@ -111,6 +127,10 @@ func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 			log.Println("Error scanning part row:", err)
 			continue
 		}
+
+		p.CreatedAt = parseTime(createdStr)
+		p.UpdatedAt = parseTime(updatedStr)
+
 		parts = append(parts, p)
 	}
 	return parts, nil
