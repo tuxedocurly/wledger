@@ -4,7 +4,7 @@
 
 # The Inventory System That Finds Your Parts For You
 
-A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating parts. Powered by WLED, Go, SQLite, and htmx.
+A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating parts. Powered by WLED, Go, SQLite, Pico CSS, and HTMX.
 
 
 > **Note:** For the full User Guide, Build Guide, Quick-Start, and Developer Documentation, please visit the **[Official GitHub Pages Site](https://tuxedocurly.github.io/wledger/)**.
@@ -39,15 +39,32 @@ WLEDger to the rescue! This tool links your digital inventory directly to your p
 
 ## Getting Started (How to Run)
 
-You'll need **Go (1.25+)** and **Docker** (with Docker Compose) installed on your system.
-
 ### Option 1: Run with Docker (Recommended)
 
-This is the simplest way to run the application in a production-like environment.
+> You'll need **Docker** (with Docker Compose) installed on your system.
 
-1.  **Build the image:**
-    ```bash
-    docker compose build
+### Docker Hub
+
+This is the easiest option.
+
+1.  **Create docker-compose.yml file:**
+    ```yaml
+    services:
+        wledger:
+            image: tuxedomakes/wledger:latest
+            container_name: wledger
+            restart: always
+            ports:
+                - "7483:3000"
+        volumes:
+        # IMPORTANT:
+        # Change ./wledger_data to the directory where
+        # you want to store your DB, img, and upload data
+            - ./wledger_data:/app/data 
+
+    volumes:
+        wledger_data:
+
     ```
 2.  **Run the container:**
     ```bash
@@ -56,9 +73,28 @@ This is the simplest way to run the application in a production-like environment
 3.  **Access the app:**
     Open your browser to `http://localhost:3000`.
 
-Your database and all uploaded files will be stored in persistent Docker volumes.
+### (Optional) Build the Docker Image Yourself
+
+If you don't want to use the docker hub image above, you can build the docker image yourself.
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/tuxedocurly/wledger.git
+    ```
+2.  **Build the image:**
+    ```bash
+    docker compose build
+    ```
+3.  **Run the container:**
+    ```bash
+    docker compose up -d
+    ```
+4.  **Access the app:**
+    Open your browser to `http://localhost:3000`.
 
 ### Option 2: Run Locally (for Development)
+
+> You'll need **Go (1.25+)** installed on your system.
 
 1.  **Install Go dependencies:**
     ```bash
