@@ -43,7 +43,7 @@ This file exists to implement those styling gaps. */
     left: 55px; 
     
     /* Styling */
-    width: 400px; /* Set a reasonable max width for the popup */
+    width: 400px; /* Set max width for the popup */
     background-color: var(--pico-card-background-color);
     border: 1px solid var(--pico-muted-border-color);
     border-radius: var(--pico-border-radius);
