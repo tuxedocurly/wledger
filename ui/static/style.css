@@ -76,6 +76,12 @@ This file exists to implement those styling gaps. */
     margin-bottom: 0; /* Fix alignment in tables */
 }
 
+/* Reset line-height for tooltips so they aren't squashed by .btn-icon */
+.btn-icon[data-tooltip]::before {
+    line-height: var(--pico-line-height);
+    font-size: 0.875rem; /* Optional: ensures text size is readable */
+}
+
 .btn-icon svg {
     width: 1.25rem;  /* Icon size */
     height: 1.25rem;
