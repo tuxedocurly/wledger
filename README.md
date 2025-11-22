@@ -15,6 +15,18 @@ I built this app to solve a personal problem: managing a growing collection of s
 
 WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller to light up the specific location where your part is located. It's designed to be used with clear plastic bins such as [these](https://amzn.to/47S11Cp), but works great with open shelf setup as well!
 
+
+<div style="display: flex; justify-content: space-around; align-items: flex-start;">
+    <div style="text-align: center;">
+        <h1>Pages UI</p>
+        <img src="docs/assets/wledger-pages-demo.gif" alt="WLEDger Pages Demo GIF" width="700">
+    </div>
+    <div style="text-align: center;">
+        <h1>Part Managemen UI</p>
+        <img src="docs/assets/wledger-part-demo.gif" alt="WLEDger Part Management Demo GIF" width="692">
+    </div>
+</div>
+
 ## Core Features
 
 * **Per-LED Bin Location:** Maps parts to individual LEDs on a WLED segment for precision locating.
