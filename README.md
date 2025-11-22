@@ -2,6 +2,12 @@
   <img src="docs/assets/wledger-logo.png" alt="WLEDger Logo" width="500">
 </p>
 
+<p align="center">
+  <a href="https://github.com/tuxedocurly/wledger/issues"><img src="https://img.shields.io/badge/GitHub-Report%20Bug-black?style=for-the-badge&logo=github" alt="Report Bug" /></a>&nbsp;&nbsp;&nbsp;
+  <a href="https://discord.gg/HABg37gjrd"><img src="https://img.shields.io/badge/Discord-Get%20Support-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join Discord" /></a>&nbsp;&nbsp;&nbsp;
+  <a href="https://ko-fi.com/tuxedomakes"><img src="https://img.shields.io/badge/Ko--Fi-Support%20Me-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support me on Ko-Fi" /></a>
+</p>
+
 # The Inventory System That Finds Your Parts For You
 
 A fast, lightweight, and robust inventory "ledger" for managing inventory and physically locating parts. Powered by WLED, Go, SQLite, Pico CSS, and HTMX.
@@ -14,8 +20,6 @@ A fast, lightweight, and robust inventory "ledger" for managing inventory and ph
 I built this app to solve a personal problem: managing a growing collection of small electronic parts. It's difficult to remember which bin or drawer in my shop holds which component.
 
 WLEDger to the rescue! This tool links your digital inventory directly to your physical storage by using a WLED controller to light up the specific location where your part is located. It's designed to be used with clear plastic bins such as [these](https://amzn.to/47S11Cp), but works great with open shelf setup as well!
-
-
 
 <div align="center">
     <h2>Pages UI</h2>
