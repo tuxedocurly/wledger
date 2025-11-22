@@ -1,4 +1,4 @@
-# --- Stage 1: The Builder ---
+# The Builder
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
@@ -11,10 +11,9 @@ RUN go mod download
 COPY . .
 
 # Build the application
-# UPDATED: Point to the new entrypoint in ./cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-w -s" -o /app/server ./cmd/server
 
-# --- Stage 2: The Final Image ---
+# Final Image
 FROM alpine:latest
 
 WORKDIR /app
@@ -25,7 +24,6 @@ RUN mkdir -p /app/data/uploads
 # Copy the binary
 COPY --from=builder /app/server .
 
-# UPDATED: Copy the 'ui' folder (templates & static)
 COPY --from=builder /app/ui ./ui
 
 # Expose the port
