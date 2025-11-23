@@ -23,9 +23,11 @@ WLEDger to the rescue! This tool links your digital inventory directly to your p
 
 <div align="center">
     <h2>Pages UI</h2>
-    <img src="docs/assets/wledger-pages-demo.gif" alt="WLEDger Pages Demo GIF" width="700" align:>
+    <img src="docs/assets/wledger-pages-demo.gif" alt="WLEDger Pages Demo GIF" width="700">
     <h2>Part Manager UI</h2>
     <img src="docs/assets/wledger-part-demo.gif" alt="WLEDger Part Manager Demo GIF" width="692">
+    <h2>Example Hardware Setup</h2>
+    <img src="docs/assets/wledger-hardware-demo.gif" alt="WLEDger Hardware Demo GIF" width="692">
 </div>
 
 
