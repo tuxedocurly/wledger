@@ -2,16 +2,31 @@
 /data/
 /uploads/
 
-# Ignore compiled binaries
+# Ignore compiled binaries, programs, and plugins
 wledger
 wledger.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# Ignore OS-specific files
+# OS-specific files
 .DS_Store
 Thumbs.db
 
-# Ignore coverage outputs
-*.out
-coverage.out
-coverage.html
+# Test binary, built with `go test -c`
 *.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
