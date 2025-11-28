@@ -9,3 +9,9 @@ wledger.exe
 # Ignore OS-specific files
 .DS_Store
 Thumbs.db
+
+# Ignore coverage outputs
+*.out
+coverage.out
+coverage.html
+*.test
