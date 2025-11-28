@@ -237,3 +237,47 @@ func TestStore_Categories(t *testing.T) {
 		t.Errorf("Orphaned category was not cleaned up")
 	}
 }
+
+// internal/store/parts_test.go
+
+func TestStore_SearchParts_MultipleCategories_Quantity(t *testing.T) {
+	s := newTestStore(t)
+
+	// create controller and bin
+	if err := s.CreateController("C1", "1.1.1.1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CreateBin("B1", 1, 0, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	// create part
+	p := getValidPart("MultiTag Part")
+	if err := s.CreatePart(p); err != nil {
+		t.Fatal(err)
+	}
+
+	// stock quantity 10
+	if err := s.CreatePartLocation(1, 1, 10); err != nil {
+		t.Fatal(err)
+	}
+
+	// if the JOIN is wrong, 2 categories could cause quantity to be 20 (10 * 2)
+	cat1, _ := s.CreateCategory("Tag A")
+	cat2, _ := s.CreateCategory("Tag B")
+	s.AssignCategoryToPart(1, cat1.ID)
+	s.AssignCategoryToPart(1, cat2.ID)
+
+	parts, err := s.SearchParts("MultiTag")
+	if err != nil {
+		t.Fatalf("SearchParts failed: %v", err)
+	}
+
+	if len(parts) != 1 {
+		t.Fatalf("Expected 1 part, got %d", len(parts))
+	}
+
+	if parts[0].TotalQuantity != 10 {
+		t.Errorf("Regression! Quantity mismatch. Expected 10, got %d. (Rows might be multiplied by JOIN in query?)", parts[0].TotalQuantity)
+	}
+}

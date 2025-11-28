@@ -148,6 +148,8 @@ func TestStore_NewStore_Physical(t *testing.T) {
 		t.Fatalf("NewStore failed: %v", err)
 	}
 
+	defer s.Close()
+
 	// Verify basic functionality works on physical DB
 	if err := s.CreatePart(getValidPart("Real DB Part")); err != nil {
 		t.Errorf("Failed to write to physical DB: %v", err)

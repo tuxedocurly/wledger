@@ -58,8 +58,8 @@ func TestHandleCleanupCategories(t *testing.T) {
 
 	h.handleCleanupCategories(rr, req)
 
-	if rr.Code != http.StatusSeeOther {
-		t.Errorf("got status %d, want %d", rr.Code, http.StatusSeeOther)
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
 	}
 	if !called {
 		t.Error("CleanupOrphanedCategories was not called")
