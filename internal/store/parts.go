@@ -87,6 +87,8 @@ func (s *Store) GetParts() ([]models.Part, error) {
 func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 	searchQuery := "%" + searchTerm + "%"
 
+	// use an EXISTS subquery to filter by category name
+	// to ensure SUM(pl.quantity) is calculated correctly
 	query := `
 		SELECT 
 			p.id, p.name, p.description, p.part_number, p.datasheet_url, p.created_at, p.updated_at,
@@ -95,16 +97,19 @@ func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 			IFNULL(SUM(pl.quantity), 0) AS total_quantity
 		FROM parts p
 		LEFT JOIN part_locations pl ON p.id = pl.part_id
-		LEFT JOIN part_categories pc ON p.id = pc.part_id
-		LEFT JOIN categories c ON pc.category_id = c.id
 		WHERE 
 			p.name LIKE ? OR 
 			p.description LIKE ? OR 
 			p.part_number LIKE ? OR
-			c.name LIKE ?
+			EXISTS (
+				SELECT 1 FROM part_categories pc
+				JOIN categories c ON pc.category_id = c.id
+				WHERE pc.part_id = p.id AND c.name LIKE ?
+			)
 		GROUP BY p.id
 		ORDER BY p.name ASC;
 	`
+
 	rows, err := s.db.Query(query, searchQuery, searchQuery, searchQuery, searchQuery)
 	if err != nil {
 		return nil, err
@@ -114,11 +119,11 @@ func (s *Store) SearchParts(searchTerm string) ([]models.Part, error) {
 	parts := []models.Part{}
 	for rows.Next() {
 		var p models.Part
-		var createdStr, updatedStr string // Temp vars
+		var createdStr, updatedStr string
 
 		err := rows.Scan(
 			&p.ID, &p.Name, &p.Description, &p.PartNumber, &p.DatasheetURL,
-			&createdStr, &updatedStr, // <--- CHANGED
+			&createdStr, &updatedStr,
 			&p.ImagePath, &p.Manufacturer, &p.Supplier, &p.UnitCost, &p.Status,
 			&p.StockTracking, &p.ReorderPoint, &p.MinStock,
 			&p.TotalQuantity,
