@@ -1,12 +1,15 @@
 services:
-  app:
-    build: .
-    container_name: wledger
-    ports:
-      - "3000:3000"
+    wledger:
+        image: tuxedomakes/wledger:latest
+        container_name: wledger
+        restart: always
+        ports:
+            - "7483:3000"
     volumes:
-      - wledger-data:/app/data
-    restart: unless-stopped
+    # IMPORTANT:
+    # Change ./wledger_data to the directory where
+    # you want to store your DB, img, and upload data
+        - ./wledger_data:/app/data 
 
 volumes:
-  wledger-data:
+    wledger_data:
