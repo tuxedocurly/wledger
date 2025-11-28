@@ -5,6 +5,7 @@
 # Ignore compiled binaries, programs, and plugins
 wledger
 wledger.exe
+server
 *.exe
 *.exe~
 *.dll
