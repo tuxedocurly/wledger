@@ -12,7 +12,7 @@ import (
 
 // Controller Methods
 func (s *Store) GetControllers() ([]models.WLEDController, error) {
-	// LEFT JOIN to count bins associated with each controller
+	// left join to grab controllers with no bins
 	query := `
 		SELECT c.id, c.name, c.ip_address, c.status, c.last_seen, COUNT(b.id) as bin_count
 		FROM wled_controllers c
@@ -31,13 +31,12 @@ func (s *Store) GetControllers() ([]models.WLEDController, error) {
 		var c models.WLEDController
 		var lastSeenStr sql.NullString
 
-		err := rows.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &c.LastSeen, &c.BinCount)
+		err := rows.Scan(&c.ID, &c.Name, &c.IPAddress, &c.Status, &lastSeenStr, &c.BinCount)
 		if err != nil {
 			log.Println("Error scanning controller row:", err)
 			continue
 		}
-		// Manually convert the string to sql.NullTime
-		// fixes an issue with SQLite driver crash after .zip restoration
+
 		if lastSeenStr.Valid {
 			c.LastSeen.Time = parseTime(lastSeenStr.String)
 			c.LastSeen.Valid = true
