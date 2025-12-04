@@ -118,7 +118,18 @@
 
     <hr>
 
-    <h4>Existing Bins</h4>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="margin-bottom: 0;">Existing Bins</h4>
+
+        <div style="width: 300px;">
+            <select id="binFilter" onchange="filterBins()">
+                <option value="all" selected>Show All Controllers</option>
+                {{ range .Controllers }}
+                <option value="{{.ID}}">{{.Name}}</option>
+                {{ end }}
+            </select>
+        </div>
+    </div>
     <div class="scroll-table">
         <table>
             <thead>
@@ -143,6 +154,24 @@
             </tbody>
         </table>
     </div>
+    <script>
+        function filterBins() {
+            // 1. Get the selected Controller ID
+            var selectedCtrl = document.getElementById("binFilter").value;
+
+            // 2. Get all rows
+            var rows = document.querySelectorAll(".bin-row");
+
+            // 3. Loop and toggle visibility
+            rows.forEach(row => {
+                if (selectedCtrl === "all" || row.dataset.controllerId === selectedCtrl) {
+                    row.style.display = ""; // Show
+                } else {
+                    row.style.display = "none"; // Hide
+                }
+            });
+        }
+    </script>
 </article>
 
 <article>
