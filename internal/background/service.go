@@ -53,7 +53,6 @@ func (s *Service) Start() {
 
 func (s *Service) runCleanupJob() {
 	log.Println("Running background tag cleanup...")
-	// FIX: Use s.store, not s.PartStore/DashStore
 	if err := s.store.CleanupOrphanedCategories(); err != nil {
 		log.Println("Background cleanup failed:", err)
 	}
@@ -63,7 +62,6 @@ func (s *Service) runCleanupJob() {
 func (s *Service) runHealthChecks() {
 	log.Println("Running WLED health checks...")
 
-	// FIX: Use s.store, not s.CtrlStore
 	controllers, err := s.store.GetAllControllersForHealthCheck()
 	if err != nil {
 		log.Println("HealthCheck: Error querying controllers:", err)
@@ -71,7 +69,6 @@ func (s *Service) runHealthChecks() {
 	}
 
 	for _, c := range controllers {
-		// FIX: Use s.wled, not s.Wled
 		online := s.wled.Ping(c.IPAddress)
 
 		var status string
@@ -85,7 +82,6 @@ func (s *Service) runHealthChecks() {
 			lastSeen.Valid = false
 		}
 
-		// FIX: Use s.store, not s.CtrlStore
 		if err := s.store.UpdateControllerStatus(c.ID, status, lastSeen); err != nil {
 			log.Println("HealthCheck: Error updating controller status:", err)
 		}
