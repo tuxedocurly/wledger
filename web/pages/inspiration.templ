@@ -20,7 +20,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 						hx-swap="beforeend"
 						class="btn btn-primary gap-2"
 					>
-						@icons.PlusIcon(5)
+						@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 						Add Prompt
 					</button>
 				}
@@ -36,7 +36,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 								<span class="badge badge-primary badge-sm gap-1">
 									<span x-text="tag"></span>
 									<button @click="toggleTag(tag)" class="hover:text-white/80">
-										@icons.XMarkIcon(4)
+										@icons.X(templ.Attributes{"class": "w-4 h-4"})
 									</button>
 								</span>
 							</template>

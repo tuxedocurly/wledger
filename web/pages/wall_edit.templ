@@ -109,7 +109,7 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 										>
 											<div class="flex items-center gap-4">
 												<div class="drag-handle cursor-grab active:cursor-grabbing p-2 -ml-2 opacity-20 group-hover:opacity-100 transition-opacity">
-													@icons.GripIcon(5)
+													@icons.GripHorizontal(templ.Attributes{"class": "w-5 h-5"})
 												</div>
 												<div class="w-8 h-8 rounded-full bg-base-300 flex items-center justify-center font-mono font-bold text-xs opacity-40" x-text="(i+1)"></div>
 												<div class="flex flex-col">
@@ -147,7 +147,7 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 											:disabled="!selectedAddId"
 											@click="if(selectedAddId) { const c = availableContainers.find(x => x.id == selectedAddId); if(c && !wallContainers.some(x => x.id == c.id)) { wallContainers.push(c); selectedAddId = ''; } }"
 										>
-											@icons.PlusIcon(5)
+											@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 											Add to Wall
 										</button>
 									</div>

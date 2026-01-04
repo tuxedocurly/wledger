@@ -55,7 +55,7 @@ func PartSearchBar(search string, canWrite bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.ImportIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Import(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -63,7 +63,7 @@ func PartSearchBar(search string, canWrite bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.PlusIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Plus(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

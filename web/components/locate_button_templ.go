@@ -73,7 +73,7 @@ func LocateButton(controllerID int64, binID int64, className string) templ.Compo
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.EyeIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Eye(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

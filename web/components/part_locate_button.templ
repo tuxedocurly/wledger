@@ -13,6 +13,6 @@ templ PartLocateButton(partID int64, className string) {
 		title="Locate all assignments"
 		onclick="event.stopPropagation()"
 	>
-		@icons.EyeIcon(5)
+		@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
 	</button>
 }

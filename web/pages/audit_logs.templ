@@ -132,7 +132,7 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 					class="btn btn-ghost btn-xs"
 					onclick={ openAuditDetail(log.ID, string(log.OldValue), string(log.NewValue)) }
 				>
-					@icons.EyeIcon(5)
+					@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
 					View
 				</button>
 			</td>

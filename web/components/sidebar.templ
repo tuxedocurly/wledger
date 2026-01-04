@@ -68,7 +68,7 @@ templ GlobalOffButton() {
 		hx-swap="none"
 		class="btn btn-outline btn-error w-full gap-2 justify-start normal-case text-base font-normal px-2"
 	>
-		@icons.PowerIcon(5)
+		@icons.Power(templ.Attributes{"class": "w-5 h-5"})
 		Turn Off All LEDs
 	</button>
 }
@@ -76,7 +76,7 @@ templ GlobalOffButton() {
 templ LogoutButton() {
 	<form action="/logout" method="POST" class="w-full">
 		<button type="submit" class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 text-error hover:bg-error/10">
-			@icons.LogoutIcon(5)
+			@icons.LogOut(templ.Attributes{"class": "w-5 h-5"})
 			Log Out
 		</button>
 	</form>
@@ -84,7 +84,7 @@ templ LogoutButton() {
 
 templ LoginButton() {
 	<a href="/login" class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 text-primary hover:text-primary">
-		@icons.LoginIcon(5)
+		@icons.LogIn(templ.Attributes{"class": "w-5 h-5"})
 		Log In
 	</a>
 }
@@ -106,11 +106,11 @@ templ ThemeToggle() {
 	>
 		<input type="checkbox" :checked="theme === 'silk'" @change="toggle()"/>
 		<div class="swap-on flex items-center w-full">
-			@icons.SunIcon(5)
+			@icons.Sun(templ.Attributes{"class": "w-5 h-5"})
 			<span>Silk Mode</span>
 		</div>
 		<div class="swap-off flex items-center w-full">
-			@icons.MoonIcon(5)
+			@icons.Moon(templ.Attributes{"class": "w-5 h-5"})
 			<span>Dark Mode</span>
 		</div>
 	</label>
@@ -120,7 +120,7 @@ templ CommunityLinks() {
 	<li class="menu-title text-[12px] font-bold opacity-80 uppercase tracking-wider mt-4">Community</li>
 	<li>
 		<a href="https://github.com/tuxedocurly/wledger/issues/new" target="_blank" class="text-base-content/70">
-			@icons.GithubIcon(5)
+			@icons.Github(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
 				Feedback
 			</span>
@@ -128,7 +128,7 @@ templ CommunityLinks() {
 	</li>
 	<li>
 		<a href="https://discord.gg/HABg37gjrd" target="_blank" class="text-base-content/70">
-			@icons.DiscordIcon(5)
+			@icons.Discord(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
 				Join Discord
 			</span>
@@ -137,7 +137,7 @@ templ CommunityLinks() {
 	<li>
 		<a href="https://ko-fi.com/tuxedomakes" target="_blank" class="text-base-content/70">
 			<span class="text-[#ff5e5b]">
-				@icons.KofiIcon(5)
+				@icons.Kofi(templ.Attributes{"class": "w-5 h-5"})
 			</span>
 			<span class="ml-3">
 				Support on Ko-Fi
@@ -149,7 +149,7 @@ templ CommunityLinks() {
 templ NavLinks(user auth.User) {
 	<li>
 		<a href="/">
-			@icons.FourBoxesIcon(5)
+			@icons.LayoutGrid(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
 				Dashboard
 			</span>
@@ -157,7 +157,7 @@ templ NavLinks(user auth.User) {
 	</li>
 	<li>
 		<a href="/parts">
-			@icons.BoxIcon(5)
+			@icons.Box(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
 				Inventory
 			</span>
@@ -165,7 +165,7 @@ templ NavLinks(user auth.User) {
 	</li>
 	<li>
 		<a href="/inspiration">
-			@icons.LightbulbIcon(5)
+			@icons.Lightbulb(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
 				Inspiration
 			</span>
@@ -175,7 +175,7 @@ templ NavLinks(user auth.User) {
 		<li class="menu-title opacity-50 my-1 p-0 h-px bg-base-300"></li>
 		<li>
 			<a href="/hardware" hx-boost="false">
-				@icons.MicrochipIcon(5)
+				@icons.Microchip(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
 					Hardware
 				</span>
@@ -183,7 +183,7 @@ templ NavLinks(user auth.User) {
 		</li>
 		<li>
 			<a href="/audit-logs">
-				@icons.ClipboardIcon(5)
+				@icons.Clipboard(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
 					Audit Logs
 				</span>
@@ -191,7 +191,7 @@ templ NavLinks(user auth.User) {
 		</li>
 		<li>
 			<a href="/settings">
-				@icons.GearIcon(5)
+				@icons.Settings(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
 					Settings
 				</span>

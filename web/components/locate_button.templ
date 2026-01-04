@@ -13,7 +13,7 @@ templ LocateButton(controllerID int64, binID int64, className string) {
 			class={ "btn btn-ghost text-accent z-10", className }
 			title="Locate"
 		>
-			@icons.EyeIcon(5)
+			@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
 		</button>
 	</object>
 }

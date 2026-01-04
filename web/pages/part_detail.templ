@@ -141,7 +141,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 								<h3 class="font-bold">Locations</h3>
 								if user.CanWrite() {
 									<button onclick="stock_modal.showModal()" class="btn btn-sm btn-primary">
-										@icons.PlusIcon(5)
+										@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 										Add Stock
 									</button>
 								}
@@ -230,7 +230,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 									class="btn btn-primary join-item btn-square"
 									@click="qty = Math.max(1, parseInt(qty || 0) - 1)"
 								>
-									@icons.MinusIcon(5)
+									@icons.Minus(templ.Attributes{"class": "w-5 h-5"})
 								</button>
 								<input
 									type="number"
@@ -245,7 +245,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 									class="btn btn-primary join-item btn-square"
 									@click="qty = parseInt(qty || 0) + 1"
 								>
-									@icons.PlusIcon(5)
+									@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 								</button>
 							</div>
 						</div>
@@ -265,12 +265,12 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 		<td class="font-medium">
 			if s.BinName.Valid {
 				<div class="flex items-center gap-2">
-					@icons.LocationIcon(5)
+					@icons.MapPin(templ.Attributes{"class": "w-5 h-5"})
 					{ s.BinName.String }
 				</div>
 			} else {
 				<div class="flex items-center gap-2 text-warning" title="This stock is no longer assigned to a valid bin">
-					@icons.WarningIcon(5)
+					@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
 					Orphaned
 				</div>
 			}
@@ -291,7 +291,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 						hx-swap="outerHTML"
 						class="btn btn-xs btn-circle btn-primary"
 					>
-						@icons.MinusIcon(4)
+						@icons.Minus(templ.Attributes{"class": "w-4 h-4"})
 					</button>
 					<span>{ fmt.Sprintf("%d", s.Quantity) }</span>
 					<button
@@ -300,7 +300,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 						hx-swap="outerHTML"
 						class="btn btn-xs btn-circle btn-primary"
 					>
-						@icons.PlusIcon(4)
+						@icons.Plus(templ.Attributes{"class": "w-4 h-4"})
 					</button>
 				</div>
 			} else {
@@ -335,7 +335,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 							class="btn btn-xs btn-ghost"
 							title="Move Stock"
 						>
-							@icons.MoveIcon(5)
+							@icons.ArrowRightLeft(templ.Attributes{"class": "w-5 h-5"})
 						</button>
 						@components.MoveStockModal(
 							fmt.Sprintf("move_stock_modal_%d", s.ID),
@@ -348,7 +348,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 					}
 					<form action={ templ.SafeURL(fmt.Sprintf("/parts/%d/stock/%d/delete", partID, s.ID)) } method="POST" onsubmit="return confirm('Remove this stock assignment?');">
 						<button class="btn btn-xs btn-ghost text-error" title="Remove">
-							@icons.TrashIcon(5)
+							@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
 						</button>
 					</form>
 				}

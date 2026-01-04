@@ -24,7 +24,7 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 					<div class="flex items-center justify-between mb-4 px-1">
 						<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">Containers</h3>
 						<button @click="addContainer()" class="btn btn-md btn-primary">
-							@icons.PlusIcon(5)
+							@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 							Add Container
 						</button>
 					</div>
@@ -42,7 +42,7 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 									<span class="text-xs uppercase font-bold opacity-40 tracking-widest" x-text="'Seg ' + container.segment_id + ' • ' + container.config.type"></span>
 								</div>
 								<button @click.stop="removeContainer(idx)" class="btn btn-ghost btn-sm text-error btn-square hover:bg-error/10">
-									@icons.XMarkIcon(5)
+									@icons.X(templ.Attributes{"class": "w-5 h-5"})
 								</button>
 							</div>
 						</template>
@@ -120,7 +120,7 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 												<span class="text-sm font-bold opacity-50 uppercase tracking-widest">Sections</span>
 												<div class="tooltip tooltip-bottom md:tooltip-left before:text-xs before:max-w-[12rem] before:whitespace-normal z-50" data-tip="Add a new sub-section to this compound container.">
 													<button type="button" @click="currentContainer.config.sections.push({rows:4,cols:4})" class="btn btn-md btn-outline btn-primary">
-														@icons.PlusIcon(5)
+														@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 														Add Section
 													</button>
 												</div>
@@ -141,7 +141,7 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 														</div>
 														<div class="tooltip tooltip-left before:text-xs z-50" data-tip="Remove this section.">
 															<button type="button" @click="currentContainer.config.sections.splice(sIdx, 1)" class="btn btn-ghost btn-xs text-error btn-square hover:bg-error/10">
-																@icons.XMarkIcon(4)
+																@icons.X(templ.Attributes{"class": "w-4 h-4"})
 															</button>
 														</div>
 													</div>

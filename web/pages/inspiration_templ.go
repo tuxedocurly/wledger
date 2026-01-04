@@ -62,7 +62,7 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.PlusIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Plus(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -75,7 +75,7 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.XMarkIcon(4).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.X(templ.Attributes{"class": "w-4 h-4"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

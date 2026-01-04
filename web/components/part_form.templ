@@ -152,7 +152,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 										hx-target={ fmt.Sprintf("#link-%d", link.ID) }
 										hx-swap="outerHTML"
 									>
-										@icons.TrashIcon(5)
+										@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
 									</button>
 								</div>
 							}

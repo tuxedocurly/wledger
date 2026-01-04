@@ -19,11 +19,11 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 						<div class="card-body">
 							<div class="flex justify-between items-center mb-4">
 								<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 flex items-center gap-2">
-									@icons.UsersIcon(5)
+									@icons.Users(templ.Attributes{"class": "w-5 h-5"})
 									User Management
 								</h3>
 								<button onclick="user_add_modal.showModal()" class="btn btn-primary px-8 gap-2">
-									@icons.PlusIcon(5)
+									@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 									<span class="hidden md:inline">Add User</span>
 								</button>
 							</div>
@@ -58,10 +58,10 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 													if u.ChangePasswordRequired.Bool {
 														<div class="flex items-center">
 															<div class="md:hidden text-warning" title="Reset Pending">
-																@icons.WarningIcon(5)
+																@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
 															</div>
 															<span class="hidden md:inline-flex badge badge-warning badge-md gap-1">
-																@icons.WarningIcon(5)
+																@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
 																Reset Pending
 															</span>
 														</div>
@@ -79,7 +79,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 																<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/reset", u.ID)) } method="POST" onsubmit="return confirm('Force this user to change their password on next login?');">
 																	<button class="btn btn-sm md:btn-sm btn-outline btn-warning px-2 md:px-3" title="Force Reset">
 																		<div class="flex items-center gap-1">
-																			@icons.LockIcon(5)
+																			@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
 																			<span class="hidden md:inline text-[10px] uppercase font-bold">Reset</span>
 																		</div>
 																	</button>
@@ -88,7 +88,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 															<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/delete", u.ID)) } method="POST" onsubmit="return confirm('Delete this user?');">
 																<button class="btn btn-sm md:btn-sm btn-outline btn-error opacity-70 hover:opacity-100 px-2 md:px-3" title="Delete">
 																	<div class="flex items-center gap-1">
-																		@icons.TrashIcon(5)
+																		@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
 																		<span class="hidden md:inline text-[10px] uppercase font-bold">Delete</span>
 																	</div>
 																</button>
@@ -108,7 +108,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 							<form action="/settings" method="POST" class="space-y-8">
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2">
-										@icons.LockIcon(5)
+										@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
 										General
 									</h3>
 									<div class="form-control bg-base-100 p-4 rounded-lg border border-base-300">
@@ -145,7 +145,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 								</div>
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2 border-t border-base-content/5 pt-6">
-										@icons.LightningIcon(5)
+										@icons.Zap(templ.Attributes{"class": "w-5 h-5"})
 										Hardware Automation
 									</h3>
 									<div class="form-control bg-base-100 p-4 rounded-lg border border-base-300">
@@ -171,7 +171,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 								</div>
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2 border-t border-base-content/5 pt-6">
-										@icons.ColorSwatchIcon(5)
+										@icons.SwatchBook(templ.Attributes{"class": "w-5 h-5"})
 										Interface Colors
 									</h3>
 									<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -183,7 +183,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 								</div>
 								<div class="card-actions justify-end mt-8 border-t border-base-content/10 pt-6">
 									<button class="btn btn-primary px-8 gap-2">
-										@icons.ImportIcon(5)
+										@icons.Import(templ.Attributes{"class": "w-5 h-5"})
 										Save All Settings
 									</button>
 								</div>
@@ -195,7 +195,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 				<div class="card bg-base-200 shadow-xl border border-base-300">
 					<div class="card-body">
 						<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2">
-							@icons.LockIcon(5)
+							@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
 							Change Your Password
 						</h3>
 						<div class="flex justify-center w-full">

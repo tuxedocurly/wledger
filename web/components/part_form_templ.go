@@ -320,7 +320,7 @@ func PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLink
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.TrashIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Trash(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

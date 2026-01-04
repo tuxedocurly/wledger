@@ -60,7 +60,7 @@ templ Base(title string, user auth.User) {
 					<div class="md:hidden flex items-center h-16 px-4 border-b border-base-300 bg-base-200 shrink-0 w-full">
 						<div class="flex-1 flex justify-start">
 							<label for="main-drawer" class="btn btn-square btn-ghost drawer-button">
-								@icons.MainDrawerIcon(6)
+								@icons.Menu(templ.Attributes{"class": "w-6 h-6"})
 							</label>
 						</div>
 						<div class="shrink-0">

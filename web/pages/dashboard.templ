@@ -20,7 +20,7 @@ templ Dashboard(user auth.User, stats db.GetDashboardStatsRow, dashboardWalls []
 		<div class="flex justify-end mb-6">
 			if user.CanConfigure() {
 				<button @click="document.getElementById('create_wall_modal').showModal()" class="btn btn-primary shadow-sm" title="Create Wall">
-					@icons.PlusIcon(5)
+					@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 					Create Wall
 				</button>
 			}
@@ -60,7 +60,7 @@ templ Dashboard(user auth.User, stats db.GetDashboardStatsRow, dashboardWalls []
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 						<span class="flex-1">Showing all controllers. Create a <strong>Wall</strong> to organize your view.</span>
 						<button @click="show = false; localStorage.setItem('dismissedDashboardWallAlert', 'true')" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
-							@icons.XMarkIcon(4)
+							@icons.X(templ.Attributes{"class": "w-4 h-4"})
 						</button>
 					</div>
 					for _, ctrl := range legacyControllers {
@@ -79,7 +79,7 @@ templ Dashboard(user auth.User, stats db.GetDashboardStatsRow, dashboardWalls []
 							</div>
 							if user.CanConfigure() {
 								<a href={ templ.SafeURL(fmt.Sprintf("/walls/%d/edit", wall.ID)) } class="btn btn-md btn-primary btn-outline gap-2">
-									@icons.PencilIcon(5)
+									@icons.Pencil(templ.Attributes{"class": "w-5 h-5"})
 									Edit Wall
 								</a>
 							}

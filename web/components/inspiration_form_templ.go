@@ -209,7 +209,7 @@ func InspirationCard(t db.InspirationTemplate, canWrite bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.PencilIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Pencil(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -230,7 +230,7 @@ func InspirationCard(t db.InspirationTemplate, canWrite bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.TrashIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Trash(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -269,7 +269,7 @@ func InspirationCard(t db.InspirationTemplate, canWrite bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.ClipboardIcon(4).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Clipboard(templ.Attributes{"class": "w-4 h-4"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

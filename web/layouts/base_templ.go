@@ -52,7 +52,7 @@ func Base(title string, user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.MainDrawerIcon(6).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Menu(templ.Attributes{"class": "w-6 h-6"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

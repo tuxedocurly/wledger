@@ -144,7 +144,7 @@ func GlobalOffButton() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.PowerIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Power(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -181,7 +181,7 @@ func LogoutButton() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.LogoutIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.LogOut(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -218,7 +218,7 @@ func LoginButton() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.LoginIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.LogIn(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -255,7 +255,7 @@ func ThemeToggle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.SunIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Sun(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -263,7 +263,7 @@ func ThemeToggle() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.MoonIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Moon(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -300,7 +300,7 @@ func CommunityLinks() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.GithubIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Github(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -308,7 +308,7 @@ func CommunityLinks() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.DiscordIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Discord(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -316,7 +316,7 @@ func CommunityLinks() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.KofiIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Kofi(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -353,7 +353,7 @@ func NavLinks(user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.FourBoxesIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.LayoutGrid(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -361,7 +361,7 @@ func NavLinks(user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.BoxIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Box(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -369,7 +369,7 @@ func NavLinks(user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = icons.LightbulbIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = icons.Lightbulb(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -382,7 +382,7 @@ func NavLinks(user auth.User) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.MicrochipIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Microchip(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -390,7 +390,7 @@ func NavLinks(user auth.User) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.ClipboardIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Clipboard(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -398,7 +398,7 @@ func NavLinks(user auth.User) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.GearIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Settings(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

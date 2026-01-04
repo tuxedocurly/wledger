@@ -67,7 +67,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.UsersIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Users(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -75,7 +75,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.PlusIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Plus(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -160,7 +160,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = icons.WarningIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -168,7 +168,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = icons.WarningIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -209,7 +209,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = icons.LockIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = icons.Lock(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -235,7 +235,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = icons.TrashIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = icons.Trash(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -253,7 +253,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.LockIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Lock(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -281,7 +281,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.LightningIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Zap(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -312,7 +312,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.ColorSwatchIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.SwatchBook(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -340,7 +340,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = icons.ImportIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = icons.Import(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -357,7 +357,7 @@ func Settings(user auth.User, s db.Setting, users []db.ListUsersRow) templ.Compo
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = icons.LockIcon(5).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = icons.Lock(templ.Attributes{"class": "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
