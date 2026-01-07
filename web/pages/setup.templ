@@ -1,10 +1,12 @@
 package pages
 
+import "github.com/tuxedocurly/wledger/internal/i18n"
+
 templ Setup() {
 	<!DOCTYPE html>
-	<html data-theme="dark">
+	<html data-theme="dark" lang={ i18n.GetLanguage(ctx) }>
 		<head>
-			<title>WLEDger - Setup</title>
+			<title>WLEDger - { i18n.T(ctx, "Setup") }</title>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="icon" href="/static/img/favicon.ico"/>
@@ -17,13 +19,13 @@ templ Setup() {
 						<div class="flex justify-center mb-6">
 							<img src="/static/img/wledger-name-rainbow.png" alt="WLEDger" class="h-14 w-auto object-contain"/>
 						</div>
-						<h2 class="text-3xl font-extrabold">Welcome!</h2>
-						<p class="text-base opacity-70 mt-2">Create your admin account to get started.</p>
+						<h2 class="text-3xl font-extrabold">{ i18n.T(ctx, "Welcome") }</h2>
+						<p class="text-base opacity-70 mt-2">{ i18n.T(ctx, "SetupDesc") }</p>
 					</div>
 					<form method="POST" action="/setup" class="space-y-6">
 						<div class="form-control w-full">
 							<label class="label py-2">
-								<span class="label-text font-semibold text-base">Admin Email</span>
+								<span class="label-text font-semibold text-base">{ i18n.T(ctx, "AdminEmail") }</span>
 							</label>
 							<input
 								type="email"
@@ -32,11 +34,11 @@ templ Setup() {
 								class="input input-bordered w-full validator text-base h-12"
 								required
 							/>
-							<p class="validator-hint text-sm text-error mt-2 font-medium">Please enter a valid email address</p>
+							<p class="validator-hint text-sm text-error mt-2 font-medium">{ i18n.T(ctx, "InvalidEmailWarning") }</p>
 						</div>
 						<div class="form-control w-full">
 							<label class="label py-2">
-								<span class="label-text font-semibold text-base">Password</span>
+								<span class="label-text font-semibold text-base">{ i18n.T(ctx, "Password") }</span>
 							</label>
 							<input
 								type="password"
@@ -46,12 +48,12 @@ templ Setup() {
 								required
 								minlength="8"
 								pattern=".{8,}"
-								title="Must be at least 8 characters"
+								title={ i18n.T(ctx, "PasswordMinLength") }
 							/>
-							<p class="validator-hint text-sm text-error mt-2 font-medium">Must be at least 8 characters long</p>
+							<p class="validator-hint text-sm text-error mt-2 font-medium">{ i18n.T(ctx, "PasswordLengthWarning") }</p>
 						</div>
 						<div class="pt-6">
-							<button class="btn btn-primary w-full text-lg font-bold min-h-[3.5rem]">Create Admin & Start</button>
+							<button class="btn btn-primary w-full text-lg font-bold min-h-[3.5rem]">{ i18n.T(ctx, "CreateAdminAndStart") }</button>
 						</div>
 					</form>
 				</div>

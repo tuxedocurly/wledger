@@ -2,13 +2,14 @@ package layouts
 
 import (
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 )
 
 templ Base(title string, user auth.User) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="dark">
+	<html lang={ i18n.GetLanguage(ctx) } data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>

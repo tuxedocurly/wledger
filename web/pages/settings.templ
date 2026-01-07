@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
 templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
-	@layouts.Base("Settings", user) {
+	@layouts.Base(i18n.T(ctx, "Settings"), user) {
 		<div class="max-w-4xl mx-auto w-full">
-			@components.PageHeader("Settings", "Configure application behavior, hardware defaults, and more.", nil)
+			@components.PageHeader(i18n.T(ctx, "Settings"), i18n.T(ctx, "SettingsDescription"), nil)
 			<div class="space-y-8">
 				if user.IsAdmin() {
 					<div class="card bg-base-200 shadow-xl border border-base-300">
@@ -20,21 +21,21 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 							<div class="flex justify-between items-center mb-4">
 								<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 flex items-center gap-2">
 									@icons.Users(templ.Attributes{"class": "w-5 h-5"})
-									User Management
+									{ i18n.T(ctx, "UserManagement") }
 								</h3>
 								<button onclick="user_add_modal.showModal()" class="btn btn-primary px-8 gap-2">
 									@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
-									<span class="hidden md:inline">Add User</span>
+									<span class="hidden md:inline">{ i18n.T(ctx, "AddUser") }</span>
 								</button>
 							</div>
 							<div class="overflow-x-auto min-h-[200px] rounded-lg border border-base-200 bg-base-100">
 								<table class="table table-zebra table-sm md:table-md w-full">
 									<thead class="bg-base-200 text-base-content/70 uppercase tracking-wider text-xs">
 										<tr>
-											<th class="text-left align-middle py-3 pl-4">Email</th>
-											<th class="text-left align-middle py-3">Role</th>
-											<th class="text-left align-middle py-3">Status</th>
-											<th class="text-right align-middle py-3 pr-4">Actions</th>
+											<th class="text-left align-middle py-3 pl-4">{ i18n.T(ctx, "Email") }</th>
+											<th class="text-left align-middle py-3">{ i18n.T(ctx, "Role") }</th>
+											<th class="text-left align-middle py-3">{ i18n.T(ctx, "Status") }</th>
+											<th class="text-right align-middle py-3 pr-4">{ i18n.T(ctx, "Actions") }</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -49,26 +50,26 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 												</td>
 												<td class="align-middle whitespace-nowrap">
 													if u.Role == "admin" {
-														<span class="badge badge-primary badge-outline badge-sm font-mono uppercase font-bold">{ u.Role }</span>
+														<span class="badge badge-primary badge-outline badge-sm font-mono uppercase font-bold">{ i18n.T(ctx, u.Role) }</span>
 													} else {
-														<span class="badge badge-ghost badge-sm font-mono uppercase">{ u.Role }</span>
+														<span class="badge badge-ghost badge-sm font-mono uppercase">{ i18n.T(ctx, u.Role) }</span>
 													}
 												</td>
 												<td class="align-middle whitespace-nowrap">
 													if u.ChangePasswordRequired.Bool {
 														<div class="flex items-center">
-															<div class="md:hidden text-warning" title="Reset Pending">
+															<div class="md:hidden text-warning" title={ i18n.T(ctx, "ResetPending") }>
 																@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
 															</div>
 															<span class="hidden md:inline-flex badge badge-warning badge-md gap-1">
 																@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
-																Reset Pending
+																{ i18n.T(ctx, "ResetPending") }
 															</span>
 														</div>
 													} else {
 														<div class="flex items-center gap-2 opacity-50">
 															<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-															<span class="text-xs font-semibold uppercase tracking-wide">Active</span>
+															<span class="text-xs font-semibold uppercase tracking-wide">{ i18n.T(ctx, "Active") }</span>
 														</div>
 													}
 												</td>
@@ -76,20 +77,20 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 													if u.ID != user.ID {
 														<div class="flex justify-end items-center gap-2">
 															if u.Role != "admin" {
-																<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/reset", u.ID)) } method="POST" onsubmit="return confirm('Force this user to change their password on next login?');">
-																	<button class="btn btn-sm md:btn-sm btn-outline btn-warning px-2 md:px-3" title="Force Reset">
+																<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/reset", u.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmForceReset"))}... }>
+																	<button class="btn btn-sm md:btn-sm btn-outline btn-warning px-2 md:px-3" title={ i18n.T(ctx, "ForceReset") }>
 																		<div class="flex items-center gap-1">
 																			@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
-																			<span class="hidden md:inline text-[10px] uppercase font-bold">Reset</span>
+																			<span class="hidden md:inline text-[10px] uppercase font-bold">{ i18n.T(ctx, "Reset") }</span>
 																		</div>
 																	</button>
 																</form>
 															}
-															<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/delete", u.ID)) } method="POST" onsubmit="return confirm('Delete this user?');">
-																<button class="btn btn-sm md:btn-sm btn-outline btn-error opacity-70 hover:opacity-100 px-2 md:px-3" title="Delete">
+															<form action={ templ.SafeURL(fmt.Sprintf("/settings/users/%d/delete", u.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmDeleteUser"))}... }>
+																<button class="btn btn-sm md:btn-sm btn-outline btn-error opacity-70 hover:opacity-100 px-2 md:px-3" title={ i18n.T(ctx, "Delete") }>
 																	<div class="flex items-center gap-1">
 																		@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
-																		<span class="hidden md:inline text-[10px] uppercase font-bold">Delete</span>
+																		<span class="hidden md:inline text-[10px] uppercase font-bold">{ i18n.T(ctx, "Delete") }</span>
 																	</div>
 																</button>
 															</form>
@@ -109,7 +110,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2">
 										@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
-										General
+										{ i18n.T(ctx, "General") }
 									</h3>
 									<div class="form-control bg-base-100 p-4 rounded-lg border border-base-300">
 										<label class="label cursor-pointer justify-start gap-4 items-center">
@@ -122,7 +123,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 												}
 											/>
 											<div class="flex flex-col flex-1 min-w-0">
-												<span class="label-text font-medium whitespace-normal">Require Login for Read-Only Access</span>
+												<span class="label-text font-medium whitespace-normal">{ i18n.T(ctx, "RequireReadAuthLabel") }</span>
 											</div>
 										</label>
 									</div>
@@ -137,8 +138,8 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 												}
 											/>
 											<div class="flex flex-col flex-1 min-w-0">
-												<span class="label-text font-medium">Enable Debug Logs</span>
-												<span class="label-text-alt opacity-50 whitespace-normal">Captures more verbose information for troubleshooting.</span>
+												<span class="label-text font-medium">{ i18n.T(ctx, "EnableDebugLogs") }</span>
+												<span class="label-text-alt opacity-50 whitespace-normal">{ i18n.T(ctx, "EnableDebugLogsDescription") }</span>
 											</div>
 										</label>
 									</div>
@@ -146,7 +147,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2 border-t border-base-content/5 pt-6">
 										@icons.Zap(templ.Attributes{"class": "w-5 h-5"})
-										Hardware Automation
+										{ i18n.T(ctx, "HardwareAutomation") }
 									</h3>
 									<div class="form-control bg-base-100 p-4 rounded-lg border border-base-300">
 										<label class="label cursor-pointer justify-start gap-4 mb-4">
@@ -158,33 +159,33 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 													checked
 												}
 											/>
-											<span class="label-text font-medium">Auto-Turn Off "Locate" LED</span>
+											<span class="label-text font-medium">{ i18n.T(ctx, "AutoTurnOffLocateLED") }</span>
 										</label>
 										<div class="flex items-center gap-4 pl-14">
-											<span class="text-sm opacity-70">Turn off after:</span>
+											<span class="text-sm opacity-70">{ i18n.T(ctx, "TurnOffAfter") }</span>
 											<div class="join">
 												<input type="number" name="locate_timeout" value={ fmt.Sprintf("%d", s.LocateTimeoutSeconds.Int64) } class="input input-sm input-bordered join-item w-24" min="1"/>
 											</div>
-											<span class="text-sm opacity-70">Seconds</span>
+											<span class="text-sm opacity-70">{ i18n.T(ctx, "Seconds") }</span>
 										</div>
 									</div>
 								</div>
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2 border-t border-base-content/5 pt-6">
 										@icons.SwatchBook(templ.Attributes{"class": "w-5 h-5"})
-										Interface Colors
+										{ i18n.T(ctx, "InterfaceColors") }
 									</h3>
 									<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-										@components.ColorPicker("Locate Action", "color_locate", s.ColorLocate.String)
-										@components.ColorPicker("Stock Level: OK", "color_ok", s.ColorStockOk.String)
-										@components.ColorPicker("Stock Level: Low", "color_low", s.ColorStockLow.String)
-										@components.ColorPicker("Stock Level: Critical", "color_critical", s.ColorStockCritical.String)
+										@components.ColorPicker(i18n.T(ctx, "LocateAction"), "color_locate", s.ColorLocate.String)
+										@components.ColorPicker(i18n.T(ctx, "StockLevelOK"), "color_ok", s.ColorStockOk.String)
+										@components.ColorPicker(i18n.T(ctx, "StockLevelLow"), "color_low", s.ColorStockLow.String)
+										@components.ColorPicker(i18n.T(ctx, "StockLevelCritical"), "color_critical", s.ColorStockCritical.String)
 									</div>
 								</div>
 								<div class="card-actions justify-end mt-8 border-t border-base-content/10 pt-6">
 									<button class="btn btn-primary px-8 gap-2">
 										@icons.Import(templ.Attributes{"class": "w-5 h-5"})
-										Save All Settings
+										{ i18n.T(ctx, "SaveAllSettings") }
 									</button>
 								</div>
 							</form>
@@ -196,7 +197,7 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 					<div class="card-body">
 						<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2">
 							@icons.Lock(templ.Attributes{"class": "w-5 h-5"})
-							Change Your Password
+							{ i18n.T(ctx, "ChangeYourPassword") }
 						</h3>
 						<div class="flex justify-center w-full">
 							<div class="w-full max-w-sm">
@@ -209,41 +210,41 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow) {
 			if user.IsAdmin() {
 				@components.Modal(components.ModalProps{
 					ID:       "user_add_modal",
-					Title:    "Add New User",
+					Title:    i18n.T(ctx, "AddNewUser"),
 					BoxClass: "bg-base-100",
 				}) {
 					<form action="/settings/users" method="POST" class="space-y-5">
 						<div class="form-control w-full">
 							<label class="label pt-0 pb-2">
-								<span class="label-text font-medium">Email Address</span>
+								<span class="label-text font-medium">{ i18n.T(ctx, "EmailAddress") }</span>
 							</label>
 							<input type="email" name="email" class="input input-bordered w-full" placeholder="user@example.com" required/>
 						</div>
 						<div class="form-control w-full">
 							<label class="label pt-0 pb-2">
-								<span class="label-text font-medium">Temporary Password</span>
+								<span class="label-text font-medium">{ i18n.T(ctx, "TemporaryPassword") }</span>
 							</label>
 							<input type="text" name="temp_password" value="Wledger123!" class="input validator input-bordered w-full font-mono bg-base-200" minlength="8" required/>
 							<label class="label pb-0">
 								<span class="label-text-alt text-warning flex items-center gap-1.5 font-medium">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-									User must change this on first login
+									{ i18n.T(ctx, "UserMustChangePasswordWarning") }
 								</span>
 							</label>
 						</div>
 						<div class="form-control w-full">
 							<label class="label pt-0 pb-2">
-								<span class="label-text font-medium">Role</span>
+								<span class="label-text font-medium">{ i18n.T(ctx, "Role") }</span>
 							</label>
 							<select name="role" class="select select-bordered w-full">
-								<option value="viewer">Viewer (Read-Only)</option>
-								<option value="editor">Editor (Inventory Operations)</option>
-								<option value="admin">Admin (Full System Access)</option>
+								<option value="viewer">{ i18n.T(ctx, "RoleViewer") }</option>
+								<option value="editor">{ i18n.T(ctx, "RoleEditor") }</option>
+								<option value="admin">{ i18n.T(ctx, "RoleAdmin") }</option>
 							</select>
 						</div>
 						<div class="modal-action mt-8">
-							<button type="button" class="btn btn-ghost" onclick="user_add_modal.close()">Cancel</button>
-							<button type="submit" class="btn btn-primary px-6">Create User</button>
+							<button type="button" class="btn btn-ghost" onclick="user_add_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
+							<button type="submit" class="btn btn-primary px-6">{ i18n.T(ctx, "CreateUser") }</button>
 						</div>
 					</form>
 				}

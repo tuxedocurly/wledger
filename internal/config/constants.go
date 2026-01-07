@@ -9,6 +9,7 @@ const (
 	DirUploadsImages = "./app/uploads/images"
 	DirUploadsDocs   = "./app/uploads/docs"
 	DirStatic        = "./web/static"
+	DirLocales       = "./locales"
 
 	// Web URL Prefixes
 	UrlPrefixStatic  = "/static/"

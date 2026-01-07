@@ -3,14 +3,15 @@ package pages
 import (
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
 templ Inspiration(templates []db.InspirationTemplate, allTags []string, user auth.User) {
-	@layouts.Base("Inspiration", user) {
-		@components.PageHeader("Inspiration", "Create AI prompts for your inventory. Get inspired or save commonly used prompts.", nil)
+	@layouts.Base(i18n.T(ctx, "Inspiration"), user) {
+		@components.PageHeader(i18n.T(ctx, "Inspiration"), i18n.T(ctx, "InspirationDescription"), nil)
 		<div x-data="inspirationApp" class="space-y-6">
 			<div class="flex flex-col md:flex-row justify-end mb-6 gap-4">
 				if user.CanWrite() {
@@ -21,7 +22,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 						class="btn btn-primary gap-2"
 					>
 						@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
-						Add Prompt
+						{ i18n.T(ctx, "AddPrompt") }
 					</button>
 				}
 			</div>
@@ -30,8 +31,8 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 				<div class="card-body p-4">
 					<div class="flex flex-col gap-2">
 						<div class="flex flex-wrap items-center gap-2">
-							<span class="font-semibold text-sm uppercase tracking-wider text-gray-500">Context Filter:</span>
-							<span x-show="selectedTags.length === 0" class="badge badge-primary badge-sm">Entire Inventory</span>
+							<span class="font-semibold text-sm uppercase tracking-wider text-gray-500">{ i18n.T(ctx, "ContextFilter") }</span>
+							<span x-show="selectedTags.length === 0" class="badge badge-primary badge-sm">{ i18n.T(ctx, "EntireInventory") }</span>
 							<template x-for="tag in selectedTags" :key="tag">
 								<span class="badge badge-primary badge-sm gap-1">
 									<span x-text="tag"></span>
@@ -40,7 +41,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 									</button>
 								</span>
 							</template>
-							<span x-show="selectedTags.length > 0" class="text-xs text-gray-400 cursor-pointer hover:text-gray-600" @click="selectedTags = []">Clear</span>
+							<span x-show="selectedTags.length > 0" class="text-xs text-gray-400 cursor-pointer hover:text-gray-600" @click="selectedTags = []">{ i18n.T(ctx, "Clear") }</span>
 						</div>
 						<!-- Horizontal Scroll Tag List -->
 						<div class="flex gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar mask-linear-fade">
@@ -53,7 +54,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 								>{ tag }</button>
 							}
 							if len(allTags) == 0 {
-								<span class="text-sm text-gray-400 italic">No tags found in inventory.</span>
+								<span class="text-sm text-gray-400 italic">{ i18n.T(ctx, "NoTagsFoundInInventory") }</span>
 							}
 						</div>
 					</div>

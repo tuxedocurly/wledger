@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 )
@@ -35,59 +36,72 @@ func Base(title string, user auth.User) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.GetLanguage(ctx))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 15, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 12, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " | WLEDger</title><link rel=\"icon\" href=\"/static/img/favicon.ico\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" data-theme=\"dark\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/htmx.org@2.0.4")
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 18, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 16, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></script><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " | WLEDger</title><link rel=\"icon\" href=\"/static/img/favicon.ico\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js")
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/htmx.org@2.0.4")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 19, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 19, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" defer></script><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"></script><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/sortablejs@1.15.2/Sortable.min.js")
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 20, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 20, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"></script><script src=\"https://unpkg.com/html5-qrcode\" type=\"text/javascript\"></script><script src=\"/static/js/theme.js\"></script><script src=\"/static/js/toast.js\"></script><style id=\"dynamic-colors\">\n\t\t    :root {\n                --color-locate: #0000FF;\n                --color-stock-ok: #00FF00;\n                --color-stock-low: #FFFF00;\n                --color-stock-critical: #FF0000;\n            }\n            [x-cloak] { display: none !important; }\n            .custom-scrollbar::-webkit-scrollbar { width: 4px; }\n            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }\n            .custom-scrollbar::-webkit-scrollbar-thumb { background: oklch(var(--bc) / 0.2); border-radius: 4px; }\n            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: oklch(var(--bc) / 0.4); }\n\n            /* SortableJS Classes */\n            .sortable-ghost {\n                opacity: 0.4;\n                background: oklch(var(--p) / 0.1) !important;\n                border: 2px dashed oklch(var(--p)) !important;\n            }\n            .sortable-chosen {\n                background: oklch(var(--b1)) !important;\n            }\n            .sortable-drag {\n                opacity: 0.9;\n                cursor: grabbing !important;\n                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;\n            }\n            </style></head><body class=\"bg-base-100 text-base-content font-sans\" x-data=\"{}\"><div id=\"toast-container\" class=\"toast toast-top toast-end z-[100]\"></div><div class=\"drawer md:drawer-open h-screen overflow-hidden\"><input id=\"main-drawer\" type=\"checkbox\" class=\"drawer-toggle\"><div class=\"drawer-content flex flex-col h-full overflow-hidden\"><div class=\"md:hidden flex items-center h-16 px-4 border-b border-base-300 bg-base-200 shrink-0 w-full\"><div class=\"flex-1 flex justify-start\"><label for=\"main-drawer\" class=\"btn btn-square btn-ghost drawer-button\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" defer></script><script src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 string
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("https://unpkg.com/sortablejs@1.15.2/Sortable.min.js")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/layouts/base.templ`, Line: 21, Col: 70}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\"></script><script src=\"https://unpkg.com/html5-qrcode\" type=\"text/javascript\"></script><script src=\"/static/js/theme.js\"></script><script src=\"/static/js/toast.js\"></script><style id=\"dynamic-colors\">\n\t\t    :root {\n                --color-locate: #0000FF;\n                --color-stock-ok: #00FF00;\n                --color-stock-low: #FFFF00;\n                --color-stock-critical: #FF0000;\n            }\n            [x-cloak] { display: none !important; }\n            .custom-scrollbar::-webkit-scrollbar { width: 4px; }\n            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }\n            .custom-scrollbar::-webkit-scrollbar-thumb { background: oklch(var(--bc) / 0.2); border-radius: 4px; }\n            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: oklch(var(--bc) / 0.4); }\n\n            /* SortableJS Classes */\n            .sortable-ghost {\n                opacity: 0.4;\n                background: oklch(var(--p) / 0.1) !important;\n                border: 2px dashed oklch(var(--p)) !important;\n            }\n            .sortable-chosen {\n                background: oklch(var(--b1)) !important;\n            }\n            .sortable-drag {\n                opacity: 0.9;\n                cursor: grabbing !important;\n                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;\n            }\n            </style></head><body class=\"bg-base-100 text-base-content font-sans\" x-data=\"{}\"><div id=\"toast-container\" class=\"toast toast-top toast-end z-[100]\"></div><div class=\"drawer md:drawer-open h-screen overflow-hidden\"><input id=\"main-drawer\" type=\"checkbox\" class=\"drawer-toggle\"><div class=\"drawer-content flex flex-col h-full overflow-hidden\"><div class=\"md:hidden flex items-center h-16 px-4 border-b border-base-300 bg-base-200 shrink-0 w-full\"><div class=\"flex-1 flex justify-start\"><label for=\"main-drawer\" class=\"btn btn-square btn-ghost drawer-button\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -95,7 +109,7 @@ func Base(title string, user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</label></div><div class=\"shrink-0\"><a href=\"/\" class=\"flex items-center hover:opacity-80 transition-opacity\"><img src=\"/static/img/wledger-name-rainbow.png\" alt=\"WLEDger\" class=\"h-6 w-auto object-contain\"></a></div><div class=\"flex-1\"></div></div><main id=\"main-content\" class=\"flex-1 overflow-y-auto p-4 md:p-8\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</label></div><div class=\"shrink-0\"><a href=\"/\" class=\"flex items-center hover:opacity-80 transition-opacity\"><img src=\"/static/img/wledger-name-rainbow.png\" alt=\"WLEDger\" class=\"h-6 w-auto object-contain\"></a></div><div class=\"flex-1\"></div></div><main id=\"main-content\" class=\"flex-1 overflow-y-auto p-4 md:p-8\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -103,7 +117,7 @@ func Base(title string, user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</main></div><div class=\"drawer-side z-40 h-full\"><label for=\"main-drawer\" aria-label=\"close sidebar\" class=\"drawer-overlay\"></label>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</main></div><div class=\"drawer-side z-40 h-full\"><label for=\"main-drawer\" aria-label=\"close sidebar\" class=\"drawer-overlay\"></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -111,7 +125,7 @@ func Base(title string, user auth.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

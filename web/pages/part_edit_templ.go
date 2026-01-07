@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
@@ -57,9 +58,9 @@ func PartEdit(user auth.User, part db.Part, tags []db.Tag, allTags []db.Tag, lin
 				part.Name,
 				"",
 				[]components.Breadcrumb{
-					{Label: "Inventory", URL: "/parts"},
+					{Label: i18n.T(ctx, "Inventory"), URL: "/parts"},
 					{Label: part.Name, URL: fmt.Sprintf("/parts/%d", part.ID)},
-					{Label: "Edit"},
+					{Label: i18n.T(ctx, "Edit")},
 				},
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -75,7 +76,7 @@ func PartEdit(user auth.User, part db.Part, tags []db.Tag, allTags []db.Tag, lin
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Edit Part", user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Base(i18n.T(ctx, "EditPart"), user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

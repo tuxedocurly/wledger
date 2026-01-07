@@ -17,6 +17,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/documents"
 	"github.com/tuxedocurly/wledger/internal/handler"
 	"github.com/tuxedocurly/wledger/internal/hardware"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/internal/images"
 	"github.com/tuxedocurly/wledger/internal/inspiration"
 	"github.com/tuxedocurly/wledger/internal/logger"
@@ -34,6 +35,12 @@ func main() {
 	// Logger init
 	log := logger.New(true)
 	log.Info("Starting WLEDger V2...")
+
+	// i18n init
+	if err := i18n.Init(); err != nil {
+		log.Error("Failed to initialize i18n", "error", err)
+		os.Exit(1)
+	}
 
 	// Database
 	os.MkdirAll(config.DirData, 0755)

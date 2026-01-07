@@ -1,40 +1,43 @@
 package components
 
-import "github.com/tuxedocurly/wledger/web/icons"
+import (
+	"github.com/tuxedocurly/wledger/internal/i18n"
+	"github.com/tuxedocurly/wledger/web/icons"
+)
 
 templ BackupRestore() {
 	<div class="card bg-base-200 shadow-xl border border-base-300">
 		<div class="card-body">
 			<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2">
 				@icons.File(templ.Attributes{"class": "w-5 h-5"})
-				Backup & Restore
+				{ i18n.T(ctx, "BackupAndRestore") }
 			</h3>
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<!-- Backup Section -->
 				<div class="bg-base-100 p-4 rounded-lg border border-base-300 flex flex-col justify-between">
 					<div>
-						<h4 class="font-bold text-lg">Create Backup</h4>
+						<h4 class="font-bold text-lg">{ i18n.T(ctx, "CreateBackup") }</h4>
 						<p class="text-sm opacity-70 mt-1">
-							Download a ZIP archive containing your entire database and all uploaded assets (images, documents).
+							{ i18n.T(ctx, "CreateBackupDescription") }
 						</p>
 					</div>
 					<a href="/settings/backup/download" class="btn btn-primary mt-4 gap-2" download>
 						@icons.Import(templ.Attributes{"class": "w-5 h-5"})
-						Download
+						{ i18n.T(ctx, "Download") }
 					</a>
 				</div>
 				<!-- Restore Section -->
 				<div class="bg-base-100 p-4 rounded-lg border border-base-300 flex flex-col justify-between">
 					<div>
-						<h4 class="font-bold text-lg text-error">Restore Backup</h4>
+						<h4 class="font-bold text-lg text-error">{ i18n.T(ctx, "RestoreBackup") }</h4>
 						<p class="text-sm opacity-70 mt-1">
-							Overwrite your current system with a backup file. 
-							<span class="font-bold text-error">This is destructive and cannot be undone.</span>
+							{ i18n.T(ctx, "RestoreBackupDescription") }
+							<span class="font-bold text-error">{ i18n.T(ctx, "DestructiveActionWarning") }</span>
 						</p>
 					</div>
 					<button onclick="restore_modal.showModal()" class="btn btn-outline btn-error mt-4 gap-2">
 						@icons.RefreshCcw(templ.Attributes{"class": "w-5 h-5"})
-						Restore
+						{ i18n.T(ctx, "Restore") }
 					</button>
 				</div>
 			</div>
@@ -48,13 +51,12 @@ templ BackupRestore() {
 			</form>
 			<h3 class="font-bold text-xl text-error mb-4 flex items-center gap-2">
 				@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
-				Danger Zone: System Restore
+				{ i18n.T(ctx, "DangerZoneSystemRestore") }
 				@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
 			</h3>
 			<div class="alert alert-error text-sm">
 				<span>
-					You are about to completely wipe the current database and replace it with the backup.
-					All current parts, bins, users, and settings will be lost.
+					{ i18n.T(ctx, "FullRestoreWarning") }
 				</span>
 			</div>
 			<form
@@ -66,7 +68,7 @@ templ BackupRestore() {
 			>
 				<div class="form-control w-full">
 					<label class="label">
-						<span class="label-text font-medium">Select Backup File</span>
+						<span class="label-text font-medium">{ i18n.T(ctx, "SelectBackupFile") }</span>
 						<span class="label-text-alt">.zip</span>
 					</label>
 					<input type="file" name="backup_file" accept=".zip" class="file-input file-input-bordered file-input-error w-full" required/>
@@ -74,11 +76,11 @@ templ BackupRestore() {
 				<div class="form-control">
 					<label class="label cursor-pointer justify-start gap-4">
 						<input type="checkbox" required class="checkbox checkbox-error"/>
-						<span class="label-text text-xs">I understand that this action is irreversible.</span>
+						<span class="label-text text-xs">{ i18n.T(ctx, "IUnderstandIrreversible") }</span>
 					</label>
 				</div>
 				<button type="submit" class="btn btn-error w-full">
-					PERFORM FULL RESTORE
+					{ i18n.T(ctx, "PerformFullRestore") }
 				</button>
 			</form>
 			<div id="restore_result" class="mt-4"></div>

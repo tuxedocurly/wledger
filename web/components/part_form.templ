@@ -3,6 +3,7 @@ package components
 import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/icons"
 )
 
@@ -24,63 +25,63 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 	>
 		<div class="card bg-base-200 shadow-sm border border-base-300">
 			<div class="card-body p-6">
-				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">Core Details</h3>
+				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">{ i18n.T(ctx, "CoreDetails") }</h3>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div class="form-control w-full">
-						<label class="label pt-0 pb-2"><span class="label-text font-medium">Part Name</span></label>
+						<label class="label pt-0 pb-2"><span class="label-text font-medium">{ i18n.T(ctx, "PartName") }</span></label>
 						<input type="text" name="name" value={ part.Name } placeholder="e.g. ESP32-WROOM-32" class="input input-bordered w-full" required/>
 					</div>
 					@TagInput(tags, allTags)
 					<div class="form-control w-full md:col-span-2">
-						<label class="label pt-0 pb-2"><span class="label-text font-medium">Description</span></label>
+						<label class="label pt-0 pb-2"><span class="label-text font-medium">{ i18n.T(ctx, "Description") }</span></label>
 						<textarea
 							name="description"
 							class="textarea textarea-bordered h-24 text-base leading-relaxed resize-y w-full"
-							placeholder="Enter a detailed description..."
+							placeholder={ i18n.T(ctx, "EnterDescriptionPlaceholder") }
 						>{ part.Description.String }</textarea>
 					</div>
 					<div class="form-control w-full md:col-span-2">
-						<label class="label pt-0 pb-2"><span class="label-text font-medium">Cover Image</span></label>
+						<label class="label pt-0 pb-2"><span class="label-text font-medium">{ i18n.T(ctx, "CoverImage") }</span></label>
 						<div class="flex items-center gap-4">
 							if isEdit && part.ImagePath.Valid {
 								<div class="avatar">
 									<div class="w-16 h-16 rounded border border-base-300">
-										<img src={ part.ImagePath.String } alt="Current Cover Image" class="object-cover w-full h-full"/>
+										<img src={ part.ImagePath.String } alt={ i18n.T(ctx, "CurrentCoverImage") } class="object-cover w-full h-full"/>
 									</div>
 								</div>
 							}
 							<input type="file" name="image" accept="image/*" class="file-input file-input-bordered file-input-primary w-full"/>
 						</div>
-						<label class="label mt-2"><span class="label-text-alt opacity-60">Replaces current image if uploaded.</span></label>
+						<label class="label mt-2"><span class="label-text-alt opacity-60">{ i18n.T(ctx, "ReplaceImageNote") }</span></label>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div class="card bg-base-200 shadow-sm border border-base-300">
 			<div class="card-body p-6">
-				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">Specifications & Sourcing</h3>
+				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">{ i18n.T(ctx, "SpecificationsAndSourcing") }</h3>
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div class="form-control w-full">
-						<label class="label"><span class="label-text font-medium mb-2">Part Number (MPN)</span></label>
+						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "PartNumberMPN") }</span></label>
 						<input type="text" name="part_number" value={ part.PartNumber.String } placeholder="e.g. SN74HC595N" class="input input-bordered w-full font-mono"/>
 					</div>
 					<div class="form-control w-full">
-						<label class="label"><span class="label-text font-medium mb-2">Manufacturer</span></label>
+						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Manufacturer") }</span></label>
 						<input type="text" name="manufacturer" value={ part.Manufacturer.String } placeholder="e.g. Texas Instruments" class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
-						<label class="label"><span class="label-text font-medium mb-2">Supplier</span></label>
+						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Supplier") }</span></label>
 						<input type="text" name="supplier" value={ part.Supplier.String } placeholder="e.g. DigiKey" class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full md:col-span-3">
-						<label class="label"><span class="label-text font-medium mb-2">Barcode Data</span></label>
+						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Barcode") }</span></label>
 						<div class="join w-full">
 							<input
 								id="barcode_input"
 								type="text"
 								name="barcode_data"
 								value={ part.BarcodeData.String }
-								placeholder="Scan a barcode here..."
+								placeholder={ i18n.T(ctx, "ScanBarcodePlaceholder") }
 								class="input input-bordered join-item w-full font-mono"
 							/>
 							@BarcodeTrigger("barcode_input")
@@ -91,23 +92,23 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 		</div>
 		<div class="card bg-base-200 shadow-sm border border-base-300">
 			<div class="card-body p-6">
-				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">Inventory Control</h3>
+				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">{ i18n.T(ctx, "InventoryControl") }</h3>
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div class="form-control w-full">
-						<label class="label"><span class="label-text font-medium mb-2">Unit Cost ($)</span></label>
+						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "UnitCostLabel") }</span></label>
 						<input type="number" step="0.01" name="unit_cost" value={ fmt.Sprintf("%.2f", part.UnitCost.Float64) } class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label mb-2">
-							<span class="label-text font-medium">Min Stock Level</span>
-							@QuestionTooltip("When inventory drops below this number, it will be flagged as 'Critical Stock'.")
+							<span class="label-text font-medium">{ i18n.T(ctx, "MinStockLevel") }</span>
+							@QuestionTooltip(i18n.T(ctx, "MinStockTooltip"))
 						</label>
 						<input type="number" name="min_stock" value={ fmt.Sprintf("%d", part.MinStockThreshold.Int64) } class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label mb-2">
-							<span class="label-text font-medium">Reorder Level</span>
-							@QuestionTooltip("When inventory drops below this number, it will be flagged as 'Low Stock'.")
+							<span class="label-text font-medium">{ i18n.T(ctx, "ReorderLevelLabel") }</span>
+							@QuestionTooltip(i18n.T(ctx, "ReorderLevelTooltip"))
 						</label>
 						<input type="number" name="reorder_level" value={ fmt.Sprintf("%d", part.ReorderLevel.Int64) } class="input input-bordered w-full"/>
 					</div>
@@ -116,9 +117,9 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 		</div>
 		<div class="card bg-base-200 shadow-sm border border-base-300">
 			<div class="card-body p-6">
-				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">Resources</h3>
+				<h3 class="card-title text-sm opacity-50 uppercase tracking-widest mb-4">{ i18n.T(ctx, "Resources") }</h3>
 				<div class="mb-6">
-					<label class="label"><span class="label-text font-medium mb-2">External Links</span></label>
+					<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "ExternalLinks") }</span></label>
 					if isEdit {
 						<div class="space-y-2 mb-2">
 							for _, link := range links {
@@ -129,7 +130,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 										name="existing_link_labels[]"
 										value={ link.Label.String }
 										class="input input-bordered w-1/3 text-sm"
-										placeholder="Label"
+										placeholder={ i18n.T(ctx, "Label") }
 										required
 									/>
 									<input
@@ -137,7 +138,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 										name="existing_link_urls[]"
 										value={ link.Url }
 										class="input input-bordered w-2/3 text-sm"
-										placeholder="URL"
+										placeholder={ i18n.T(ctx, "URL") }
 										required
 									/>
 									<button
@@ -156,7 +157,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 					<div class="space-y-2">
 						<template x-for="(link, index) in newLinks" :key="index">
 							<div class="flex gap-2">
-								<input type="text" name="link_labels[]" x-model="link.label" placeholder="Label (e.g. Datasheet)" class="input input-bordered w-1/3" required/>
+								<input type="text" name="link_labels[]" x-model="link.label" placeholder={ i18n.T(ctx, "LinkLabelPlaceholder") } class="input input-bordered w-1/3" required/>
 								<input type="url" name="link_urls[]" x-model="link.url" placeholder="https://..." class="input input-bordered w-2/3" required/>
 								<button type="button" @click="removeLink(index)" class="btn btn-square btn-ghost text-error">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -166,12 +167,12 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 					</div>
 					<button type="button" @click="addLink()" class="btn btn-s btn-primary gap-2 mt-2">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-						Add Link
+						{ i18n.T(ctx, "AddLink") }
 					</button>
 				</div>
 				<div class="divider"></div>
 				<div>
-					<label class="label"><span class="label-text font-medium mb-2">Documents</span></label>
+					<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Documents") }</span></label>
 					if isEdit && len(docs) > 0 {
 						<div class="grid grid-cols-1 gap-2 mb-4">
 							for _, doc := range docs {
@@ -187,7 +188,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 										hx-target={ fmt.Sprintf("#doc-%d", doc.ID) }
 										hx-swap="outerHTML"
 									>
-										Delete
+										{ i18n.T(ctx, "Delete") }
 									</button>
 								</div>
 							}
@@ -198,12 +199,12 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 			</div>
 		</div>
 		<div class="flex justify-end gap-4 pt-4 pb-12">
-			<a href="/parts" class="btn btn-ghost">Cancel</a>
+			<a href="/parts" class="btn btn-ghost">{ i18n.T(ctx, "Cancel") }</a>
 			<button type="submit" class="btn btn-primary px-8">
 				if isEdit {
-					Save Changes
+					{ i18n.T(ctx, "SaveChanges") }
 				} else {
-					Create Part
+					{ i18n.T(ctx, "CreatePart") }
 				}
 			</button>
 		</div>
@@ -213,7 +214,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 }
 
 templ BinOptions(bins []db.Bin) {
-	<option value="" disabled selected>Select a bin...</option>
+	<option value="" disabled selected>{ i18n.T(ctx, "SelectABin") }</option>
 	for _, b := range bins {
 		<option value={ fmt.Sprintf("%d", b.ID) }>{ b.Name }</option>
 	}

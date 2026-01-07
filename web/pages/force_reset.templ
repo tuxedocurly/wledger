@@ -1,14 +1,17 @@
 package pages
 
-import "github.com/tuxedocurly/wledger/web/components"
+import (
+	"github.com/tuxedocurly/wledger/internal/i18n"
+	"github.com/tuxedocurly/wledger/web/components"
+)
 
 templ ForceReset() {
 	<!DOCTYPE html>
-	<html data-theme="dark">
+	<html data-theme="dark" lang={ i18n.GetLanguage(ctx) }>
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<title>Password Change Required</title>
+			<title>{ i18n.T(ctx, "PasswordChangeRequired") }</title>
 			<link rel="icon" href="/static/img/favicon.ico"/>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 		</head>
@@ -17,16 +20,16 @@ templ ForceReset() {
 				<div class="card-body">
 					<div class="text-center mb-6">
 						<div class="text-5xl mb-2 grayscale">🔐</div>
-						<h2 class="card-title justify-center text-2xl font-bold">Set Your Password</h2>
+						<h2 class="card-title justify-center text-2xl font-bold">{ i18n.T(ctx, "SetYourPassword") }</h2>
 						<p class="text-sm opacity-70 mt-2">
-							Your account requires a password change before you can proceed.
+							{ i18n.T(ctx, "PasswordChangeRequiredDesc") }
 						</p>
 					</div>
 					@components.ChangePasswordForm("/force-reset", false)
 					<div class="divider"></div>
 					<div class="text-center">
 						<form action="/logout" method="POST">
-							<button class="btn btn-ghost btn-xs">Cancel & Logout</button>
+							<button class="btn btn-ghost btn-xs">{ i18n.T(ctx, "CancelAndLogout") }</button>
 						</form>
 					</div>
 				</div>

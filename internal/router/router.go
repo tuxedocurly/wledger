@@ -21,6 +21,7 @@ func New(mw *middleware.Manager, sessionManager *scs.SessionManager, h *handler.
 	r.Use(chimiddleware.Recoverer)
 	r.Use(mw.RequestLogger)
 	r.Use(sessionManager.LoadAndSave)
+	r.Use(mw.I18n)
 	r.Use(mw.Authenticate)
 	r.Use(mw.FirstRunCheck)
 

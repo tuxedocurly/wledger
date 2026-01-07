@@ -1,0 +1,740 @@
+{
+  "Dashboard": {
+    "description": "Title of the dashboard page",
+    "other": "Dashboard"
+  },
+  "DashboardStatus": {
+    "description": "Sub-header on the dashboard",
+    "other": "Visual inventory status."
+  },
+  "CreateWall": {
+    "description": "Button to create a new wall",
+    "other": "Create Wall"
+  },
+  "UniqueParts": {
+    "description": "Stat card label for unique parts count",
+    "other": "Unique Parts"
+  },
+  "TotalStock": {
+    "description": "Stat card label for total stock count",
+    "other": "Total Stock"
+  },
+  "TotalValue": {
+    "description": "Stat card label for total inventory value",
+    "other": "Total Value"
+  },
+  "Controllers": {
+    "description": "Stat card label for controllers status",
+    "other": "Controllers"
+  },
+  "NoContainersConfigured": {
+    "description": "Empty state title when no containers are set up",
+    "other": "No containers configured"
+  },
+  "SetupHardwarePrompt": {
+    "description": "Empty state instruction to go to hardware settings",
+    "other": "Go to Hardware to set up your first WLED controller and map some bins."
+  },
+  "ShowingAllControllers": {
+    "description": "Alert message when no walls are configured",
+    "other": "Showing all controllers. Create a Wall to organize your view."
+  },
+  "Dismiss": {
+    "description": "Title/Tooltip for dismiss button",
+    "other": "Dismiss"
+  },
+  "EditWall": {
+    "description": "Button to edit a wall",
+    "other": "Edit Wall"
+  },
+  "NoContainersOnWall": {
+    "description": "Empty state title for a wall without containers",
+    "other": "No containers on this wall"
+  },
+  "AddContainerToWallPrompt": {
+    "description": "Instruction to add a container to a wall",
+    "other": "Click the Edit Wall button above to add a container."
+  },
+  "CreateNewWall": {
+    "description": "Title for the create wall modal",
+    "other": "Create New Wall"
+  },
+  "WallName": {
+    "description": "Label for wall name input",
+    "other": "Wall Name"
+  },
+  "DescriptionOptional": {
+    "description": "Label for optional description input",
+    "other": "Description (Optional)"
+  },
+  "Cancel": {
+    "description": "General cancel button label",
+    "other": "Cancel"
+  },
+  "Language": {
+    "other": "Language"
+  },
+  "English": {
+    "other": "English"
+  },
+  "Spanish": {
+    "other": "Spanish"
+  },
+  "en": {
+    "other": "English"
+  },
+  "es": {
+    "other": "Spanish"
+  },
+  "Settings": {
+    "other": "Settings"
+  },
+  "SettingsDescription": {
+    "other": "Configure application behavior, hardware defaults, and more."
+  },
+  "UserManagement": {
+    "other": "User Management"
+  },
+  "AddUser": {
+    "other": "Add User"
+  },
+  "Email": {
+    "other": "Email"
+  },
+  "Role": {
+    "other": "Role"
+  },
+  "Status": {
+    "other": "Status"
+  },
+  "Actions": {
+    "other": "Actions"
+  },
+  "ResetPending": {
+    "other": "Reset Pending"
+  },
+  "Active": {
+    "other": "Active"
+  },
+  "ForceReset": {
+    "other": "Force Reset"
+  },
+  "Delete": {
+    "other": "Delete"
+  },
+  "ConfirmForceReset": {
+    "other": "Force this user to change their password on next login?"
+  },
+  "ConfirmDeleteUser": {
+    "other": "Delete this user?"
+  },
+  "General": {
+    "other": "General"
+  },
+  "RequireReadAuthLabel": {
+    "other": "Require Login for Read-Only Access"
+  },
+  "EnableDebugLogs": {
+    "other": "Enable Debug Logs"
+  },
+  "EnableDebugLogsDescription": {
+    "other": "Captures more verbose information for troubleshooting."
+  },
+  "HardwareAutomation": {
+    "other": "Hardware Automation"
+  },
+  "AutoTurnOffLocateLED": {
+    "other": "Auto-Turn Off \"Locate\" LED"
+  },
+  "TurnOffAfter": {
+    "other": "Turn off after:"
+  },
+  "Seconds": {
+    "other": "Seconds"
+  },
+  "InterfaceColors": {
+    "other": "Interface Colors"
+  },
+  "LocateAction": {
+    "other": "Locate Action"
+  },
+  "StockLevelOK": {
+    "other": "Stock Level: OK"
+  },
+  "StockLevelLow": {
+    "other": "Stock Level: Low"
+  },
+  "StockLevelCritical": {
+    "other": "Stock Level: Critical"
+  },
+  "SaveAllSettings": {
+    "other": "Save All Settings"
+  },
+  "ChangeYourPassword": {
+    "other": "Change Your Password"
+  },
+  "AddNewUser": {
+    "other": "Add New User"
+  },
+  "EmailAddress": {
+    "other": "Email Address"
+  },
+  "TemporaryPassword": {
+    "other": "Temporary Password"
+  },
+  "UserMustChangePasswordWarning": {
+    "other": "User must change this on first login"
+  },
+  "RoleViewer": {
+    "other": "Viewer (Read-Only)"
+  },
+  "RoleEditor": {
+    "other": "Editor (Inventory Operations)"
+  },
+  "RoleAdmin": {
+    "other": "Admin (Full System Access)"
+  },
+  "CreateUser": {
+    "other": "Create User"
+  },
+  "BackupAndRestore": {
+    "other": "Backup & Restore"
+  },
+  "CreateBackup": {
+    "other": "Create Backup"
+  },
+  "CreateBackupDescription": {
+    "other": "Download a ZIP archive containing your entire database and all uploaded assets (images, documents)."
+  },
+  "Download": {
+    "other": "Download"
+  },
+  "RestoreBackup": {
+    "other": "Restore Backup"
+  },
+  "RestoreBackupDescription": {
+    "other": "Overwrite your current system with a backup file."
+  },
+  "DestructiveActionWarning": {
+    "other": "This is destructive and cannot be undone."
+  },
+  "Restore": {
+    "other": "Restore"
+  },
+  "DangerZoneSystemRestore": {
+    "other": "Danger Zone: System Restore"
+  },
+  "FullRestoreWarning": {
+    "other": "You are about to completely wipe the current database and replace it with the backup. All current parts, bins, users, and settings will be lost."
+  },
+  "SelectBackupFile": {
+    "other": "Select Backup File"
+  },
+  "IUnderstandIrreversible": {
+    "other": "I understand that this action is irreversible."
+  },
+  "PerformFullRestore": {
+    "other": "PERFORM FULL RESTORE"
+  },
+  "CurrentPassword": {
+    "other": "Current Password"
+  },
+  "NewPassword": {
+    "other": "New Password"
+  },
+  "PasswordMinLength": {
+    "other": "Must be at least 8 characters"
+  },
+  "ConfirmNewPassword": {
+    "other": "Confirm New Password"
+  },
+  "ReEnterPassword": {
+    "other": "Re-enter password"
+  },
+  "PasswordsDoNotMatch": {
+    "other": "Passwords do not match"
+  },
+  "UpdatePassword": {
+    "other": "Update Password"
+  },
+  "GuestAccess": {
+    "other": "Guest Access"
+  },
+  "SearchPlaceholder": {
+    "other": "Search (Cmd+K)"
+  },
+  "TurnOffAllLEDs": {
+    "other": "Turn Off All LEDs"
+  },
+  "LogOut": {
+    "other": "Log Out"
+  },
+  "LogIn": {
+    "other": "Log In"
+  },
+  "SilkMode": {
+    "other": "Silk Mode"
+  },
+  "DarkMode": {
+    "other": "Dark Mode"
+  },
+  "Community": {
+    "other": "Community"
+  },
+  "Feedback": {
+    "other": "Feedback"
+  },
+  "JoinDiscord": {
+    "other": "Join Discord"
+  },
+  "SupportOnKofi": {
+    "other": "Support on Ko-Fi"
+  },
+  "Inventory": {
+    "other": "Inventory"
+  },
+  "Inspiration": {
+    "other": "Inspiration"
+  },
+  "Hardware": {
+    "other": "Hardware"
+  },
+  "AuditLogs": {
+    "other": "Audit Logs"
+  },
+  "ItemsSelected": {
+    "other": "selected"
+  },
+  "SelectAllVisible": {
+    "other": "Select All Visible"
+  },
+  "NoPartsFound": {
+    "other": "No parts found"
+  },
+  "NoPartsMatching": {
+    "other": "We couldn't find anything matching \"{{.Search}}\"."
+  },
+  "ClearSearch": {
+    "other": "Clear Search"
+  },
+  "ConfirmBulkDelete": {
+    "other": "Confirm Bulk Delete"
+  },
+  "BulkDeleteConfirmPrefix": {
+    "other": "Are you sure you want to delete"
+  },
+  "BulkDeleteConfirmSuffix": {
+    "other": "parts? This action cannot be undone."
+  },
+  "ConfirmDelete": {
+    "other": "Confirm Delete"
+  },
+  "Stock": {
+    "other": "Stock"
+  },
+  "EditPart": {
+    "other": "Edit Part"
+  },
+  "ConfirmDeletePart": {
+    "other": "Are you sure you want to delete this part? This will remove all associated documents, images, and inventory assignments."
+  },
+  "Specifications": {
+    "other": "Specifications"
+  },
+  "MPN": {
+    "other": "MPN"
+  },
+  "Manufacturer": {
+    "other": "Manufacturer"
+  },
+  "Supplier": {
+    "other": "Supplier"
+  },
+  "Barcode": {
+    "other": "Barcode"
+  },
+  "UnitCost": {
+    "other": "Unit Cost"
+  },
+  "Tags": {
+    "other": "Tags"
+  },
+  "Resources": {
+    "other": "Resources"
+  },
+  "TotalInStock": {
+    "other": "Total In Stock"
+  },
+  "LowStockWarning": {
+    "other": "Low Stock Warning"
+  },
+  "Locations": {
+    "other": "Locations"
+  },
+  "AddStock": {
+    "other": "Add Stock"
+  },
+  "Location": {
+    "other": "Location"
+  },
+  "Qty": {
+    "other": "Qty"
+  },
+  "NoStockAssigned": {
+    "other": "No stock assigned."
+  },
+  "Orphaned": {
+    "other": "Orphaned"
+  },
+  "OrphanedStockTitle": {
+    "other": "This stock is no longer assigned to a valid bin"
+  },
+  "Unmanaged": {
+    "other": "Unmanaged"
+  },
+  "ReassignToValidBin": {
+    "other": "Reassign to a valid bin"
+  },
+  "Fix": {
+    "other": "Fix"
+  },
+  "ReassignOrphanedStock": {
+    "other": "Reassign Orphaned Stock"
+  },
+  "ReassignOrphanedStockDesc": {
+    "other": "This stock is currently not assigned to any physical bin. Select a new location for these {{.Count}} items."
+  },
+  "MoveStock": {
+    "other": "Move Stock"
+  },
+  "MoveStockDesc": {
+    "other": "Select a new location to move these {{.Count}} items to."
+  },
+  "Remove": {
+    "other": "Remove"
+  },
+  "ConfirmRemoveStock": {
+    "other": "Remove this stock assignment?"
+  },
+  "SelectWLEDController": {
+    "other": "1. Select WLED Controller"
+  },
+  "ChoosePhysicalBin": {
+    "other": "2. Choose Physical Bin"
+  },
+  "SetQuantity": {
+    "other": "3. Set Quantity"
+  },
+  "SelectControllerPrompt": {
+    "other": "Select a controller above to see available bins"
+  },
+  "SelectAController": {
+    "other": "Select a controller..."
+  },
+  "SaveStock": {
+    "other": "Save Stock"
+  },
+  "AddStockLocation": {
+    "other": "Add Stock Location"
+  },
+  "AddController": {
+    "other": "Add Controller"
+  },
+  "Checking": {
+    "other": "Checking..."
+  },
+  "Configure": {
+    "other": "Configure"
+  },
+  "ConfirmDeleteController": {
+    "other": "Delete this controller?"
+  },
+  "ViewGrid": {
+    "other": "View Grid"
+  },
+  "NoControllersFound": {
+    "other": "No controllers found"
+  },
+  "AddFirstWLEDDevice": {
+    "other": "Add your first WLED device!"
+  },
+  "AddNewController": {
+    "other": "Add New Controller"
+  },
+  "Name": {
+    "other": "Name"
+  },
+  "IPAddress": {
+    "other": "IP Address"
+  },
+  "Port": {
+    "other": "Port"
+  },
+  "ConfigureGrid": {
+    "other": "Configure Grid"
+  },
+  "BackToHardware": {
+    "other": "Back to Hardware"
+  },
+  "ConfigureController": {
+    "other": "Configure {{.Name}}"
+  },
+  "MapLEDsToBins": {
+    "other": "Map your physical LEDs to virtual bins."
+  },
+  "AuditLogsDescription": {
+    "other": "Monitor system activity and changes."
+  },
+  "Search": {
+    "other": "Search"
+  },
+  "SearchDetailsPlaceholder": {
+    "other": "Search details..."
+  },
+  "AllActions": {
+    "other": "All Actions"
+  },
+  "CREATE": {
+    "other": "CREATE"
+  },
+  "UPDATE": {
+    "other": "UPDATE"
+  },
+  "DELETE": {
+    "other": "DELETE"
+  },
+  "ADJUST_STOCK": {
+    "other": "ADJUST_STOCK"
+  },
+  "User": {
+    "other": "User"
+  },
+  "AllUsers": {
+    "other": "All Users"
+  },
+  "Entity": {
+    "other": "Entity"
+  },
+  "AllEntities": {
+    "other": "All Entities"
+  },
+  "PART": {
+    "other": "PART"
+  },
+  "BIN": {
+    "other": "BIN"
+  },
+  "CONTROLLER": {
+    "other": "CONTROLLER"
+  },
+  "USER": {
+    "other": "USER"
+  },
+  "SETTINGS": {
+    "other": "SETTINGS"
+  },
+  "Filter": {
+    "other": "Filter"
+  },
+  "Reset": {
+    "other": "Reset"
+  },
+  "Timestamp": {
+    "other": "Timestamp"
+  },
+  "NoAuditLogsFound": {
+    "other": "No audit logs found matching your filters."
+  },
+  "InspirationDescription": {
+    "other": "Create AI prompts for your inventory. Get inspired or save commonly used prompts."
+  },
+  "AddPrompt": {
+    "other": "Add Prompt"
+  },
+  "ContextFilter": {
+    "other": "Context Filter:"
+  },
+  "EntireInventory": {
+    "other": "Entire Inventory"
+  },
+  "Clear": {
+    "other": "Clear"
+  },
+  "NoTagsFoundInInventory": {
+    "other": "No tags found in inventory."
+  },
+  "InventoryAndControl": {
+    "other": "Inventory & Control"
+  },
+  "Password": {
+    "other": "Password"
+  },
+  "Login": {
+    "other": "Login"
+  },
+  "OR": {
+    "other": "OR"
+  },
+  "ContinueAsGuest": {
+    "other": "Continue as Guest"
+  },
+  "PasswordChangeRequired": {
+    "other": "Password Change Required"
+  },
+  "SetYourPassword": {
+    "other": "Set Your Password"
+  },
+  "PasswordChangeRequiredDesc": {
+    "other": "Your account requires a password change before you can proceed."
+  },
+  "CancelAndLogout": {
+    "other": "Cancel & Logout"
+  },
+  "Setup": {
+    "other": "Setup"
+  },
+  "Welcome": {
+    "other": "Welcome!"
+  },
+  "SetupDesc": {
+    "other": "Create your admin account to get started."
+  },
+  "AdminEmail": {
+    "other": "Admin Email"
+  },
+  "InvalidEmailWarning": {
+    "other": "Please enter a valid email address"
+  },
+  "PasswordLengthWarning": {
+    "other": "Must be at least 8 characters long"
+  },
+  "CreateAdminAndStart": {
+    "other": "Create Admin & Start"
+  },
+  "Error": {
+    "other": "Error"
+  },
+  "OopsSomethingWentWrong": {
+    "other": "Oops! Something went wrong"
+  },
+  "GoToDashboard": {
+    "other": "Go to Dashboard"
+  },
+  "GoBack": {
+    "other": "Go Back"
+  },
+  "CreatePart": {
+    "other": "Create Part"
+  },
+  "AddNewPart": {
+    "other": "Add New Part"
+  },
+  "CreateNew": {
+    "other": "Create New"
+  },
+  "CoreDetails": {
+    "other": "Core Details"
+  },
+  "PartName": {
+    "other": "Part Name"
+  },
+  "EnterDescriptionPlaceholder": {
+    "other": "Enter a detailed description..."
+  },
+  "CoverImage": {
+    "other": "Cover Image"
+  },
+  "CurrentCoverImage": {
+    "other": "Current Cover Image"
+  },
+  "ReplaceImageNote": {
+    "other": "Replaces current image if uploaded."
+  },
+  "SpecificationsAndSourcing": {
+    "other": "Specifications & Sourcing"
+  },
+  "PartNumberMPN": {
+    "other": "Part Number (MPN)"
+  },
+  "ScanBarcodePlaceholder": {
+    "other": "Scan a barcode here..."
+  },
+  "InventoryControl": {
+    "other": "Inventory Control"
+  },
+  "UnitCostLabel": {
+    "other": "Unit Cost ($)"
+  },
+  "MinStockLevel": {
+    "other": "Min Stock Level"
+  },
+  "MinStockTooltip": {
+    "other": "When inventory drops below this number, it will be flagged as 'Critical Stock'."
+  },
+  "ReorderLevelLabel": {
+    "other": "Reorder Level"
+  },
+  "ReorderLevelTooltip": {
+    "other": "When inventory drops below this number, it will be flagged as 'Low Stock'."
+  },
+  "ExternalLinks": {
+    "other": "External Links"
+  },
+  "Label": {
+    "other": "Label"
+  },
+  "URL": {
+    "other": "URL"
+  },
+  "LinkLabelPlaceholder": {
+    "other": "Label (e.g. Datasheet)"
+  },
+  "AddLink": {
+    "other": "Add Link"
+  },
+  "Documents": {
+    "other": "Documents"
+  },
+  "SaveChanges": {
+    "other": "Save Changes"
+  },
+  "SelectABin": {
+    "other": "Select a bin..."
+  },
+  "BackToDashboard": {
+    "other": "Back to Dashboard"
+  },
+  "EditWallTitle": {
+    "other": "Edit {{.Name}}"
+  },
+  "WallEditDescription": {
+    "other": "Configure a wall with containers to organize your inventory dashboard."
+  },
+  "WallSettings": {
+    "other": "Wall Settings"
+  },
+  "DeleteWall": {
+    "other": "Delete Wall"
+  },
+  "Containers": {
+    "other": "Containers"
+  },
+  "Linked": {
+    "other": "Linked"
+  },
+  "NoContainersLinked": {
+    "other": "No containers linked"
+  },
+  "AddContainerToWallInstructions": {
+    "other": "Select a container from the menu below to add it to this wall."
+  },
+  "LinkNewContainer": {
+    "other": "Link New Container"
+  },
+  "ChooseAContainer": {
+    "other": "Choose a container..."
+  },
+  "AddToWall": {
+    "other": "Add to Wall"
+  }
+}

@@ -3,19 +3,20 @@ package pages
 import (
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
 templ PartCreate(user auth.User, allTags []db.Tag) {
-	@layouts.Base("Create Part", user) {
+	@layouts.Base(i18n.T(ctx, "CreatePart"), user) {
 		<div class="max-w-4xl mx-auto w-full">
 			@components.PageHeader(
-				"Add New Part",
+				i18n.T(ctx, "AddNewPart"),
 				"",
 				[]components.Breadcrumb{
-					{Label: "Inventory", URL: "/parts"},
-					{Label: "Create New"},
+					{Label: i18n.T(ctx, "Inventory"), URL: "/parts"},
+					{Label: i18n.T(ctx, "CreateNew")},
 				},
 			)
 			@components.PartForm(db.Part{}, nil, allTags, []db.PartLink{}, []db.PartDoc{}, "/parts", false)

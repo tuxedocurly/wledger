@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
@@ -11,37 +12,37 @@ import (
 )
 
 templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsersRow, filters db.ListAuditLogsParams, totalCount int64, currentPage int) {
-	@layouts.Base("Audit Logs", user) {
+	@layouts.Base(i18n.T(ctx, "AuditLogs"), user) {
 		<div class="max-w-7xl mx-auto w-full px-4">
-			@components.PageHeader("Audit Logs", "Monitor system activity and changes.", nil)
+			@components.PageHeader(i18n.T(ctx, "AuditLogs"), i18n.T(ctx, "AuditLogsDescription"), nil)
 			<!-- Filters -->
 			<div class="card bg-base-200 shadow-sm border border-base-300 mb-6">
 				<div class="card-body p-4">
 					<form action="/audit-logs" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
 						<div class="form-control">
 							<label class="label pt-0 pb-1">
-								<span class="label-text text-md font-bold uppercase opacity-50">Search</span>
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "Search") }</span>
 							</label>
-							<input type="text" name="search" value={ filters.Search.String } class="input input-bordered input-md w-full" placeholder="Search details..."/>
+							<input type="text" name="search" value={ filters.Search.String } class="input input-bordered input-md w-full" placeholder={ i18n.T(ctx, "SearchDetailsPlaceholder") }/>
 						</div>
 						<div class="form-control">
 							<label class="label pt-0 pb-1">
-								<span class="label-text text-md font-bold uppercase opacity-50">Action</span>
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "Action") }</span>
 							</label>
 							<select name="action_type" class="select select-bordered select-md w-full">
-								<option value="">All Actions</option>
-								<option value="CREATE" selected?={ filters.ActionType.String == "CREATE" }>CREATE</option>
-								<option value="UPDATE" selected?={ filters.ActionType.String == "UPDATE" }>UPDATE</option>
-								<option value="DELETE" selected?={ filters.ActionType.String == "DELETE" }>DELETE</option>
-								<option value="ADJUST_STOCK" selected?={ filters.ActionType.String == "ADJUST_STOCK" }>ADJUST_STOCK</option>
+								<option value="">{ i18n.T(ctx, "AllActions") }</option>
+								<option value="CREATE" selected?={ filters.ActionType.String == "CREATE" }>{ i18n.T(ctx, "CREATE") }</option>
+								<option value="UPDATE" selected?={ filters.ActionType.String == "UPDATE" }>{ i18n.T(ctx, "UPDATE") }</option>
+								<option value="DELETE" selected?={ filters.ActionType.String == "DELETE" }>{ i18n.T(ctx, "DELETE") }</option>
+								<option value="ADJUST_STOCK" selected?={ filters.ActionType.String == "ADJUST_STOCK" }>{ i18n.T(ctx, "ADJUST_STOCK") }</option>
 							</select>
 						</div>
 						<div class="form-control">
 							<label class="label pt-0 pb-1">
-								<span class="label-text text-md font-bold uppercase opacity-50">User</span>
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "User") }</span>
 							</label>
 							<select name="user_id" class="select select-bordered select-md w-full">
-								<option value="">All Users</option>
+								<option value="">{ i18n.T(ctx, "AllUsers") }</option>
 								for _, u := range users {
 									<option value={ fmt.Sprintf("%d", u.ID) } selected?={ filters.UserID.Valid && filters.UserID.Int64 == u.ID }>{ u.Email }</option>
 								}
@@ -49,20 +50,20 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 						</div>
 						<div class="form-control">
 							<label class="label pt-0 pb-1">
-								<span class="label-text text-md font-bold uppercase opacity-50">Entity</span>
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "Entity") }</span>
 							</label>
 							<select name="entity_type" class="select select-bordered select-md w-full">
-								<option value="">All Entities</option>
-								<option value="PART" selected?={ filters.EntityType.String == "PART" }>PART</option>
-								<option value="BIN" selected?={ filters.EntityType.String == "BIN" }>BIN</option>
-								<option value="CONTROLLER" selected?={ filters.EntityType.String == "CONTROLLER" }>CONTROLLER</option>
-								<option value="USER" selected?={ filters.EntityType.String == "USER" }>USER</option>
-								<option value="SETTINGS" selected?={ filters.EntityType.String == "SETTINGS" }>SETTINGS</option>
+								<option value="">{ i18n.T(ctx, "AllEntities") }</option>
+								<option value="PART" selected?={ filters.EntityType.String == "PART" }>{ i18n.T(ctx, "PART") }</option>
+								<option value="BIN" selected?={ filters.EntityType.String == "BIN" }>{ i18n.T(ctx, "BIN") }</option>
+								<option value="CONTROLLER" selected?={ filters.EntityType.String == "CONTROLLER" }>{ i18n.T(ctx, "CONTROLLER") }</option>
+								<option value="USER" selected?={ filters.EntityType.String == "USER" }>{ i18n.T(ctx, "USER") }</option>
+								<option value="SETTINGS" selected?={ filters.EntityType.String == "SETTINGS" }>{ i18n.T(ctx, "SETTINGS") }</option>
 							</select>
 						</div>
 						<div class="flex gap-2 lg:col-span-2">
-							<button type="submit" class="btn btn-primary btn-md flex-1">Filter</button>
-							<a href="/audit-logs" class="btn btn-outline btn-primary btn-md">Reset</a>
+							<button type="submit" class="btn btn-primary btn-md flex-1">{ i18n.T(ctx, "Filter") }</button>
+							<a href="/audit-logs" class="btn btn-outline btn-primary btn-md">{ i18n.T(ctx, "Reset") }</a>
 						</div>
 					</form>
 				</div>
@@ -73,12 +74,12 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 					<table class="table table-zebra w-full">
 						<thead>
 							<tr class="bg-base-200">
-								<th>Timestamp</th>
-								<th>User</th>
-								<th>Action</th>
-								<th>Entity</th>
-								<th>Details</th>
-								<th class="text-right">Data</th>
+								<th>{ i18n.T(ctx, "Timestamp") }</th>
+								<th>{ i18n.T(ctx, "User") }</th>
+								<th>{ i18n.T(ctx, "Action") }</th>
+								<th>{ i18n.T(ctx, "Entity") }</th>
+								<th>{ i18n.T(ctx, "Details") }</th>
+								<th class="text-right">{ i18n.T(ctx, "Data") }</th>
 							</tr>
 						</thead>
 						<tbody id="audit-logs-table-body">
@@ -109,12 +110,12 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 			</td>
 			<td>
 				<span class={ "badge badge-sm font-mono " + getActionBadgeClass(log.ActionType) }>
-					{ log.ActionType }
+					{ i18n.T(ctx, log.ActionType) }
 				</span>
 			</td>
 			<td>
 				<div class="flex flex-col text-xs">
-					<span class="opacity-50">{ log.EntityType }</span>
+					<span class="opacity-50">{ i18n.T(ctx, log.EntityType) }</span>
 					<span class="font-mono">ID: { fmt.Sprintf("%d", log.EntityID) }</span>
 				</div>
 			</td>
@@ -129,7 +130,7 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 					{ templ.Attributes{"onclick": fmt.Sprintf("openAuditLogDetail(%d, this.dataset.old, this.dataset.new)", log.ID)}... }
 				>
 					@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
-					View
+					{ i18n.T(ctx, "View") }
 				</button>
 			</td>
 		</tr>
@@ -137,7 +138,7 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 	if len(logs) == 0 && currentPage == 1 {
 		<tr>
 			<td colspan="6" class="text-center py-12 opacity-50">
-				No audit logs found matching your filters.
+				{ i18n.T(ctx, "NoAuditLogsFound") }
 			</td>
 		</tr>
 	}

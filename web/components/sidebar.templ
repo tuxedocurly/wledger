@@ -1,6 +1,7 @@
 package components
 
 import "github.com/tuxedocurly/wledger/internal/auth"
+import "github.com/tuxedocurly/wledger/internal/i18n"
 import "github.com/tuxedocurly/wledger/web/icons"
 
 templ Sidebar(user auth.User) {
@@ -14,10 +15,10 @@ templ Sidebar(user auth.User) {
 				if user.IsAuthenticated() {
 					<div class="flex flex-col">
 						<span class="text-sm font-semibold truncate">{ user.Email }</span>
-						<span class="text-xs opacity-50 uppercase tracking-wider font-mono mt-0.5">{ user.Role }</span>
+						<span class="text-xs opacity-50 uppercase tracking-wider font-mono mt-0.5">{ i18n.T(ctx, user.Role) }</span>
 					</div>
 				} else {
-					<span class="text-xs opacity-50 uppercase tracking-wider font-mono mt-0.5">Guest Access</span>
+					<span class="text-xs opacity-50 uppercase tracking-wider font-mono mt-0.5">{ i18n.T(ctx, "GuestAccess") }</span>
 				}
 			</div>
 		</div>
@@ -28,7 +29,7 @@ templ Sidebar(user auth.User) {
 				<input
 					type="text"
 					name="q"
-					placeholder="Search (Cmd+K)"
+					placeholder={ i18n.T(ctx, "SearchPlaceholder") }
 					class="input input-sm input-bordered w-full pl-9 h-10"
 					@keydown.window.meta.k.prevent="$el.focus()"
 					@keydown.window.ctrl.k.prevent="$el.focus()"
@@ -48,6 +49,7 @@ templ Sidebar(user auth.User) {
 		</ul>
 		<!-- Sidebar Footer -->
 		<div class="p-4 border-t border-base-300 bg-base-200/50 space-y-2 shrink-0">
+			@LanguageSwitcher()
 			@ThemeToggle()
 			if user.IsAuthenticated() {
 				@LogoutButton()
@@ -62,6 +64,19 @@ templ Sidebar(user auth.User) {
 // -----------------------------------------------------------
 // REUSABLE COMPONENTS
 // -----------------------------------------------------------
+templ LanguageSwitcher() {
+	<div class="dropdown dropdown-top w-full">
+		<div tabindex="0" role="button" class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 gap-2">
+			@icons.Languages(templ.Attributes{"class": "w-5 h-5"})
+			<span>{ i18n.T(ctx, i18n.GetLanguage(ctx)) }</span>
+		</div>
+		<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-full mb-2">
+			<li><a href="?lang=en">{ i18n.T(ctx, "English") }</a></li>
+			<li><a href="?lang=es">{ i18n.T(ctx, "Spanish") }</a></li>
+		</ul>
+	</div>
+}
+
 templ GlobalOffButton() {
 	<button
 		hx-post="/hardware/off"
@@ -69,7 +84,7 @@ templ GlobalOffButton() {
 		class="btn btn-outline btn-error w-full gap-2 justify-start normal-case text-base font-normal px-2"
 	>
 		@icons.Power(templ.Attributes{"class": "w-5 h-5"})
-		Turn Off All LEDs
+		{ i18n.T(ctx, "TurnOffAllLEDs") }
 	</button>
 }
 
@@ -77,7 +92,7 @@ templ LogoutButton() {
 	<form action="/logout" method="POST" class="w-full">
 		<button type="submit" class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 text-error hover:bg-error/10">
 			@icons.LogOut(templ.Attributes{"class": "w-5 h-5"})
-			Log Out
+			{ i18n.T(ctx, "LogOut") }
 		</button>
 	</form>
 }
@@ -85,7 +100,7 @@ templ LogoutButton() {
 templ LoginButton() {
 	<a href="/login" class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 text-primary hover:text-primary">
 		@icons.LogIn(templ.Attributes{"class": "w-5 h-5"})
-		Log In
+		{ i18n.T(ctx, "LogIn") }
 	</a>
 }
 
@@ -98,22 +113,22 @@ templ ThemeToggle() {
 		<input type="checkbox" :checked="theme === 'silk'" @change="toggle()"/>
 		<div class="swap-on flex items-center w-full">
 			@icons.Sun(templ.Attributes{"class": "w-5 h-5"})
-			<span>Silk Mode</span>
+			<span>{ i18n.T(ctx, "SilkMode") }</span>
 		</div>
 		<div class="swap-off flex items-center w-full">
 			@icons.Moon(templ.Attributes{"class": "w-5 h-5"})
-			<span>Dark Mode</span>
+			<span>{ i18n.T(ctx, "DarkMode") }</span>
 		</div>
 	</label>
 }
 
 templ CommunityLinks() {
-	<li class="menu-title text-[12px] font-bold opacity-80 uppercase tracking-wider mt-4">Community</li>
+	<li class="menu-title text-[12px] font-bold opacity-80 uppercase tracking-wider mt-4">{ i18n.T(ctx, "Community") }</li>
 	<li>
 		<a href="https://github.com/tuxedocurly/wledger/issues/new" target="_blank" class="text-base-content/70">
 			@icons.Github(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
-				Feedback
+				{ i18n.T(ctx, "Feedback") }
 			</span>
 		</a>
 	</li>
@@ -121,7 +136,7 @@ templ CommunityLinks() {
 		<a href="https://discord.gg/HABg37gjrd" target="_blank" class="text-base-content/70">
 			@icons.Discord(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
-				Join Discord
+				{ i18n.T(ctx, "JoinDiscord") }
 			</span>
 		</a>
 	</li>
@@ -131,7 +146,7 @@ templ CommunityLinks() {
 				@icons.Kofi(templ.Attributes{"class": "w-5 h-5"})
 			</span>
 			<span class="ml-3">
-				Support on Ko-Fi
+				{ i18n.T(ctx, "SupportOnKofi") }
 			</span>
 		</a>
 	</li>
@@ -142,7 +157,7 @@ templ NavLinks(user auth.User) {
 		<a href="/">
 			@icons.LayoutGrid(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
-				Dashboard
+				{ i18n.T(ctx, "Dashboard") }
 			</span>
 		</a>
 	</li>
@@ -150,7 +165,7 @@ templ NavLinks(user auth.User) {
 		<a href="/parts">
 			@icons.Box(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
-				Inventory
+				{ i18n.T(ctx, "Inventory") }
 			</span>
 		</a>
 	</li>
@@ -158,7 +173,7 @@ templ NavLinks(user auth.User) {
 		<a href="/inspiration">
 			@icons.Lightbulb(templ.Attributes{"class": "w-5 h-5"})
 			<span class="ml-3">
-				Inspiration
+				{ i18n.T(ctx, "Inspiration") }
 			</span>
 		</a>
 	</li>
@@ -168,7 +183,7 @@ templ NavLinks(user auth.User) {
 			<a href="/hardware" hx-boost="false">
 				@icons.Microchip(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
-					Hardware
+					{ i18n.T(ctx, "Hardware") }
 				</span>
 			</a>
 		</li>
@@ -176,7 +191,7 @@ templ NavLinks(user auth.User) {
 			<a href="/audit-logs">
 				@icons.Clipboard(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
-					Audit Logs
+					{ i18n.T(ctx, "AuditLogs") }
 				</span>
 			</a>
 		</li>
@@ -184,7 +199,7 @@ templ NavLinks(user auth.User) {
 			<a href="/settings">
 				@icons.Settings(templ.Attributes{"class": "w-5 h-5"})
 				<span class="ml-3">
-					Settings
+					{ i18n.T(ctx, "Settings") }
 				</span>
 			</a>
 		</li>

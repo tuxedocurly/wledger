@@ -11,6 +11,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/config"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/internal/uierror"
 )
 
@@ -258,6 +259,50 @@ func (m *Manager) Authenticate(next http.Handler) http.Handler {
 		// Update Context
 		// Now every handler downstream can call auth.GetUser(r.Context())
 		ctx := auth.WithUser(r.Context(), uiUser)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// I18n is a middleware that detects the user's preferred language and populates the context with a Localizer.
+func (m *Manager) I18n(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 1. URL Query Param
+		lang := r.URL.Query().Get("lang")
+
+		// 2. Cookie
+		if lang == "" {
+			cookie, err := r.Cookie("lang")
+			if err == nil {
+				lang = cookie.Value
+			}
+		}
+
+		// 3. Accept-Language Header
+		if lang == "" {
+			acceptLang := r.Header.Get("Accept-Language")
+			if acceptLang != "" {
+				// Simple parsing, taking the first one
+				lang = strings.Split(acceptLang, ",")[0]
+				lang = strings.Split(lang, ";")[0] // Handle q-values
+				lang = strings.TrimSpace(lang)
+			}
+		}
+
+		// Update Context with Localizer
+		ctx := i18n.WithLocalizer(r.Context(), lang)
+
+		// If lang was provided in query param, persist it to a cookie for future requests
+		if r.URL.Query().Get("lang") != "" {
+			http.SetCookie(w, &http.Cookie{
+				Name:     "lang",
+				Value:    lang,
+				Path:     "/",
+				HttpOnly: true,
+				MaxAge:   365 * 24 * 60 * 60, // 1 year
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

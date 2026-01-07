@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
 templ Hardware(user auth.User, controllers []db.Controller) {
-	@layouts.Base("Hardware", user) {
-		@components.PageHeader("Hardware", "", nil)
+	@layouts.Base(i18n.T(ctx, "Hardware"), user) {
+		@components.PageHeader(i18n.T(ctx, "Hardware"), "", nil)
 		<div class="flex flex-col md:flex-row justify-end mb-6 gap-4">
 			if user.CanWrite() {
 				<button onclick="add_controller_modal.showModal()" class="btn btn-primary gap-2">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-					Add Controller
+					{ i18n.T(ctx, "AddController") }
 				</button>
 			}
 		</div>
@@ -38,23 +39,23 @@ templ Hardware(user auth.User, controllers []db.Controller) {
 								hx-trigger="load, every 10s"
 								class="badge badge-ghost text-xs"
 							>
-								Checking...
+								{ i18n.T(ctx, "Checking") }
 							</div>
 						</div>
 						<div class="card-actions justify-end mt-4 pt-4 border-t border-base-content/10">
 							if user.CanConfigure() {
 								<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", c.ID)) } class="btn btn-sm btn-ghost gap-2">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-									Configure
+									{ i18n.T(ctx, "Configure") }
 								</a>
-								<form action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/delete", c.ID)) } method="POST" onsubmit="return confirm('Delete this controller?');">
+								<form action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/delete", c.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmDeleteController"))}... }>
 									<button class="btn btn-sm btn-ghost text-error">
 										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
 									</button>
 								</form>
 							} else {
 								<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", c.ID)) } class="btn btn-sm btn-ghost">
-									View Grid
+									{ i18n.T(ctx, "ViewGrid") }
 								</a>
 							}
 						</div>
@@ -62,29 +63,29 @@ templ Hardware(user auth.User, controllers []db.Controller) {
 				</div>
 			}
 			if len(controllers) == 0 {
-				@components.EmptyState("No controllers found", "Add your first WLED device!", "🔌")
+				@components.EmptyState(i18n.T(ctx, "NoControllersFound"), i18n.T(ctx, "AddFirstWLEDDevice"), "🔌")
 			}
 		</div>
 		@components.Modal(components.ModalProps{
 			ID:    "add_controller_modal",
-			Title: "Add New Controller",
+			Title: i18n.T(ctx, "AddNewController"),
 		}) {
 			<form action="/hardware" method="POST" class="space-y-4">
 				<div class="form-control">
-					<label class="label"><span class="label-text">Name</span></label>
+					<label class="label"><span class="label-text">{ i18n.T(ctx, "Name") }</span></label>
 					<input type="text" name="name" placeholder="e.g. Shelf LEDs" class="input input-bordered w-full" required/>
 				</div>
 				<div class="form-control">
-					<label class="label"><span class="label-text">IP Address</span></label>
+					<label class="label"><span class="label-text">{ i18n.T(ctx, "IPAddress") }</span></label>
 					<input type="text" name="ip_address" placeholder="192.168.1.x" class="input input-bordered w-full font-mono" required/>
 				</div>
 				<div class="form-control">
-					<label class="label"><span class="label-text">Port</span></label>
+					<label class="label"><span class="label-text">{ i18n.T(ctx, "Port") }</span></label>
 					<input type="number" name="port" value="80" class="input input-bordered w-full font-mono"/>
 				</div>
 				<div class="modal-action">
-					<button type="button" class="btn" onclick="add_controller_modal.close()">Cancel</button>
-					<button class="btn btn-primary">Add Controller</button>
+					<button type="button" class="btn" onclick="add_controller_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
+					<button class="btn btn-primary">{ i18n.T(ctx, "AddController") }</button>
 				</div>
 			</form>
 		}

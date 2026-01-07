@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
@@ -53,11 +54,11 @@ func PartCreate(user auth.User, allTags []db.Tag) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			templ_7745c5c3_Err = components.PageHeader(
-				"Add New Part",
+				i18n.T(ctx, "AddNewPart"),
 				"",
 				[]components.Breadcrumb{
-					{Label: "Inventory", URL: "/parts"},
-					{Label: "Create New"},
+					{Label: i18n.T(ctx, "Inventory"), URL: "/parts"},
+					{Label: i18n.T(ctx, "CreateNew")},
 				},
 			).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
@@ -73,7 +74,7 @@ func PartCreate(user auth.User, allTags []db.Tag) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Create Part", user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Base(i18n.T(ctx, "CreatePart"), user).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

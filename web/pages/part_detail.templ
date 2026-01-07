@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
@@ -17,20 +18,20 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 				part.Name,
 				part.Description.String,
 				[]components.Breadcrumb{
-					{Label: "Inventory", URL: "/parts"},
+					{Label: i18n.T(ctx, "Inventory"), URL: "/parts"},
 					{Label: part.Name},
 				},
 			) {
 				if user.CanWrite() {
 					<a href={ templ.SafeURL(fmt.Sprintf("/parts/%d/edit", part.ID)) } class="btn btn-outline gap-2">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-						Edit Part
+						{ i18n.T(ctx, "EditPart") }
 					</a>
 					@components.DeleteButton(components.DeleteButtonProps{
 						ID:          fmt.Sprintf("%d", part.ID),
 						TargetURL:   fmt.Sprintf("/parts/%d/delete", part.ID),
-						Message:     "Are you sure you want to delete this part? This will remove all associated documents, images, and inventory assignments.",
-						ButtonLabel: "Delete",
+						Message:     i18n.T(ctx, "ConfirmDeletePart"),
+						ButtonLabel: i18n.T(ctx, "Delete"),
 					})
 				}
 			}
@@ -49,40 +50,40 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 					</div>
 					<div class="card bg-base-200 shadow-xl border border-base-300">
 						<div class="card-body p-4">
-							<h3 class="font-bold text-xs uppercase tracking-wider opacity-50 mb-3">Specifications</h3>
+							<h3 class="font-bold text-xs uppercase tracking-wider opacity-50 mb-3">{ i18n.T(ctx, "Specifications") }</h3>
 							<div class="space-y-3 text-sm">
 								if part.PartNumber.Valid && part.PartNumber.String != "" {
 									<div class="flex justify-between">
-										<span class="opacity-70">MPN</span>
+										<span class="opacity-70">{ i18n.T(ctx, "MPN") }</span>
 										<span class="font-mono">{ part.PartNumber.String }</span>
 									</div>
 								}
 								if part.Manufacturer.Valid && part.Manufacturer.String != "" {
 									<div class="flex justify-between">
-										<span class="opacity-70">Manufacturer</span>
+										<span class="opacity-70">{ i18n.T(ctx, "Manufacturer") }</span>
 										<span class="font-medium">{ part.Manufacturer.String }</span>
 									</div>
 								}
 								if part.Supplier.Valid && part.Supplier.String != "" {
 									<div class="flex justify-between">
-										<span class="opacity-70">Supplier</span>
+										<span class="opacity-70">{ i18n.T(ctx, "Supplier") }</span>
 										<span class="font-medium">{ part.Supplier.String }</span>
 									</div>
 								}
 								if part.BarcodeData.Valid && part.BarcodeData.String != "" {
 									<div class="flex justify-between">
-										<span class="opacity-70">Barcode</span>
+										<span class="opacity-70">{ i18n.T(ctx, "Barcode") }</span>
 										<span class="font-mono">{ part.BarcodeData.String }</span>
 									</div>
 								}
 								<div class="divider"></div>
 								<div class="flex justify-between">
-									<span class="opacity-70">Unit Cost</span>
+									<span class="opacity-70">{ i18n.T(ctx, "UnitCost") }</span>
 									<span class="font-mono">$ { fmt.Sprintf("%.2f", part.UnitCost.Float64) }</span>
 								</div>
 								if part.Tags.Valid && part.Tags.String != "" {
 									<div class="divider"></div>
-									<span class="flex justify-between opacity-70">Tags</span>
+									<span class="flex justify-between opacity-70">{ i18n.T(ctx, "Tags") }</span>
 									<div class="flex flex-wrap gap-1">
 										for tag := range strings.SplitSeq(part.Tags.String, ", ") {
 											<span class="badge badge-info badge-outline badge-sm">{ tag }</span>
@@ -95,7 +96,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 					if len(links) > 0 || len(docs) > 0 {
 						<div class="card bg-base-200 shadow-xl border border-base-300">
 							<div class="card-body p-4">
-								<h3 class="font-bold text-xs uppercase tracking-wider opacity-50 mb-3">Resources</h3>
+								<h3 class="font-bold text-xs uppercase tracking-wider opacity-50 mb-3">{ i18n.T(ctx, "Resources") }</h3>
 								if len(links) > 0 {
 									<div class="flex flex-col gap-2">
 										for _, link := range links {
@@ -126,23 +127,23 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 				<div class="lg:col-span-2 space-y-6">
 					<div class="stats shadow-xl border border-base-300 w-full bg-base-200">
 						<div class="stat">
-							<div class="stat-title">Total In Stock</div>
+							<div class="stat-title">{ i18n.T(ctx, "TotalInStock") }</div>
 							<div class="stat-value text-primary">
 								{ fmt.Sprintf("%d", calculateTotalStock(stock)) }
 							</div>
 							if part.MinStockThreshold.Valid && calculateTotalStock(stock) <= part.MinStockThreshold.Int64 {
-								<div class="stat-desc text-warning font-bold">Low Stock Warning</div>
+								<div class="stat-desc text-warning font-bold">{ i18n.T(ctx, "LowStockWarning") }</div>
 							}
 						</div>
 					</div>
 					<div class="card bg-base-200 shadow-xl border border-base-300">
 						<div class="card-body p-0">
 							<div class="p-4 border-b border-base-300 flex justify-between items-center">
-								<h3 class="font-bold">Locations</h3>
+								<h3 class="font-bold">{ i18n.T(ctx, "Locations") }</h3>
 								if user.CanWrite() {
 									<button onclick="stock_modal.showModal()" class="btn btn-sm btn-primary">
 										@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
-										Add Stock
+										{ i18n.T(ctx, "AddStock") }
 									</button>
 								}
 							</div>
@@ -150,17 +151,17 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 								<table class="table">
 									<thead>
 										<tr>
-											<th>Location</th>
-											<th>Controller</th>
-											<th>Qty</th>
-											<th class="text-right w-1">Actions</th>
+											<th>{ i18n.T(ctx, "Location") }</th>
+											<th>{ i18n.T(ctx, "Hardware") }</th>
+											<th>{ i18n.T(ctx, "Qty") }</th>
+											<th class="text-right w-1">{ i18n.T(ctx, "Actions") }</th>
 										</tr>
 									</thead>
 									<tbody>
 										if len(stock) == 0 {
 											<tr>
 												<td colspan="4" class="text-center py-8 opacity-50">
-													No stock assigned.
+													{ i18n.T(ctx, "NoStockAssigned") }
 												</td>
 											</tr>
 										}
@@ -177,7 +178,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 			if user.CanWrite() {
 				@components.Modal(components.ModalProps{
 					ID:       "stock_modal",
-					Title:    "Add Stock Location",
+					Title:    i18n.T(ctx, "AddStockLocation"),
 					BoxClass: "bg-base-100 max-w-2xl",
 				}) {
 					<form
@@ -188,7 +189,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 					>
 						<div class="form-control w-full">
 							<label class="label pt-0 pb-2 justify-start gap-2">
-								<span class="label-text font-bold text-xs uppercase tracking-widest">1. Select WLED Controller</span>
+								<span class="label-text font-bold text-xs uppercase tracking-widest">{ i18n.T(ctx, "SelectWLEDController") }</span>
 							</label>
 							<select
 								name="controller_id"
@@ -199,7 +200,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 								required
 								@change="hasSelection = false"
 							>
-								<option value="" disabled selected>Select a controller...</option>
+								<option value="" disabled selected>{ i18n.T(ctx, "SelectAController") }</option>
 								for _, c := range controllers {
 									<option value={ fmt.Sprintf("%d", c.ID) }>{ c.Name }</option>
 								}
@@ -207,7 +208,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 						</div>
 						<div class="form-control w-full">
 							<label class="label pt-0 pb-2 justify-start gap-2">
-								<span class="label-text font-bold text-xs uppercase tracking-widest">2. Choose Physical Bin</span>
+								<span class="label-text font-bold text-xs uppercase tracking-widest">{ i18n.T(ctx, "ChoosePhysicalBin") }</span>
 							</label>
 							<div
 								id="visual_bin_picker"
@@ -215,14 +216,14 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 								@bin-selected-form="hasSelection = true"
 							>
 								<div class="text-center opacity-40 py-8">
-									<p class="text-sm">Select a controller above to see available bins</p>
+									<p class="text-sm">{ i18n.T(ctx, "SelectControllerPrompt") }</p>
 								</div>
 							</div>
 						</div>
 						<div class="divider"></div>
 						<div class="form-control w-full" x-data="{ qty: 1 }">
 							<label class="label pt-0 pb-2 justify-start gap-2">
-								<span class="label-text font-bold text-xs uppercase tracking-widest">3. Set Quantity</span>
+								<span class="label-text font-bold text-xs uppercase tracking-widest">{ i18n.T(ctx, "SetQuantity") }</span>
 							</label>
 							<div class="join w-full">
 								<button
@@ -250,8 +251,8 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 							</div>
 						</div>
 						<div class="modal-action mt-8 pt-6 border-t border-base-200">
-							<button type="button" class="btn btn-ghost" onclick="stock_modal.close()">Cancel</button>
-							<button type="submit" class="btn btn-primary px-8" :disabled="!hasSelection">Save Stock</button>
+							<button type="button" class="btn btn-ghost" onclick="stock_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
+							<button type="submit" class="btn btn-primary px-8" :disabled="!hasSelection">{ i18n.T(ctx, "SaveStock") }</button>
 						</div>
 					</form>
 				}
@@ -269,9 +270,9 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 					{ s.BinName.String }
 				</div>
 			} else {
-				<div class="flex items-center gap-2 text-warning" title="This stock is no longer assigned to a valid bin">
+				<div class="flex items-center gap-2 text-warning" title={ i18n.T(ctx, "OrphanedStockTitle") }>
 					@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5"})
-					Orphaned
+					{ i18n.T(ctx, "Orphaned") }
 				</div>
 			}
 		</td>
@@ -279,7 +280,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 			if s.ControllerName.Valid {
 				{ s.ControllerName.String }
 			} else {
-				<span class="italic">Unmanaged</span>
+				<span class="italic">{ i18n.T(ctx, "Unmanaged") }</span>
 			}
 		</td>
 		<td class="text-right font-mono font-bold">
@@ -317,14 +318,14 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 						<button
 							{ templ.Attributes{"onclick": fmt.Sprintf("move_stock_modal_%d.showModal()", s.ID)}... }
 							class="btn btn-xs btn-outline btn-warning"
-							title="Reassign to a valid bin"
+							title={ i18n.T(ctx, "ReassignToValidBin") }
 						>
-							Fix
+							{ i18n.T(ctx, "Fix") }
 						</button>
 						@components.MoveStockModal(
 							fmt.Sprintf("move_stock_modal_%d", s.ID),
-							"Reassign Orphaned Stock",
-							fmt.Sprintf("This stock is currently not assigned to any physical bin. Select a new location for these %d items.", s.Quantity),
+							i18n.T(ctx, "ReassignOrphanedStock"),
+							i18n.TD(ctx, "ReassignOrphanedStockDesc", map[string]interface{}{"Count": s.Quantity}),
 							fmt.Sprintf("/parts/%d/stock/%d/move", partID, s.ID),
 							s.Quantity,
 							controllers,
@@ -333,30 +334,29 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 						<button
 							{ templ.Attributes{"onclick": fmt.Sprintf("move_stock_modal_%d.showModal()", s.ID)}... }
 							class="btn btn-xs btn-ghost"
-							title="Move Stock"
+							title={ i18n.T(ctx, "MoveStock") }
 						>
 							@icons.ArrowRightLeft(templ.Attributes{"class": "w-5 h-5"})
 						</button>
 						@components.MoveStockModal(
 							fmt.Sprintf("move_stock_modal_%d", s.ID),
-							"Move Stock",
-							fmt.Sprintf("Select a new location to move these %d items to.", s.Quantity),
+							i18n.T(ctx, "MoveStock"),
+							i18n.TD(ctx, "MoveStockDesc", map[string]interface{}{"Count": s.Quantity}),
 							fmt.Sprintf("/parts/%d/stock/%d/move", partID, s.ID),
 							s.Quantity,
 							controllers,
 						)
+					                                        }
+					                                        <form action={ templ.SafeURL(fmt.Sprintf("/parts/%d/stock/%d/delete", partID, s.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmRemoveStock"))}... }>
+					                                                <button class="btn btn-xs btn-ghost text-error" title={ i18n.T(ctx, "Remove") }>
+					                                                        @icons.Trash(templ.Attributes{"class": "w-5 h-5"})
+					                                                </button>
+					                                        </form>
+					                                }
+					                        </div>
+					                </td>
+					        </tr>
 					}
-					<form action={ templ.SafeURL(fmt.Sprintf("/parts/%d/stock/%d/delete", partID, s.ID)) } method="POST" onsubmit="return confirm('Remove this stock assignment?');">
-						<button class="btn btn-xs btn-ghost text-error" title="Remove">
-							@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
-						</button>
-					</form>
-				}
-			</div>
-		</td>
-	</tr>
-}
-
 // Helper to sum stock
 func calculateTotalStock(stock []db.GetPartAssignmentsRow) int64 {
 	var total int64 = 0

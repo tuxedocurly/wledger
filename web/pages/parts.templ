@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 	"net/url"
@@ -24,28 +25,28 @@ type PartView struct {
 
 // PartsList is the full page wrapper
 templ PartsList(user auth.User, parts []PartView, search string, page int, binID *int64) {
-	@layouts.Base("Inventory", user) {
+	@layouts.Base(i18n.T(ctx, "Inventory"), user) {
 		<div
 			x-data="{ 
-				selectedIds: [], 
-				toggleSelection(id) {
-					if (this.selectedIds.includes(id)) {
-						this.selectedIds = this.selectedIds.filter(i => i !== id);
-					} else {
-						this.selectedIds.push(id);
-					}
-				},
-				selectAll() {
-					const checkboxes = document.querySelectorAll('.part-checkbox');
-					const allIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
-					this.selectedIds = [...new Set([...this.selectedIds, ...allIds])];
-				},
-				deselectAll() {
-					this.selectedIds = [];
-				}
-			}"
+                                selectedIds: [], 
+                                toggleSelection(id) {
+                                        if (this.selectedIds.includes(id)) {
+                                                this.selectedIds = this.selectedIds.filter(i => i !== id);
+                                        } else {
+                                                this.selectedIds.push(id);
+                                        }
+                                },
+                                selectAll() {
+                                        const checkboxes = document.querySelectorAll('.part-checkbox');
+                                        const allIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                                        this.selectedIds = [...new Set([...this.selectedIds, ...allIds])];
+                                },
+                                deselectAll() {
+                                        this.selectedIds = [];
+                                }
+                        }"
 		>
-			@components.PageHeader("Inventory", "", nil)
+			@components.PageHeader(i18n.T(ctx, "Inventory"), "", nil)
 			<div class="flex flex-col md:flex-row justify-end items-center mb-6 gap-4">
 				<div x-show="selectedIds.length === 0" class="w-full md:w-auto">
 					@components.PartSearchBar(search, user.CanWrite())
@@ -54,13 +55,13 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 					<!-- Bulk Toolbar -->
 					<div class="flex flex-col sm:flex-row items-center justify-between bg-base-200 p-2 rounded-lg border border-primary/30 gap-3">
 						<div class="flex items-center justify-between w-full sm:w-auto gap-4">
-							<span class="text-sm font-bold ml-2"><span x-text="selectedIds.length"></span> selected</span>
-							<button class="btn btn-md btn-outline" @click="deselectAll()">Cancel</button>
+							<span class="text-sm font-bold ml-2"><span x-text="selectedIds.length"></span> { i18n.T(ctx, "ItemsSelected") }</span>
+							<button class="btn btn-md btn-outline" @click="deselectAll()">{ i18n.T(ctx, "Cancel") }</button>
 						</div>
 						<div class="flex gap-2 w-full sm:w-auto">
-							<button class="btn btn-md btn-primary flex-1 sm:flex-none" @click="selectAll()">Select All Visible</button>
+							<button class="btn btn-md btn-primary flex-1 sm:flex-none" @click="selectAll()">{ i18n.T(ctx, "SelectAllVisible") }</button>
 							if user.CanWrite() {
-								<button class="btn btn-md btn-error flex-1 sm:flex-none" @click="document.getElementById('bulk_delete_modal').showModal()">Delete</button>
+								<button class="btn btn-md btn-error flex-1 sm:flex-none" @click="document.getElementById('bulk_delete_modal').showModal()">{ i18n.T(ctx, "Delete") }</button>
 							}
 						</div>
 					</div>
@@ -68,10 +69,10 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 			</div>
 			<div id="parts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12 items-start">
 				if len(parts) == 0 && page == 1 {
-					@components.EmptyState("No parts found", fmt.Sprintf("We couldn't find anything matching \"%s\".", search), "📦") {
+					@components.EmptyState(i18n.T(ctx, "NoPartsFound"), i18n.TD(ctx, "NoPartsMatching", map[string]interface{}{"Search": search}), "📦") {
 						if search != "" {
 							<button onclick="document.querySelector('input[name=q]').value = ''; htmx.trigger('input[name=q]', 'input');" class="btn btn-sm btn-outline mt-4">
-								Clear Search
+								{ i18n.T(ctx, "ClearSearch") }
 							</button>
 						}
 					}
@@ -81,19 +82,19 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 			</div>
 			@components.ImportModal()
 			if user.CanWrite() {
-				@components.Modal(components.ModalProps{ID: "bulk_delete_modal", Title: "Confirm Bulk Delete", TitleClass: "text-error"}) {
+				@components.Modal(components.ModalProps{ID: "bulk_delete_modal", Title: i18n.T(ctx, "ConfirmBulkDelete"), TitleClass: "text-error"}) {
 					<p class="py-4">
-						Are you sure you want to delete <span class="font-bold" x-text="selectedIds.length"></span> parts? This action cannot be undone.
+						{ i18n.T(ctx, "BulkDeleteConfirmPrefix") } <span class="font-bold" x-text="selectedIds.length"></span> { i18n.T(ctx, "BulkDeleteConfirmSuffix") }
 					</p>
 					<div class="modal-action">
 						<form method="dialog">
-							<button class="btn">Cancel</button>
+							<button class="btn">{ i18n.T(ctx, "Cancel") }</button>
 						</form>
 						<button
 							class="btn btn-error"
 							@click="htmx.ajax('DELETE', '/parts/bulk', { values: { ids: selectedIds }, target: '#main-content' }); document.getElementById('bulk_delete_modal').close()"
 						>
-							Confirm Delete
+							{ i18n.T(ctx, "ConfirmDelete") }
 						</button>
 					</div>
 				}
@@ -142,7 +143,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 				<div class="flex justify-between items-end mt-4">
 					<div class="flex flex-col">
 						<span class="text-s font-mono opacity-50"># { part.PartNumber.String }</span>
-						<span class="badge badge-info font-semibold mt-1">Stock: { fmt.Sprintf("%d", part.TotalStock) }</span>
+						<span class="badge badge-info font-semibold mt-1">{ i18n.T(ctx, "Stock") }: { fmt.Sprintf("%d", part.TotalStock) }</span>
 					</div>
 					<div class="flex items-center gap-2">
 						if part.OrphanedStock > 0 {
@@ -177,5 +178,5 @@ func binQuery(binID *int64) string {
 }
 
 script navigateTo(url string) {
-	window.location.href = url;
+        window.location.href = url;
 }
