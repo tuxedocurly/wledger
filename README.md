@@ -155,7 +155,7 @@ make build
 
 ### Development
 
-WLEDger uses `air` for live reloading and `make` for task orchestration.
+WLEDger uses `Templ` for live reloading and `make` for task orchestration.
 
 ```bash
 make dev
@@ -163,8 +163,8 @@ make dev
 
 This will start:
 
-- Go server (with Air)
-- Templ generation watcher
+- Go server (with Templ watcher)
+- Templ + Go change watcher
 - Tailwind CSS watcher
 
 ---

@@ -35,6 +35,11 @@ UPDATE bins
 SET led_index = ?
 WHERE id = ?;
 
+-- name: UpdateBin :exec
+UPDATE bins
+SET name = ?, led_index = ?, width = ?, grid_x = ?, grid_y = ?
+WHERE id = ?;
+
 -- name: DeleteBin :exec
 DELETE FROM bins WHERE id = ?;
 
@@ -48,3 +53,8 @@ FROM bins b
 JOIN containers c ON b.container_id = c.id
 JOIN controllers ct ON c.controller_id = ct.id
 WHERE ct.ip_address = ? AND c.segment_id = ? AND b.led_index = ?;
+
+-- name: ClearContainerBinLedIndices :exec
+UPDATE bins
+SET led_index = NULL
+WHERE container_id = ?;

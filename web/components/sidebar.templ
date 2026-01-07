@@ -92,16 +92,7 @@ templ LoginButton() {
 templ ThemeToggle() {
 	<label
 		class="btn btn-ghost justify-start w-full normal-case text-base font-normal px-2 swap"
-		x-data="{
-            theme: localStorage.getItem('theme') || 'dark',
-            isAnimating: false,
-            toggle() {
-                this.isAnimating = true;
-                this.theme = this.theme === 'dark' ? 'silk' : 'dark';
-                localStorage.setItem('theme', this.theme);
-                document.documentElement.setAttribute('data-theme', this.theme);
-            }
-        }"
+		x-data="themeToggle"
 		:class="{ 'swap-rotate': isAnimating }"
 	>
 		<input type="checkbox" :checked="theme === 'silk'" @change="toggle()"/>

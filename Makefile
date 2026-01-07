@@ -2,7 +2,7 @@
 .PHONY: help
 help:
 	@echo "Available commands:"
-	@echo "  make dev        - Run all dev watchers (templ, tailwind, air)"
+	@echo "  make dev        - Run all dev watchers (templ, tailwind, server)"
 	@echo "  make build      - Build for production"
 	@echo "  make generate   - Generate all code (templ, sqlc, tailwind)"
 	@echo "  make clean      - Clean generated files and build artifacts"
@@ -13,38 +13,40 @@ help:
 .PHONY: install_dependencies
 install_dependencies:
 	@echo "Installing Go development tools..."
-	@go install github.com/a-h/templ/cmd/templ@latest
-	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-	@go install github.com/air-verse/air@latest
-	@echo "Installing Node.js dependencies..."
-	@npm install
-	@echo "Dependencies installed!"
+	@go install github.com/a-h/templ/cmd/templ@latest \
+		&& echo "✅ Templ installed successfully" \
+		|| (echo "❌ Templ installation failed" && exit 1)
+		
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest \
+		&& echo "✅ sqlc installed successfully" \
+		|| (echo "❌ sqlc installation failed" && exit 1)
 
-# Run all dev watchers (with initial generation)
+	@echo "Installing Node.js dependencies..."
+	@npm install \
+		&& echo "✅ Node dependencies installed" \
+		|| (echo "❌ npm install failed" && exit 1)
+		
+	@echo "🎉 All dependencies installed!"
+
+# Run all dev watchers
 .PHONY: dev
 dev:
 	@echo "Running initial code generation..."
 	@make --no-print-directory generate
 	@echo ""
 	@echo "Starting development watchers..."
-	@make --no-print-directory -j3 dev-templ dev-tailwind dev-server
+	@make --no-print-directory -j2 dev-templ dev-tailwind
 
-# Watch Templ files
+# Watch Templ files AND Run Server
+# Using --cmd to run the server directly after generation
 .PHONY: dev-templ
 dev-templ:
-	templ generate --watch --proxy="http://localhost:8080"
+	templ generate --watch --proxy="http://localhost:8080" --cmd="go run -tags fts5 ./cmd/server"
 
 # Watch CSS (Tailwind v4)
 .PHONY: dev-tailwind
 dev-tailwind:
 	npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/css/output.css --watch
-
-# Watch Go Server
-.PHONY: dev-server
-dev-server:
-# Give Templ/Tailwind a moment to grab locks/ports
-	@sleep 2
-	air -c air.toml
 
 # Generate all code (useful after git pull or initial setup)
 .PHONY: generate

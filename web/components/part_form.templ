@@ -20,12 +20,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 		method="POST"
 		enctype="multipart/form-data"
 		class="space-y-8"
-		x-data="{ 
-            // AlpineJS for dynamic link rows
-            newLinks: [],
-            addLink() { this.newLinks.push({url: '', label: ''}); },
-            removeLink(index) { this.newLinks.splice(index, 1); }
-        }"
+		x-data="partLinksForm"
 	>
 		<div class="card bg-base-200 shadow-sm border border-base-300">
 			<div class="card-body p-6">
@@ -213,6 +208,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 			</button>
 		</div>
 	</form>
+	<script src="/static/js/part_form.js"></script>
 	@BarcodeScannerModal()
 }
 

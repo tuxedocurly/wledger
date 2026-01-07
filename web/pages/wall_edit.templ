@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
-	"github.com/tuxedocurly/wledger/internal/utils"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
@@ -12,6 +11,8 @@ import (
 
 templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.DashboardContainer, allContainers []db.Container) {
 	@layouts.Base("Edit Wall", user) {
+		@templ.JSONScript("wall-containers-data", wallContainers)
+		@templ.JSONScript("available-containers-data", allContainers)
 		<div class="mb-6">
 			<a href="/" class="btn btn-sm btn-ghost gap-2 pl-0">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -21,39 +22,7 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 			<h2 class="opacity-70">Configure a wall with containers to organize your inventory dashboard.</h2>
 		</div>
 		<div
-			x-data={ fmt.Sprintf("{ wallContainers: %s, availableContainers: %s, selectedAddId: '' }", utils.JSON(wallContainers), utils.JSON(allContainers)) }
-			x-init="
-				$nextTick(() => {
-					new Sortable($refs.wallContainerList, {
-						handle: '.drag-handle',
-						draggable: '.group',
-						animation: 150,
-						ghostClass: 'sortable-ghost',
-						chosenClass: 'sortable-chosen',
-						dragClass: 'sortable-drag',
-						onStart: () => {
-							if (window.navigator.vibrate) window.navigator.vibrate(5);
-						},
-						onEnd: (evt) => {
-							// Calculate new order from a clone to avoid immediate reactive conflicts
-							const newOrder = [...wallContainers];
-							const item = newOrder.splice(evt.oldIndex, 1)[0];
-							newOrder.splice(evt.newIndex, 0, item);
-
-							// Force Alpine to completely re-render the list
-							// clear the array and then set it back in nextTick.
-							// This destroys the old DOM elements and creates new
-							// clean ones with correct scopes.
-							wallContainers = [];
-							
-							$nextTick(() => {
-								wallContainers = newOrder;
-								if (window.navigator.vibrate) window.navigator.vibrate(10);
-							});
-						}
-					});
-				})
-			"
+			x-data={ fmt.Sprintf("wallEdit(%d, 'wall-containers-data', 'available-containers-data')", wall.ID) }
 			class="mb-12"
 		>
 			<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/walls/%d", wall.ID)) }>
@@ -78,7 +47,7 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 									<button
 										type="button"
 										class="btn btn-error btn-outline w-full"
-										@click={ fmt.Sprintf("if(confirm('Delete this wall?')) { const f = document.createElement('form'); f.method='POST'; f.action='/walls/%d/delete'; document.body.appendChild(f); f.submit(); }", wall.ID) }
+										@click="deleteWall()"
 									>Delete Wall</button>
 								</div>
 							</div>
@@ -145,7 +114,7 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 											type="button"
 											class="btn btn-md btn-primary px-6"
 											:disabled="!selectedAddId"
-											@click="if(selectedAddId) { const c = availableContainers.find(x => x.id == selectedAddId); if(c && !wallContainers.some(x => x.id == c.id)) { wallContainers.push(c); selectedAddId = ''; } }"
+											@click="addToWall()"
 										>
 											@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
 											Add to Wall
@@ -158,5 +127,6 @@ templ WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboa
 				</div>
 			</form>
 		</div>
+		<script src="/static/js/wall_edit.js"></script>
 	}
 }

@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const clearContainerBinLedIndices = `-- name: ClearContainerBinLedIndices :exec
+UPDATE bins
+SET led_index = NULL
+WHERE container_id = ?
+`
+
+func (q *Queries) ClearContainerBinLedIndices(ctx context.Context, containerID int64) error {
+	_, err := q.exec(ctx, q.clearContainerBinLedIndicesStmt, clearContainerBinLedIndices, containerID)
+	return err
+}
+
 const createBin = `-- name: CreateBin :one
 INSERT INTO bins (name, container_id, led_index, width, grid_x, grid_y)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -208,6 +219,33 @@ func (q *Queries) RestoreBin(ctx context.Context, arg RestoreBinParams) error {
 		arg.Width,
 		arg.GridX,
 		arg.GridY,
+	)
+	return err
+}
+
+const updateBin = `-- name: UpdateBin :exec
+UPDATE bins
+SET name = ?, led_index = ?, width = ?, grid_x = ?, grid_y = ?
+WHERE id = ?
+`
+
+type UpdateBinParams struct {
+	Name     string        `json:"name"`
+	LedIndex sql.NullInt64 `json:"led_index"`
+	Width    sql.NullInt64 `json:"width"`
+	GridX    sql.NullInt64 `json:"grid_x"`
+	GridY    sql.NullInt64 `json:"grid_y"`
+	ID       int64         `json:"id"`
+}
+
+func (q *Queries) UpdateBin(ctx context.Context, arg UpdateBinParams) error {
+	_, err := q.exec(ctx, q.updateBinStmt, updateBin,
+		arg.Name,
+		arg.LedIndex,
+		arg.Width,
+		arg.GridX,
+		arg.GridY,
+		arg.ID,
 	)
 	return err
 }

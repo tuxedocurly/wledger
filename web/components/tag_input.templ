@@ -8,17 +8,10 @@ import (
 // tags: Current tags for the part
 // allTags: All existing tags in the system for autocomplete suggestions
 templ TagInput(currentTags []db.Tag, allTags []db.Tag) {
+	@templ.JSONScript("tag-input-data", getTagNames(currentTags))
 	<div
 		class="form-control w-full"
-		x-data={ templ.JSONString(map[string]any{
-            "tags": getTagNames(currentTags),
-            "inputValue": "",
-        }) }
-		x-init="
-            $watch('tags', value => {
-                $refs.hiddenInput.value = value.join(',');
-            })
-        "
+		x-data="tagInput('tag-input-data')"
 	>
 		<label class="label pt-0 pb-2">
 			<span class="label-text font-medium">Tags</span>
@@ -29,7 +22,7 @@ templ TagInput(currentTags []db.Tag, allTags []db.Tag) {
 					<span x-text="tag" class="text-sm font-medium"></span>
 					<button
 						type="button"
-						@click="tags = tags.filter((_, i) => i !== index)"
+						@click="removeTag(index)"
 						class="btn btn-ghost btn-xs btn-circle hover:bg-primary-focus p-0 min-h-0 h-4 w-4"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,13 +36,7 @@ templ TagInput(currentTags []db.Tag, allTags []db.Tag) {
 				placeholder="Add tag and press Enter..."
 				class="bg-transparent border-none outline-none flex-grow min-w-32 text-sm px-2 py-1"
 				x-model="inputValue"
-				@keydown.enter.prevent="
-                    if (inputValue.trim() !== '') {
-                        const newTags = inputValue.split(',').map(t => t.trim().toLowerCase()).filter(t => t !== '' && !tags.includes(t));
-                        tags = [...tags, ...newTags];
-                        inputValue = '';
-                    }
-                "
+				@keydown.enter.prevent="addTag()"
 				list="tag-suggestions"
 			/>
 		</div>
@@ -63,6 +50,7 @@ templ TagInput(currentTags []db.Tag, allTags []db.Tag) {
 			<span class="label-text-alt opacity-60">Separate tags with commas or press Enter.</span>
 		</label>
 	</div>
+	<script src="/static/js/tag_input.js"></script>
 }
 
 func getTagNames(tags []db.Tag) []string {

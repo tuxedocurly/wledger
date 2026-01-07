@@ -43,30 +43,6 @@ templ AuditDetailModal() {
 		<div class="modal-action">
 			<button class="btn btn-ghost" onclick="audit_detail_modal.close()">Close</button>
 		</div>
-		<script>
-            function copyToClipboard(id) {
-                const text = document.getElementById(id).textContent;
-                navigator.clipboard.writeText(text);
-            }
-
-            window.addEventListener('open-audit-detail', (e) => {
-                const { id, oldVal, newVal } = e.detail;
-                
-                const formatJson = (val) => {
-                    if (!val || val === "null" || val === "{}") return "{}";
-                    try {
-                        const obj = JSON.parse(val);
-                        return JSON.stringify(obj, null, 2);
-                    } catch(e) {
-                        return val;
-                    }
-                };
-
-                document.getElementById('audit-detail-old').textContent = formatJson(oldVal);
-                document.getElementById('audit-detail-new').textContent = formatJson(newVal);
-                
-                audit_detail_modal.showModal();
-            });
-		</script>
+		<script src="/static/js/audit.js"></script>
 	}
 }

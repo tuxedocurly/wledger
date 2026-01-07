@@ -15,16 +15,14 @@ templ Base(title string, user auth.User) {
 			<title>{ title } | WLEDger</title>
 			<link rel="icon" href="/static/img/favicon.ico"/>
 			<link href="/static/css/output.css" rel="stylesheet"/>
-			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-			<script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
-			<script src="https://unpkg.com/sortablejs@1.15.2/Sortable.min.js"></script>
+			<script src={ "https://unpkg.com/htmx.org@2.0.4" }></script>
+			<script src={ "https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" } defer></script>
+			<script src={ "https://unpkg.com/sortablejs@1.15.2/Sortable.min.js" }></script>
 			<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-			<script>
-                const savedTheme = localStorage.getItem('theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            </script>
+			<script src="/static/js/theme.js"></script>
+			<script src="/static/js/toast.js"></script>
 			<style id="dynamic-colors">
-            :root {
+		    :root {
                 --color-locate: #0000FF;
                 --color-stock-ok: #00FF00;
                 --color-stock-low: #FFFF00;
@@ -53,7 +51,7 @@ templ Base(title string, user auth.User) {
             </style>
 		</head>
 		<body class="bg-base-100 text-base-content font-sans" x-data="{}">
-			<div id="toast-container" class="toast toast-end z-[100]"></div>
+			<div id="toast-container" class="toast toast-top toast-end z-[100]"></div>
 			<div class="drawer md:drawer-open h-screen overflow-hidden">
 				<input id="main-drawer" type="checkbox" class="drawer-toggle"/>
 				<div class="drawer-content flex flex-col h-full overflow-hidden">

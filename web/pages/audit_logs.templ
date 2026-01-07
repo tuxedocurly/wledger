@@ -10,13 +10,6 @@ import (
 	"net/url"
 )
 
-script openAuditDetail(id int64, oldVal string, newVal string) {
-    console.log("Detail for", id, oldVal, newVal);
-    window.dispatchEvent(new CustomEvent('open-audit-detail', { 
-        detail: { id, oldVal, newVal } 
-    }));
-}
-
 templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsersRow, filters db.ListAuditLogsParams, totalCount int64, currentPage int) {
 	@layouts.Base("Audit Logs", user) {
 		<div class="max-w-7xl mx-auto w-full px-4">
@@ -97,6 +90,7 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 			<!-- Infinite Scroll Sentinel is inside AuditLogRows -->
 		</div>
 		@components.AuditDetailModal()
+		<script src="/static/js/audit.js"></script>
 	}
 }
 
@@ -130,7 +124,9 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 			<td class="text-right">
 				<button
 					class="btn btn-ghost btn-xs"
-					onclick={ openAuditDetail(log.ID, string(log.OldValue), string(log.NewValue)) }
+					data-old={ string(log.OldValue) }
+					data-new={ string(log.NewValue) }
+					{ templ.Attributes{"onclick": fmt.Sprintf("openAuditLogDetail(%d, this.dataset.old, this.dataset.new)", log.ID)}... }
 				>
 					@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
 					View

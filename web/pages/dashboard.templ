@@ -56,13 +56,14 @@ templ Dashboard(user auth.User, stats db.GetDashboardStatsRow, dashboardWalls []
 						"🔌",
 					)
 				} else {
-					<div x-data="{ show: !localStorage.getItem('dismissedDashboardWallAlert') }" x-show="show" class="alert alert-info shadow-sm mb-8 transition-all duration-300">
+					<div x-data="dashboardAlert" x-show="show" class="alert alert-info shadow-sm mb-8 transition-all duration-300">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 						<span class="flex-1">Showing all controllers. Create a <strong>Wall</strong> to organize your view.</span>
-						<button @click="show = false; localStorage.setItem('dismissedDashboardWallAlert', 'true')" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
+						<button @click="dismiss()" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
 							@icons.X(templ.Attributes{"class": "w-4 h-4"})
 						</button>
 					</div>
+					<script src="/static/js/dashboard.js"></script>
 					for _, ctrl := range legacyControllers {
 						@components.DashboardGrid(ctrl)
 					}

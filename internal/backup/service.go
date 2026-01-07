@@ -152,6 +152,15 @@ func (s *service) Export(ctx context.Context, w io.Writer) error {
 			}
 			return err
 		}
+
+		// Ignore hidden files/directories (like .restore_tmp, .uploads_bak, .git, etc.)
+		if strings.HasPrefix(info.Name(), ".") && path != s.uploadsDir {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		if info.IsDir() {
 			return nil
 		}
@@ -186,8 +195,23 @@ func (s *service) Export(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
+func (s *service) cleanOldTempFiles() {
+	entries, err := os.ReadDir(s.uploadsDir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() && (strings.HasPrefix(entry.Name(), ".restore_tmp_") || strings.HasPrefix(entry.Name(), ".uploads_bak_")) {
+			s.logger.Info("cleaning up old temporary restore directory", "name", entry.Name())
+			os.RemoveAll(filepath.Join(s.uploadsDir, entry.Name()))
+		}
+	}
+}
+
 func (s *service) Restore(ctx context.Context, zipReader io.ReaderAt, size int64) error {
 	s.logger.Debug("starting system restore", "size", size)
+	s.cleanOldTempFiles()
+
 	zr, err := zip.NewReader(zipReader, size)
 	if err != nil {
 		return fmt.Errorf("invalid ZIP file: %w", err)
@@ -220,10 +244,9 @@ func (s *service) Restore(ctx context.Context, zipReader io.ReaderAt, size int64
 
 	// Preparation: Extract Uploads to Temp Directory
 	timestamp := time.Now().UnixNano()
-	// Use uploadsDir parent to keep temp folders in "app/" root
-	// app/uploads -> app/restore_tmp_123
-	appDir := filepath.Dir(s.uploadsDir)
-	tempDir := filepath.Join(appDir, fmt.Sprintf("restore_tmp_%d", timestamp))
+	// Use a hidden folder inside uploadsDir to ensure same-filesystem operations
+	// This avoids "cross-device link" errors when uploadsDir is a Docker volume
+	tempDir := filepath.Join(s.uploadsDir, fmt.Sprintf(".restore_tmp_%d", timestamp))
 
 	s.logger.Debug("extracting uploads to temp directory", "temp_dir", tempDir)
 	defer os.RemoveAll(tempDir)
@@ -328,29 +351,51 @@ func (s *service) Restore(ctx context.Context, zipReader io.ReaderAt, size int64
 		return err
 	}
 
-	// Atomic Swap of Assets
-	liveUploads := s.uploadsDir
-	backupUploads := filepath.Join(appDir, fmt.Sprintf("uploads_bak_%d", timestamp))
+	// Atomic Swap of Assets (Modified for Volume compatibility)
+	s.logger.Debug("swapping upload contents", "dir", s.uploadsDir)
 
-	s.logger.Debug("performing atomic swap of uploads directory", "live", liveUploads, "backup", backupUploads)
-	if err := os.Rename(liveUploads, backupUploads); err != nil {
-		// If live dir doesn't exist (first run), just ignore
-		if !os.IsNotExist(err) {
-			s.logger.Error("CRITICAL: Failed to move live uploads to backup.", "err", err)
-			return fmt.Errorf("file system swap failed (DB restored): %w", err)
+	// Create backup folder inside uploadsDir
+	backupDir := filepath.Join(s.uploadsDir, fmt.Sprintf(".uploads_bak_%d", timestamp))
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return fmt.Errorf("failed to create backup dir: %w", err)
+	}
+	defer os.RemoveAll(backupDir)
+
+	// Helper to move contents
+	moveContents := func(src, dst string) error {
+		entries, err := os.ReadDir(src)
+		if err != nil {
+			return err
 		}
+		for _, entry := range entries {
+			// Skip the special directories we created
+			if entry.Name() == filepath.Base(tempDir) || entry.Name() == filepath.Base(backupDir) {
+				continue
+			}
+			srcPath := filepath.Join(src, entry.Name())
+			dstPath := filepath.Join(dst, entry.Name())
+			if err := os.Rename(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
-	if err := os.Rename(tempDir, liveUploads); err != nil {
-		s.logger.Error("CRITICAL: Failed to move temp uploads to live.", "err", err)
-		// Rollback Backup -> Live
-		if recErr := os.Rename(backupUploads, liveUploads); recErr != nil {
-			s.logger.Error("FATAL: Failed to restore backup uploads!", "err", recErr)
-		}
-		return fmt.Errorf("file system error during swap: %w", err)
+	// Move current contents to backup
+	if err := moveContents(s.uploadsDir, backupDir); err != nil {
+		return fmt.Errorf("failed to move current uploads to backup: %w", err)
 	}
 
-	os.RemoveAll(backupUploads)
+	// Move new contents from temp to live
+	if err := moveContents(tempDir, s.uploadsDir); err != nil {
+		s.logger.Error("failed to move new uploads to live, attempting rollback", "err", err)
+		// Rollback
+		if rbErr := moveContents(backupDir, s.uploadsDir); rbErr != nil {
+			s.logger.Error("FATAL: rollback failed", "err", rbErr)
+		}
+		return fmt.Errorf("failed to swap new uploads: %w", err)
+	}
+
 	return nil
 }
 

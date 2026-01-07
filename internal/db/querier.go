@@ -14,6 +14,7 @@ type Querier interface {
 	CleanupSessions(ctx context.Context, expiry float64) error
 	ClearAuditLogs(ctx context.Context) error
 	ClearBins(ctx context.Context) error
+	ClearContainerBinLedIndices(ctx context.Context, containerID int64) error
 	ClearContainers(ctx context.Context) error
 	ClearControllers(ctx context.Context) error
 	ClearPartAiPrompts(ctx context.Context) error
@@ -132,6 +133,7 @@ type Querier interface {
 	SearchParts(ctx context.Context, arg SearchPartsParams) ([]SearchPartsRow, error)
 	SetFlag(ctx context.Context, arg SetFlagParams) error
 	SetPasswordResetFlag(ctx context.Context, arg SetPasswordResetFlagParams) error
+	UpdateBin(ctx context.Context, arg UpdateBinParams) error
 	UpdateBinLedIndex(ctx context.Context, arg UpdateBinLedIndexParams) error
 	UpdateColors(ctx context.Context, arg UpdateColorsParams) error
 	UpdateContainerConfig(ctx context.Context, arg UpdateContainerConfigParams) error

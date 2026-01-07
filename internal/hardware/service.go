@@ -39,7 +39,27 @@ func NewService(store db.Store, wledClient *wled.Client, logger *slog.Logger) Se
 }
 
 func (s *service) GetContainers(ctx context.Context, controllerID int64) ([]db.Container, error) {
-	return s.store.GetContainersByController(ctx, controllerID)
+	containers, err := s.store.GetContainersByController(ctx, controllerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate config JSON for each container and log if corrupted
+	for _, c := range containers {
+		if c.ConfigJson.Valid && c.ConfigJson.String != "" {
+			var js json.RawMessage
+			if err := json.Unmarshal([]byte(c.ConfigJson.String), &js); err != nil {
+				s.logger.Error("corrupted container configuration detected",
+					"container_id", c.ID,
+					"controller_id", controllerID,
+					"err", err,
+					"json", c.ConfigJson.String,
+				)
+			}
+		}
+	}
+
+	return containers, nil
 }
 
 func (s *service) ListControllers(ctx context.Context) ([]db.Controller, error) {
@@ -217,35 +237,86 @@ func (s *service) SaveGrid(ctx context.Context, controllerID int64, gridDataJSON
 		}
 
 		// Sync Bins
-		seenContainers := make(map[int64]bool)
-		for _, b := range inputBins {
-			dbID, ok := containerIDMap[b.ContainerIndex]
-			if !ok {
-				continue
-			}
+		for i := range inputContainers {
+			dbID := containerIDMap[i]
 
-			if !seenContainers[dbID] {
-				err := q.DeleteBinsByContainer(ctx, dbID)
-				if err != nil {
-					return err
+			// Get all input bins for THIS container
+			var containerInputBins []binInJSON
+			for _, b := range inputBins {
+				if b.ContainerIndex == i {
+					containerInputBins = append(containerInputBins, b)
 				}
-				seenContainers[dbID] = true
 			}
 
-			_, err := q.CreateBin(ctx, db.CreateBinParams{
-				Name:        b.Name,
-				ContainerID: dbID,
-				LedIndex:    sql.NullInt64{Int64: int64(b.LedIndex), Valid: true},
-				Width:       sql.NullInt64{Int64: 1, Valid: true},
-				GridX:       sql.NullInt64{Int64: int64(b.X), Valid: true},
-				GridY:       sql.NullInt64{Int64: int64(b.Y), Valid: true},
-			})
+			// Get existing bins from DB to preserve IDs (and part assignments)
+			existingBins, err := q.GetBinsByContainer(ctx, dbID)
 			if err != nil {
 				return err
 			}
 
-			if int64(b.LedIndex) >= totalLedCount {
-				totalLedCount = int64(b.LedIndex) + 1
+			// Clear all LED indices for this container to avoid unique constraint violations during swap/resize
+			// SQLite UNIQUE(container_id, led_index) allows multiple NULLs
+			err = q.ClearContainerBinLedIndices(ctx, dbID)
+			if err != nil {
+				return fmt.Errorf("failed to clear bin indices: %w", err)
+			}
+
+			// Map existing bins by Position (X,Y)
+			existingByPos := make(map[string]db.Bin)
+			for _, bin := range existingBins {
+				if bin.GridX.Valid && bin.GridY.Valid {
+					key := fmt.Sprintf("%d,%d", bin.GridX.Int64, bin.GridY.Int64)
+					existingByPos[key] = bin
+				}
+			}
+
+			processedBinIDs := make(map[int64]bool)
+
+			for _, b := range containerInputBins {
+				key := fmt.Sprintf("%d,%d", b.X, b.Y)
+
+				if existing, found := existingByPos[key]; found {
+					// Update existing bin
+					err := q.UpdateBin(ctx, db.UpdateBinParams{
+						ID:       existing.ID,
+						Name:     b.Name,
+						LedIndex: sql.NullInt64{Int64: int64(b.LedIndex), Valid: true},
+						Width:    sql.NullInt64{Int64: 1, Valid: true},
+						GridX:    sql.NullInt64{Int64: int64(b.X), Valid: true},
+						GridY:    sql.NullInt64{Int64: int64(b.Y), Valid: true},
+					})
+					if err != nil {
+						return err
+					}
+					processedBinIDs[existing.ID] = true
+				} else {
+					// Create new bin
+					_, err := q.CreateBin(ctx, db.CreateBinParams{
+						Name:        b.Name,
+						ContainerID: dbID,
+						LedIndex:    sql.NullInt64{Int64: int64(b.LedIndex), Valid: true},
+						Width:       sql.NullInt64{Int64: 1, Valid: true},
+						GridX:       sql.NullInt64{Int64: int64(b.X), Valid: true},
+						GridY:       sql.NullInt64{Int64: int64(b.Y), Valid: true},
+					})
+					if err != nil {
+						return err
+					}
+				}
+
+				if int64(b.LedIndex) >= totalLedCount {
+					totalLedCount = int64(b.LedIndex) + 1
+				}
+			}
+
+			// Delete orphans (bins that were in DB but not in input)
+			for _, bin := range existingBins {
+				if !processedBinIDs[bin.ID] {
+					err := q.DeleteBin(ctx, bin.ID)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 

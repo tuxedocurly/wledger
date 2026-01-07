@@ -37,6 +37,8 @@ You need some addressable LEDs. The most common and well-supported type is the *
 
 Other options, such as SK6812 (and many more), are available as well.
 
+> Reddit user u/ShroomShroomBeepBeep made a great suggestion - instead of using LED strips (tons of soldering required) you could use some seed style strips, such as [these](https://amzn.to/49hMWyz).
+
 ### Storage Bins (The "Inventory")
 
 WLEDger works by lighting up 1 or more bins when you need to locate a part. For this to work well, the storage bins you choose should be clear or semi-transparent.
@@ -88,7 +90,7 @@ This is the fastest, cleanest, and most "plug-and-play" method. It's designed to
 | :--- | :--- |
 | **Bins** | [High Quality 8x8 Transparent Bin Organizer](https://amzn.to/43vlFGY) |
 | **MCU** | [Adafruit Sparkle Motion Mini](https://www.adafruit.com/product/6160) |
-| **LEDs** | [8x Custom 8-LED PCBs](/hardware/README.md) (Order from JLCPCB, PCBWay, Seeed Fusion, ...) |
+| **LEDs** | [8x Custom 8-LED PCBs](https://github.com/tuxedocurly/wledger/tree/main/hardware) (Order from JLCPCB, PCBWay, Seeed Fusion, ...) |
 | **Backer** | A sheet of cardboard, MDF, or thin plywood to attach the PCBs to. |
 | **Power** | 5V 4A+ Power Supply (USB brick, battery pack, etc) |
 | **Wiring** | Wire (22 AWG is good) |
@@ -96,6 +98,8 @@ This is the fastest, cleanest, and most "plug-and-play" method. It's designed to
 ---
 
 ## Path 2: The "Cheapest" Build (DIY Wiring)
+
+> Reddit user u/ShroomShroomBeepBeep made a great suggestion - instead of using LED strips (tons of soldering required) you could use some seed style strips, such as [these](https://amzn.to/49hMWyz).
 
 This is the classic DIY method. It's *very* cheap to build, but requires the most time. You will cut an LED strip into 64 individual pieces and solder them all back together.
 

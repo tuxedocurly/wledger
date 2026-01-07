@@ -10,20 +10,22 @@ document.addEventListener('alpine:init', () => {
         },
         copyPrompt(id) {
             const tagsQuery = this.selectedTags.length > 0 ? '?tags=' + this.selectedTags.join(',') : '';
-            fetch('/inspiration/' + id + '/generate' + tagsQuery)
-                .then(response => response.text())
+            return fetch('/inspiration/' + id + '/generate' + tagsQuery)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text();
+                })
                 .then(text => {
-                    navigator.clipboard.writeText(text).then(() => {
-                        const toast = document.createElement('div');
-                        toast.className = 'toast toast-top toast-center z-50';
-                        toast.innerHTML = '<div class="alert alert-success text-white"><span>Copied to clipboard!</span></div>';
-                        document.body.appendChild(toast);
-                        setTimeout(() => toast.remove(), 2000);
-                    });
+                    return navigator.clipboard.writeText(text);
                 })
                 .catch(err => {
                     console.error('Failed to copy: ', err);
-                    alert('Failed to generate prompt. See console.');
+                    if (window.showToast) {
+                        window.showToast('Failed to generate prompt. See console.', 'alert-error');
+                    } else {
+                        alert('Failed to generate prompt. See console.');
+                    }
+                    throw err;
                 });
         }
     }))

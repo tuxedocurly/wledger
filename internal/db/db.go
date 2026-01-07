@@ -39,6 +39,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.clearBinsStmt, err = db.PrepareContext(ctx, clearBins); err != nil {
 		return nil, fmt.Errorf("error preparing query ClearBins: %w", err)
 	}
+	if q.clearContainerBinLedIndicesStmt, err = db.PrepareContext(ctx, clearContainerBinLedIndices); err != nil {
+		return nil, fmt.Errorf("error preparing query ClearContainerBinLedIndices: %w", err)
+	}
 	if q.clearContainersStmt, err = db.PrepareContext(ctx, clearContainers); err != nil {
 		return nil, fmt.Errorf("error preparing query ClearContainers: %w", err)
 	}
@@ -381,6 +384,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.setPasswordResetFlagStmt, err = db.PrepareContext(ctx, setPasswordResetFlag); err != nil {
 		return nil, fmt.Errorf("error preparing query SetPasswordResetFlag: %w", err)
 	}
+	if q.updateBinStmt, err = db.PrepareContext(ctx, updateBin); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateBin: %w", err)
+	}
 	if q.updateBinLedIndexStmt, err = db.PrepareContext(ctx, updateBinLedIndex); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateBinLedIndex: %w", err)
 	}
@@ -448,6 +454,11 @@ func (q *Queries) Close() error {
 	if q.clearBinsStmt != nil {
 		if cerr := q.clearBinsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing clearBinsStmt: %w", cerr)
+		}
+	}
+	if q.clearContainerBinLedIndicesStmt != nil {
+		if cerr := q.clearContainerBinLedIndicesStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing clearContainerBinLedIndicesStmt: %w", cerr)
 		}
 	}
 	if q.clearContainersStmt != nil {
@@ -1020,6 +1031,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing setPasswordResetFlagStmt: %w", cerr)
 		}
 	}
+	if q.updateBinStmt != nil {
+		if cerr := q.updateBinStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateBinStmt: %w", cerr)
+		}
+	}
 	if q.updateBinLedIndexStmt != nil {
 		if cerr := q.updateBinLedIndexStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateBinLedIndexStmt: %w", cerr)
@@ -1129,6 +1145,7 @@ type Queries struct {
 	cleanupSessionsStmt                *sql.Stmt
 	clearAuditLogsStmt                 *sql.Stmt
 	clearBinsStmt                      *sql.Stmt
+	clearContainerBinLedIndicesStmt    *sql.Stmt
 	clearContainersStmt                *sql.Stmt
 	clearControllersStmt               *sql.Stmt
 	clearPartAiPromptsStmt             *sql.Stmt
@@ -1243,6 +1260,7 @@ type Queries struct {
 	searchPartsStmt                    *sql.Stmt
 	setFlagStmt                        *sql.Stmt
 	setPasswordResetFlagStmt           *sql.Stmt
+	updateBinStmt                      *sql.Stmt
 	updateBinLedIndexStmt              *sql.Stmt
 	updateColorsStmt                   *sql.Stmt
 	updateContainerConfigStmt          *sql.Stmt
@@ -1267,6 +1285,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		cleanupSessionsStmt:                q.cleanupSessionsStmt,
 		clearAuditLogsStmt:                 q.clearAuditLogsStmt,
 		clearBinsStmt:                      q.clearBinsStmt,
+		clearContainerBinLedIndicesStmt:    q.clearContainerBinLedIndicesStmt,
 		clearContainersStmt:                q.clearContainersStmt,
 		clearControllersStmt:               q.clearControllersStmt,
 		clearPartAiPromptsStmt:             q.clearPartAiPromptsStmt,
@@ -1381,6 +1400,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		searchPartsStmt:                    q.searchPartsStmt,
 		setFlagStmt:                        q.setFlagStmt,
 		setPasswordResetFlagStmt:           q.setPasswordResetFlagStmt,
+		updateBinStmt:                      q.updateBinStmt,
 		updateBinLedIndexStmt:              q.updateBinLedIndexStmt,
 		updateColorsStmt:                   q.updateColorsStmt,
 		updateContainerConfigStmt:          q.updateContainerConfigStmt,
