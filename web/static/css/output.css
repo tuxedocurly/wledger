@@ -374,98 +374,6 @@
       }
     }
   }
-  .fab {
-    @layer daisyui.l1.l2.l3 {
-      pointer-events: none;
-      position: fixed;
-      inset-inline-end: calc(0.25rem * 4);
-      bottom: calc(0.25rem * 4);
-      z-index: 999;
-      display: flex;
-      flex-direction: column-reverse;
-      align-items: flex-end;
-      gap: calc(0.25rem * 2);
-      font-size: var(--text-sm);
-      line-height: var(--tw-leading, var(--text-sm--line-height));
-      white-space: nowrap;
-      > * {
-        pointer-events: auto;
-        display: flex;
-        align-items: center;
-        gap: calc(0.25rem * 2);
-        &:hover, &:has(:focus-visible) {
-          z-index: 1;
-        }
-      }
-      > [tabindex] {
-        &:first-child {
-          position: relative;
-          display: grid;
-          transition-property: opacity, visibility, rotate;
-          transition-duration: 0.2s;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        }
-      }
-      .fab-close {
-        position: absolute;
-        inset-inline-end: calc(0.25rem * 0);
-        bottom: calc(0.25rem * 0);
-      }
-      .fab-main-action {
-        position: absolute;
-        inset-inline-end: calc(0.25rem * 0);
-        bottom: calc(0.25rem * 0);
-      }
-      &:focus-within {
-        &:has(.fab-close), &:has(.fab-main-action) {
-          > [tabindex] {
-            rotate: 90deg;
-            opacity: 0%;
-          }
-        }
-        > [tabindex]:first-child {
-          pointer-events: none;
-        }
-        > :nth-child(n + 2) {
-          visibility: visible;
-          --tw-scale-x: 100%;
-          --tw-scale-y: 100%;
-          --tw-scale-z: 100%;
-          scale: var(--tw-scale-x) var(--tw-scale-y);
-          opacity: 100%;
-        }
-      }
-      > :nth-child(n + 2) {
-        visibility: hidden;
-        --tw-scale-x: 80%;
-        --tw-scale-y: 80%;
-        --tw-scale-z: 80%;
-        scale: var(--tw-scale-x) var(--tw-scale-y);
-        opacity: 0%;
-        transition-property: opacity, scale, visibility;
-        transition-duration: 0.2s;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        &.fab-main-action, &.fab-close {
-          --tw-scale-x: 100%;
-          --tw-scale-y: 100%;
-          --tw-scale-z: 100%;
-          scale: var(--tw-scale-x) var(--tw-scale-y);
-        }
-      }
-      > :nth-child(3) {
-        transition-delay: 30ms;
-      }
-      > :nth-child(4) {
-        transition-delay: 60ms;
-      }
-      > :nth-child(5) {
-        transition-delay: 90ms;
-      }
-      > :nth-child(6) {
-        transition-delay: 120ms;
-      }
-    }
-  }
   .drawer-toggle {
     @layer daisyui.l1.l2.l3 {
       position: fixed;
@@ -1074,151 +982,6 @@
   .pointer-events-none {
     pointer-events: none;
   }
-  .collapse {
-    &:not(td, tr, colgroup) {
-      visibility: revert-layer;
-    }
-    @layer daisyui.l1.l2.l3 {
-      display: grid;
-      position: relative;
-      overflow: hidden;
-      border-radius: var(--radius-box, 1rem);
-      width: 100%;
-      grid-template-rows: max-content 0fr;
-      grid-template-columns: minmax(0, 1fr);
-      isolation: isolate;
-      @media (prefers-reduced-motion: no-preference) {
-        transition: grid-template-rows 0.2s;
-      }
-      > input:is([type="checkbox"], [type="radio"]) {
-        grid-column-start: 1;
-        grid-row-start: 1;
-        appearance: none;
-        opacity: 0;
-        z-index: 1;
-        width: 100%;
-        padding: 1rem;
-        padding-inline-end: 3rem;
-        min-height: 1lh;
-        transition: background-color 0.2s ease-out;
-      }
-      &:is( [open], [tabindex]:focus:not(.collapse-close), [tabindex]:focus-within:not(.collapse-close) ), &:not(.collapse-close):has(> input:is([type="checkbox"], [type="radio"]):checked) {
-        grid-template-rows: max-content 1fr;
-      }
-      &:is( [open], [tabindex]:focus:not(.collapse-close), [tabindex]:focus-within:not(.collapse-close) ) > .collapse-content, &:not(.collapse-close) > :where(input:is([type="checkbox"], [type="radio"]):checked ~ .collapse-content) {
-        content-visibility: visible;
-        min-height: fit-content;
-        @supports not (content-visibility: visible) {
-          visibility: visible;
-        }
-      }
-      &:focus-visible, &:has(> input:is([type="checkbox"], [type="radio"]):focus-visible), &:has(summary:focus-visible) {
-        outline-color: var(--color-base-content);
-        outline-style: solid;
-        outline-width: 2px;
-        outline-offset: 2px;
-      }
-      &:not(.collapse-close) {
-        > input[type="checkbox"], > input[type="radio"]:not(:checked), > .collapse-title {
-          cursor: pointer;
-        }
-      }
-      &[tabindex]:focus:not(.collapse-close, .collapse[open]), &[tabindex]:focus-within:not(.collapse-close, .collapse[open]) {
-        > .collapse-title {
-          cursor: unset;
-        }
-      }
-      &:is( [open], [tabindex]:focus:not(.collapse-close), [tabindex]:focus-within:not(.collapse-close) ) > :where(.collapse-content), &:not(.collapse-close) > :where(input:is([type="checkbox"], [type="radio"]):checked ~ .collapse-content) {
-        padding-bottom: 1rem;
-      }
-    }
-    @layer daisyui.l1.l2 {
-      &:is([open]) {
-        &.collapse-arrow {
-          > .collapse-title:after {
-            @media (prefers-reduced-motion: no-preference) {
-              transform: translateY(-50%) rotate(225deg);
-            }
-          }
-        }
-      }
-      &.collapse-open {
-        &.collapse-arrow {
-          > .collapse-title:after {
-            @media (prefers-reduced-motion: no-preference) {
-              transform: translateY(-50%) rotate(225deg);
-            }
-          }
-        }
-        &.collapse-plus {
-          > .collapse-title:after {
-            --tw-content: "−";
-            content: var(--tw-content);
-          }
-        }
-      }
-      &[tabindex].collapse-arrow:focus:not(.collapse-close), &.collapse-arrow[tabindex]:focus-within:not(.collapse-close) {
-        > .collapse-title:after {
-          transform: translateY(-50%) rotate(225deg);
-        }
-      }
-      &.collapse-arrow:not(.collapse-close) {
-        > input:is([type="checkbox"], [type="radio"]):checked ~ .collapse-title:after {
-          transform: translateY(-50%) rotate(225deg);
-        }
-      }
-      &[open] {
-        &.collapse-plus {
-          > .collapse-title:after {
-            --tw-content: "−";
-            content: var(--tw-content);
-          }
-        }
-      }
-      &[tabindex].collapse-plus:focus:not(.collapse-close) {
-        > .collapse-title:after {
-          --tw-content: "−";
-          content: var(--tw-content);
-        }
-      }
-      &.collapse-plus:not(.collapse-close) {
-        > input:is([type="checkbox"], [type="radio"]):checked ~ .collapse-title:after {
-          --tw-content: "−";
-          content: var(--tw-content);
-        }
-      }
-    }
-    &:is(details) {
-      @layer daisyui.l1.l2.l3 {
-        width: 100%;
-        @media (prefers-reduced-motion: no-preference) {
-          &::details-content {
-            transition: content-visibility 0.2s allow-discrete, visibility 0.2s allow-discrete, min-height 0.2s ease-out allow-discrete, padding 0.1s ease-out 20ms, background-color 0.2s ease-out, height 0.2s;
-            height: 0;
-            interpolate-size: allow-keywords;
-          }
-          &:where([open])::details-content {
-            height: auto;
-          }
-        }
-        & summary {
-          position: relative;
-          display: block;
-          &::-webkit-details-marker {
-            display: none;
-          }
-        }
-        & > .collapse-content {
-          content-visibility: visible;
-        }
-      }
-    }
-    &:is(details) summary {
-      @layer daisyui.l1.l2.l3 {
-        outline: none;
-      }
-    }
-  }
   .validator-hint {
     @layer daisyui.l1.l2.l3 {
       visibility: hidden;
@@ -1248,9 +1011,6 @@
         display: revert-layer;
       }
     }
-  }
-  .collapse {
-    visibility: collapse;
   }
   .visible {
     visibility: visible;
@@ -3104,30 +2864,6 @@
       padding-inline: calc(var(--size) / 2 - var(--border));
     }
   }
-  .kbd {
-    box-shadow: none;
-    @layer daisyui.l1.l2.l3 {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-field);
-      background-color: var(--color-base-200);
-      vertical-align: middle;
-      padding-inline: 0.5em;
-      border: var(--border) solid var(--color-base-content);
-      @supports (color: color-mix(in lab, red, red)) {
-        border: var(--border) solid color-mix(in srgb, var(--color-base-content) 20%, #0000);
-      }
-      border-bottom: calc(var(--border) + 1px) solid var(--color-base-content);
-      @supports (color: color-mix(in lab, red, red)) {
-        border-bottom: calc(var(--border) + 1px) solid color-mix(in srgb, var(--color-base-content) 20%, #0000);
-      }
-      --size: calc(var(--size-selector, 0.25rem) * 6);
-      font-size: 0.875rem;
-      height: var(--size);
-      min-width: var(--size);
-    }
-  }
   .stat {
     @layer daisyui.l1.l2.l3 {
       display: inline-grid;
@@ -3284,15 +3020,6 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
-  }
-  .mask {
-    @layer daisyui.l1.l2.l3 {
-      display: inline-block;
-      vertical-align: middle;
-      mask-size: contain;
-      mask-repeat: no-repeat;
-      mask-position: center;
-    }
   }
   .block {
     display: block;
@@ -3551,9 +3278,6 @@
   .flex-grow {
     flex-grow: 1;
   }
-  .grow {
-    flex-grow: 1;
-  }
   .-translate-y-1\/2 {
     --tw-translate-y: calc(calc(1/2 * 100%) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
@@ -3621,9 +3345,6 @@
   }
   .cursor-pointer {
     cursor: pointer;
-  }
-  .resize {
-    resize: both;
   }
   .resize-y {
     resize: vertical;

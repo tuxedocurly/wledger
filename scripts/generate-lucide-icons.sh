@@ -11,6 +11,7 @@ icons=(
   github
   grip-horizontal
   import
+  languages
   layout-grid
   lightbulb
   lock

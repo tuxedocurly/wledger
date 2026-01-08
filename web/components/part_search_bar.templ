@@ -1,6 +1,7 @@
 package components
 
 import "github.com/tuxedocurly/wledger/web/icons"
+import "github.com/tuxedocurly/wledger/internal/i18n"
 
 // PartSearchBar renders the search input and 'Add Part' button.
 // It handles responsive layout (stacking on mobile, row on desktop).
@@ -12,7 +13,7 @@ templ PartSearchBar(search string, canWrite bool) {
 				name="q"
 				value={ search }
 				class="input input-bordered join-item w-full rounded-full md:w-64"
-				placeholder="Search parts..."
+				placeholder={ i18n.T(ctx, "SearchPartsPlaceholder") }
 				hx-get="/parts"
 				hx-trigger="input changed delay:250ms, search"
 				hx-target="#parts-grid"
@@ -23,13 +24,13 @@ templ PartSearchBar(search string, canWrite bool) {
 		</form>
 		if canWrite {
 			<div class="flex gap-2 w-full md:w-auto">
-				<button onclick="import_parts_modal.showModal()" class="btn btn-outline flex-1 md:flex-none shadow-sm" title="Bulk Import">
+				<button onclick="import_parts_modal.showModal()" class="btn btn-outline flex-1 md:flex-none shadow-sm" title={ i18n.T(ctx, "BulkImport") }>
 					@icons.Import(templ.Attributes{"class": "w-5 h-5"})
-					Import
+					{ i18n.T(ctx, "Import") }
 				</button>
 				<a href="/parts/new" class="btn btn-primary flex-1 md:flex-none shadow-sm gap-2">
 					@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
-					Add Part
+					{ i18n.T(ctx, "AddPart") }
 				</a>
 			</div>
 		}

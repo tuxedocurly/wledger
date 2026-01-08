@@ -736,5 +736,47 @@
   },
   "AddToWall": {
     "other": "Añadir al Muro"
+  },
+  "SearchPartsPlaceholder": {
+    "other": "Buscar piezas..."
+  },
+  "BulkImport": {
+    "other": "Importación masiva"
+  },
+  "Import": {
+    "other": "Importar"
+  },
+  "AddPart": {
+    "other": "Añadir pieza"
+  },
+  "BulkImportParts": {
+    "other": "Importación masiva de piezas"
+  },
+  "NeedATemplate": {
+    "other": "¿Necesita una plantilla?"
+  },
+  "DownloadSampleCSVPrompt": {
+    "other": "Descargue un archivo CSV de ejemplo para comenzar."
+  },
+  "DownloadCSV": {
+    "other": "Descargar CSV"
+  },
+  "UploadFile": {
+    "other": "Subir archivo"
+  },
+  "OrPasteCSVData": {
+    "other": "O PEGUE DATOS CSV (CON ENCABEZADOS)"
+  },
+  "StartImport": {
+    "other": "Iniciar importación"
+  },
+  "ImportSuccess": {
+    "other": "¡Éxito!"
+  },
+  "RefreshPage": {
+    "other": "Refrescar página"
+  },
+  "ImportFailed": {
+    "other": "Importación fallida"
   }
 }

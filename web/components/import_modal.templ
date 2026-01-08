@@ -1,19 +1,21 @@
 package components
 
+import "github.com/tuxedocurly/wledger/internal/i18n"
+
 templ ImportModal() {
 	@Modal(ModalProps{
 		ID:       "import_parts_modal",
-		Title:    "Bulk Import Parts",
+		Title:    i18n.T(ctx, "BulkImportParts"),
 		BoxClass: "w-11/12 max-w-2xl",
 	}) {
 		<div class="flex justify-between items-center bg-base-200 p-4 rounded-lg mb-6">
 			<div class="text-sm">
-				<p class="font-bold">Need a template?</p>
-				<p class="opacity-70">Download a sample CSV file to get started.</p>
+				<p class="font-bold">{ i18n.T(ctx, "NeedATemplate") }</p>
+				<p class="opacity-70">{ i18n.T(ctx, "DownloadSampleCSVPrompt") }</p>
 			</div>
 			<a href="/parts/import/template" class="btn btn-sm btn-outline gap-2" download>
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-				Download CSV
+				{ i18n.T(ctx, "DownloadCSV") }
 			</a>
 		</div>
 		<form
@@ -25,12 +27,12 @@ templ ImportModal() {
 		>
 			<div class="form-control w-full">
 				<label class="label">
-					<span class="label-text font-medium">Upload File</span>
+					<span class="label-text font-medium">{ i18n.T(ctx, "UploadFile") }</span>
 					<span class="label-text-alt">.csv</span>
 				</label>
 				<input type="file" name="file" accept=".csv" class="file-input file-input-bordered w-full"/>
 			</div>
-			<div class="divider text-xs opacity-50">OR PASTE CSV DATA (WITH HEADERS)</div>
+			<div class="divider text-xs opacity-50">{ i18n.T(ctx, "OrPasteCSVData") }</div>
 			<div class="form-control w-full">
 				<textarea
 					name="raw_text"
@@ -39,7 +41,7 @@ templ ImportModal() {
 				></textarea>
 			</div>
 			<div class="modal-action">
-				<button type="submit" class="btn btn-primary w-full md:w-auto">Start Import</button>
+				<button type="submit" class="btn btn-primary w-full md:w-auto">{ i18n.T(ctx, "StartImport") }</button>
 			</div>
 		</form>
 		<div id="import_result" class="mt-4"></div>
@@ -51,16 +53,16 @@ templ ImportResult(success bool, message string, details []string) {
 		<div class="alert alert-success">
 			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 			<div>
-				<h3 class="font-bold">Success!</h3>
+				<h3 class="font-bold">{ i18n.T(ctx, "ImportSuccess") }</h3>
 				<div class="text-xs">{ message }</div>
 			</div>
-			<a href="/parts" class="btn btn-sm">Refresh Page</a>
+			<a href="/parts" class="btn btn-sm">{ i18n.T(ctx, "RefreshPage") }</a>
 		</div>
 	} else {
 		<div class="alert alert-error items-start">
 			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6 mt-0.5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 			<div class="w-full">
-				<h3 class="font-bold">Import Failed</h3>
+				<h3 class="font-bold">{ i18n.T(ctx, "ImportFailed") }</h3>
 				<div class="text-xs font-mono mt-1 break-words whitespace-pre-wrap">{ message }</div>
 				if len(details) > 0 {
 					<ul class="list-disc list-inside text-xs mt-2 opacity-80">

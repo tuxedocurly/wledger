@@ -113,11 +113,11 @@ templ ThemeToggle() {
 		<input type="checkbox" :checked="theme === 'silk'" @change="toggle()"/>
 		<div class="swap-on flex items-center w-full">
 			@icons.Sun(templ.Attributes{"class": "w-5 h-5"})
-			<span>{ i18n.T(ctx, "SilkMode") }</span>
+			<span class="ml-2">{ i18n.T(ctx, "SilkMode") }</span>
 		</div>
 		<div class="swap-off flex items-center w-full">
 			@icons.Moon(templ.Attributes{"class": "w-5 h-5"})
-			<span>{ i18n.T(ctx, "DarkMode") }</span>
+			<span class="ml-2">{ i18n.T(ctx, "DarkMode") }</span>
 		</div>
 	</label>
 }

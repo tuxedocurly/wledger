@@ -736,5 +736,47 @@
   },
   "AddToWall": {
     "other": "Add to Wall"
+  },
+  "SearchPartsPlaceholder": {
+    "other": "Search parts..."
+  },
+  "BulkImport": {
+    "other": "Bulk Import"
+  },
+  "Import": {
+    "other": "Import"
+  },
+  "AddPart": {
+    "other": "Add Part"
+  },
+  "BulkImportParts": {
+    "other": "Bulk Import Parts"
+  },
+  "NeedATemplate": {
+    "other": "Need a template?"
+  },
+  "DownloadSampleCSVPrompt": {
+    "other": "Download a sample CSV file to get started."
+  },
+  "DownloadCSV": {
+    "other": "Download CSV"
+  },
+  "UploadFile": {
+    "other": "Upload File"
+  },
+  "OrPasteCSVData": {
+    "other": "OR PASTE CSV DATA (WITH HEADERS)"
+  },
+  "StartImport": {
+    "other": "Start Import"
+  },
+  "ImportSuccess": {
+    "other": "Success!"
+  },
+  "RefreshPage": {
+    "other": "Refresh Page"
+  },
+  "ImportFailed": {
+    "other": "Import Failed"
   }
 }

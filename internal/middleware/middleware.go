@@ -266,10 +266,10 @@ func (m *Manager) Authenticate(next http.Handler) http.Handler {
 // I18n is a middleware that detects the user's preferred language and populates the context with a Localizer.
 func (m *Manager) I18n(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. URL Query Param
+		// URL Query Param
 		lang := r.URL.Query().Get("lang")
 
-		// 2. Cookie
+		// Cookie
 		if lang == "" {
 			cookie, err := r.Cookie("lang")
 			if err == nil {
@@ -277,7 +277,7 @@ func (m *Manager) I18n(next http.Handler) http.Handler {
 			}
 		}
 
-		// 3. Accept-Language Header
+		// Accept-Language Header
 		if lang == "" {
 			acceptLang := r.Header.Get("Accept-Language")
 			if acceptLang != "" {

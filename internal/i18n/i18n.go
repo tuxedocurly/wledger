@@ -64,6 +64,9 @@ func GetLocalizer(ctx context.Context) *i18n.Localizer {
 		return localizer
 	}
 	// Fallback to English localizer if none found in context
+	if bundle == nil {
+		return nil
+	}
 	return i18n.NewLocalizer(bundle, language.English.String())
 }
 
@@ -79,6 +82,9 @@ func GetLanguage(ctx context.Context) string {
 // T translates a message by its ID.
 func T(ctx context.Context, messageID string) string {
 	localizer := GetLocalizer(ctx)
+	if localizer == nil {
+		return messageID
+	}
 	msg, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID: messageID,
 	})
@@ -91,6 +97,9 @@ func T(ctx context.Context, messageID string) string {
 // TD translates a message with data for template variables.
 func TD(ctx context.Context, messageID string, templateData interface{}) string {
 	localizer := GetLocalizer(ctx)
+	if localizer == nil {
+		return messageID
+	}
 	msg, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID:    messageID,
 		TemplateData: templateData,
