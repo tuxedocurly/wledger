@@ -1,0 +1,800 @@
+{
+  "Dashboard": {
+    "other": "Tableau de bord"
+  },
+  "DashboardStatus": {
+    "other": "État visuel de l'inventaire."
+  },
+  "CreateWall": {
+    "other": "Créer un mur"
+  },
+  "UniqueParts": {
+    "other": "Pièces uniques"
+  },
+  "TotalStock": {
+    "other": "Stock total"
+  },
+  "TotalValue": {
+    "other": "Valeur totale"
+  },
+  "Controllers": {
+    "other": "Contrôleurs"
+  },
+  "NoContainersConfigured": {
+    "other": "Aucun conteneur configuré"
+  },
+  "SetupHardwarePrompt": {
+    "other": "Allez dans Matériel pour configurer votre premier contrôleur WLED et mapper des bacs."
+  },
+  "ShowingAllControllers": {
+    "other": "Affichage de tous les contrôleurs. Créez un mur pour organiser votre vue."
+  },
+  "Dismiss": {
+    "other": "Ignorer"
+  },
+  "EditWall": {
+    "other": "Modifier le mur"
+  },
+  "NoContainersOnWall": {
+    "other": "Aucun conteneur sur ce mur"
+  },
+  "AddContainerToWallPrompt": {
+    "other": "Cliquez sur le bouton Modifier le mur ci-dessus pour ajouter un conteneur."
+  },
+  "CreateNewWall": {
+    "other": "Créer un nouveau mur"
+  },
+  "WallName": {
+    "other": "Nom du mur"
+  },
+  "DescriptionOptional": {
+    "other": "Description (Optionnel)"
+  },
+  "Cancel": {
+    "other": "Annuler"
+  },
+  "Language": {
+    "other": "Langue"
+  },
+  "English": {
+    "other": "Anglais"
+  },
+  "Spanish": {
+    "other": "Espagnol"
+  },
+  "en": {
+    "other": "Anglais"
+  },
+  "es": {
+    "other": "Espagnol"
+  },
+  "zh": {
+    "other": "Chinois Simplifié"
+  },
+  "pt-BR": {
+    "other": "Portugais (Brésil)"
+  },
+  "it": {
+    "other": "Italien"
+  },
+  "de": {
+    "other": "Allemand"
+  },
+  "fr": {
+    "other": "Français"
+  },
+  "ru": {
+    "other": "Russe"
+  },
+  "Chinese": {
+    "other": "Chinois Simplifié"
+  },
+  "Portuguese": {
+    "other": "Portugais (Brésil)"
+  },
+  "Italian": {
+    "other": "Italien"
+  },
+  "German": {
+    "other": "Allemand"
+  },
+  "French": {
+    "other": "Français"
+  },
+  "Russian": {
+    "other": "Russe"
+  },
+  "Settings": {
+    "other": "Paramètres"
+  },
+  "SettingsDescription": {
+    "other": "Configurer le comportement de l'application, les paramètres par défaut du matériel, etc."
+  },
+  "UserManagement": {
+    "other": "Gestion des utilisateurs"
+  },
+  "AddUser": {
+    "other": "Ajouter un utilisateur"
+  },
+  "Email": {
+    "other": "E-mail"
+  },
+  "Role": {
+    "other": "Rôle"
+  },
+  "Status": {
+    "other": "Statut"
+  },
+  "Actions": {
+    "other": "Actions"
+  },
+  "ResetPending": {
+    "other": "Réinitialisation en attente"
+  },
+  "Active": {
+    "other": "Actif"
+  },
+  "ForceReset": {
+    "other": "Forcer la réinitialisation"
+  },
+  "Delete": {
+    "other": "Supprimer"
+  },
+  "ConfirmForceReset": {
+    "other": "Forcer cet utilisateur à changer son mot de passe lors de sa prochaine connexion ?"
+  },
+  "ConfirmDeleteUser": {
+    "other": "Supprimer cet utilisateur ?"
+  },
+  "General": {
+    "other": "Général"
+  },
+  "RequireReadAuthLabel": {
+    "other": "Exiger une connexion pour l'accès en lecture seule"
+  },
+  "EnableDebugLogs": {
+    "other": "Activer les journaux de débogage"
+  },
+  "EnableDebugLogsDescription": {
+    "other": "Capture des informations plus détaillées pour le dépannage."
+  },
+  "HardwareAutomation": {
+    "other": "Automatisation du matériel"
+  },
+  "AutoTurnOffLocateLED": {
+    "other": "Éteindre automatiquement la LED « Localiser »"
+  },
+  "TurnOffAfter": {
+    "other": "Éteindre après :"
+  },
+  "Seconds": {
+    "other": "Secondes"
+  },
+  "InterfaceColors": {
+    "other": "Couleurs de l'interface"
+  },
+  "LocateAction": {
+    "other": "Action Localiser"
+  },
+  "StockLevelOK": {
+    "other": "Niveau de stock : OK"
+  },
+  "StockLevelLow": {
+    "other": "Niveau de stock : Bas"
+  },
+  "StockLevelCritical": {
+    "other": "Niveau de stock : Critique"
+  },
+  "SaveAllSettings": {
+    "other": "Enregistrer tous les paramètres"
+  },
+  "ChangeYourPassword": {
+    "other": "Changer votre mot de passe"
+  },
+  "AddNewUser": {
+    "other": "Ajouter un nouvel utilisateur"
+  },
+  "EmailAddress": {
+    "other": "Adresse e-mail"
+  },
+  "TemporaryPassword": {
+    "other": "Mot de passe temporaire"
+  },
+  "UserMustChangePasswordWarning": {
+    "other": "L'utilisateur doit le changer lors de sa première connexion"
+  },
+  "RoleViewer": {
+    "other": "Observateur (Lecture seule)"
+  },
+  "RoleEditor": {
+    "other": "Éditeur (Opérations d'inventaire)"
+  },
+  "RoleAdmin": {
+    "other": "Administrateur (Accès complet au système)"
+  },
+  "CreateUser": {
+    "other": "Créer un utilisateur"
+  },
+  "BackupAndRestore": {
+    "other": "Sauvegarde et Restauration"
+  },
+  "CreateBackup": {
+    "other": "Créer une sauvegarde"
+  },
+  "CreateBackupDescription": {
+    "other": "Téléchargez une archive ZIP contenant l'intégralité de votre base de données et tous les éléments téléchargés (images, documents)."
+  },
+  "Download": {
+    "other": "Télécharger"
+  },
+  "RestoreBackup": {
+    "other": "Restaurer une sauvegarde"
+  },
+  "RestoreBackupDescription": {
+    "other": "Écrasez votre système actuel avec un fichier de sauvegarde."
+  },
+  "DestructiveActionWarning": {
+    "other": "Cette action est destructive et ne peut être annulée."
+  },
+  "Restore": {
+    "other": "Restaurer"
+  },
+  "DangerZoneSystemRestore": {
+    "other": "Zone de danger : Restauration du système"
+  },
+  "FullRestoreWarning": {
+    "other": "Vous êtes sur le point d'effacer complètement la base de données actuelle et de la remplacer par la sauvegarde. Toutes les pièces, bacs, utilisateurs et paramètres actuels seront perdus."
+  },
+  "SelectBackupFile": {
+    "other": "Sélectionner le fichier de sauvegarde"
+  },
+  "IUnderstandIrreversible": {
+    "other": "Je comprends que cette action est irréversible."
+  },
+  "PerformFullRestore": {
+    "other": "EFFECTUER UNE RESTAURATION COMPLÈTE"
+  },
+  "CurrentPassword": {
+    "other": "Mot de passe actuel"
+  },
+  "NewPassword": {
+    "other": "Nouveau mot de passe"
+  },
+  "PasswordMinLength": {
+    "other": "Doit contenir au moins 8 caractères"
+  },
+  "ConfirmNewPassword": {
+    "other": "Confirmer le nouveau mot de passe"
+  },
+  "ReEnterPassword": {
+    "other": "Saisir à nouveau le mot de passe"
+  },
+  "PasswordsDoNotMatch": {
+    "other": "Les mots de passe ne correspondent pas"
+  },
+  "UpdatePassword": {
+    "other": "Mettre à jour le mot de passe"
+  },
+  "GuestAccess": {
+    "other": "Accès invité"
+  },
+  "SearchPlaceholder": {
+    "other": "Rechercher (Cmd+K)"
+  },
+  "TurnOffAllLEDs": {
+    "other": "Éteindre toutes les LED"
+  },
+  "LogOut": {
+    "other": "Se déconnecter"
+  },
+  "LogIn": {
+    "other": "Se connecter"
+  },
+  "SilkMode": {
+    "other": "Mode Soie"
+  },
+  "DarkMode": {
+    "other": "Mode sombre"
+  },
+  "Community": {
+    "other": "Communauté"
+  },
+  "Feedback": {
+    "other": "Commentaires"
+  },
+  "JoinDiscord": {
+    "other": "Rejoindre Discord"
+  },
+  "SupportOnKofi": {
+    "other": "Soutenir sur Ko-Fi"
+  },
+  "Inventory": {
+    "other": "Inventaire"
+  },
+  "Inspiration": {
+    "other": "Inspiration"
+  },
+  "Hardware": {
+    "other": "Matériel"
+  },
+  "AuditLogs": {
+    "other": "Journaux d'audit"
+  },
+  "ItemsSelected": {
+    "other": "sélectionné(s)"
+  },
+  "SelectAllVisible": {
+    "other": "Sélectionner tout ce qui est visible"
+  },
+  "NoPartsFound": {
+    "other": "Aucune pièce trouvée"
+  },
+  "NoPartsMatching": {
+    "other": "Nous n'avons rien trouvé correspondant à « {{.Search}} »."
+  },
+  "ClearSearch": {
+    "other": "Effacer la recherche"
+  },
+  "ConfirmBulkDelete": {
+    "other": "Confirmer la suppression en masse"
+  },
+  "BulkDeleteConfirmPrefix": {
+    "other": "Êtes-vous sûr de vouloir supprimer"
+  },
+  "BulkDeleteConfirmSuffix": {
+    "other": "pièces ? Cette action ne peut être annulée."
+  },
+  "ConfirmDelete": {
+    "other": "Confirmer la suppression"
+  },
+  "Stock": {
+    "other": "Stock"
+  },
+  "EditPart": {
+    "other": "Modifier la pièce"
+  },
+  "ConfirmDeletePart": {
+    "other": "Êtes-vous sûr de vouloir supprimer cette pièce ? Cela supprimera tous les documents, images et affectations d'inventaire associés."
+  },
+  "Specifications": {
+    "other": "Spécifications"
+  },
+  "MPN": {
+    "other": "MPN"
+  },
+  "Manufacturer": {
+    "other": "Fabricant"
+  },
+  "Supplier": {
+    "other": "Fournisseur"
+  },
+  "Barcode": {
+    "other": "Code-barres"
+  },
+  "UnitCost": {
+    "other": "Coût unitaire"
+  },
+  "Tags": {
+    "other": "Étiquettes"
+  },
+  "Resources": {
+    "other": "Ressources"
+  },
+  "TotalInStock": {
+    "other": "Total en stock"
+  },
+  "LowStockWarning": {
+    "other": "Avertissement de stock bas"
+  },
+  "Locations": {
+    "other": "Emplacements"
+  },
+  "AddStock": {
+    "other": "Ajouter du stock"
+  },
+  "Location": {
+    "other": "Emplacement"
+  },
+  "Qty": {
+    "other": "Qté"
+  },
+  "NoStockAssigned": {
+    "other": "Aucun stock affecté."
+  },
+  "Orphaned": {
+    "other": "Orphelin"
+  },
+  "OrphanedStockTitle": {
+    "other": "Ce stock n'est plus affecté à un bac valide"
+  },
+  "Unmanaged": {
+    "other": "Non géré"
+  },
+  "ReassignToValidBin": {
+    "other": "Réaffecter à un bac valide"
+  },
+  "Fix": {
+    "other": "Réparer"
+  },
+  "ReassignOrphanedStock": {
+    "other": "Réaffecter le stock orphelin"
+  },
+  "ReassignOrphanedStockDesc": {
+    "other": "Ce stock n'est actuellement affecté à aucun bac physique. Sélectionnez un nouvel emplacement pour ces {{.Count}} articles."
+  },
+  "MoveStock": {
+    "other": "Déplacer le stock"
+  },
+  "MoveStockDesc": {
+    "other": "Sélectionnez un nouvel emplacement pour déplacer ces {{.Count}} articles."
+  },
+  "Remove": {
+    "other": "Supprimer"
+  },
+  "ConfirmRemoveStock": {
+    "other": "Supprimer cette affectation de stock ?"
+  },
+  "SelectWLEDController": {
+    "other": "1. Sélectionner le contrôleur WLED"
+  },
+  "ChoosePhysicalBin": {
+    "other": "2. Choisir le bac physique"
+  },
+  "SetQuantity": {
+    "other": "3. Définir la quantité"
+  },
+  "SelectControllerPrompt": {
+    "other": "Sélectionnez un contrôleur ci-dessus pour voir les bacs disponibles"
+  },
+  "SelectAController": {
+    "other": "Sélectionner un contrôleur..."
+  },
+  "SaveStock": {
+    "other": "Enregistrer le stock"
+  },
+  "AddStockLocation": {
+    "other": "Ajouter un emplacement de stock"
+  },
+  "AddController": {
+    "other": "Ajouter un contrôleur"
+  },
+  "Checking": {
+    "other": "Vérification..."
+  },
+  "Configure": {
+    "other": "Configurer"
+  },
+  "ConfirmDeleteController": {
+    "other": "Supprimer ce contrôleur ?"
+  },
+  "ViewGrid": {
+    "other": "Voir la grille"
+  },
+  "NoControllersFound": {
+    "other": "Aucun contrôleur trouvé"
+  },
+  "AddFirstWLEDDevice": {
+    "other": "Ajoutez votre premier appareil WLED !"
+  },
+  "AddNewController": {
+    "other": "Ajouter un nouveau contrôleur"
+  },
+  "Name": {
+    "other": "Nom"
+  },
+  "IPAddress": {
+    "other": "Adresse IP"
+  },
+  "Port": {
+    "other": "Port"
+  },
+  "ConfigureGrid": {
+    "other": "Configurer la grille"
+  },
+  "BackToHardware": {
+    "other": "Retour à Matériel"
+  },
+  "ConfigureController": {
+    "other": "Configurer {{.Name}}"
+  },
+  "MapLEDsToBins": {
+    "other": "Mappez vos LED physiques à des bacs virtuels."
+  },
+  "AuditLogsDescription": {
+    "other": "Surveiller l'activité et les modifications du système."
+  },
+  "Search": {
+    "other": "Rechercher"
+  },
+  "SearchDetailsPlaceholder": {
+    "other": "Rechercher des détails..."
+  },
+  "AllActions": {
+    "other": "Toutes les actions"
+  },
+  "CREATE": {
+    "other": "CRÉER"
+  },
+  "UPDATE": {
+    "other": "METTRE À JOUR"
+  },
+  "DELETE": {
+    "other": "SUPPRIMER"
+  },
+  "ADJUST_STOCK": {
+    "other": "AJUSTER_STOCK"
+  },
+  "User": {
+    "other": "Utilisateur"
+  },
+  "AllUsers": {
+    "other": "Tous les utilisateurs"
+  },
+  "Entity": {
+    "other": "Entité"
+  },
+  "AllEntities": {
+    "other": "Toutes les entités"
+  },
+  "PART": {
+    "other": "PIÈCE"
+  },
+  "BIN": {
+    "other": "BAC"
+  },
+  "CONTROLLER": {
+    "other": "CONTRÔLEUR"
+  },
+  "USER": {
+    "other": "UTILISATEUR"
+  },
+  "SETTINGS": {
+    "other": "PARAMÈTRES"
+  },
+  "Filter": {
+    "other": "Filtrer"
+  },
+  "Reset": {
+    "other": "Réinitialiser"
+  },
+  "Timestamp": {
+    "other": "Horodatage"
+  },
+  "NoAuditLogsFound": {
+    "other": "Aucun journal d'audit trouvé correspondant à vos filtres."
+  },
+  "InspirationDescription": {
+    "other": "Créez des invites IA pour votre inventaire. Laissez-vous inspirer ou enregistrez les invites fréquemment utilisées."
+  },
+  "AddPrompt": {
+    "other": "Ajouter une invite"
+  },
+  "ContextFilter": {
+    "other": "Filtre de contexte :"
+  },
+  "EntireInventory": {
+    "other": "Tout l'inventaire"
+  },
+  "Clear": {
+    "other": "Effacer"
+  },
+  "NoTagsFoundInInventory": {
+    "other": "Aucune étiquette trouvée dans l'inventaire."
+  },
+  "InventoryAndControl": {
+    "other": "Inventaire & Contrôle"
+  },
+  "Password": {
+    "other": "Mot de passe"
+  },
+  "Login": {
+    "other": "Connexion"
+  },
+  "OR": {
+    "other": "OU"
+  },
+  "ContinueAsGuest": {
+    "other": "Continuer en tant qu'invité"
+  },
+  "PasswordChangeRequired": {
+    "other": "Changement de mot de passe requis"
+  },
+  "SetYourPassword": {
+    "other": "Définir votre mot de passe"
+  },
+  "PasswordChangeRequiredDesc": {
+    "other": "Votre compte nécessite un changement de mot de passe avant de pouvoir continuer."
+  },
+  "CancelAndLogout": {
+    "other": "Annuler & Déconnexion"
+  },
+  "Setup": {
+    "other": "Configuration"
+  },
+  "Welcome": {
+    "other": "Bienvenue !"
+  },
+  "SetupDesc": {
+    "other": "Créez votre compte administrateur pour commencer."
+  },
+  "AdminEmail": {
+    "other": "E-mail de l'administrateur"
+  },
+  "InvalidEmailWarning": {
+    "other": "Veuillez saisir une adresse e-mail valide"
+  },
+  "PasswordLengthWarning": {
+    "other": "Doit contenir au moins 8 caractères"
+  },
+  "CreateAdminAndStart": {
+    "other": "Créer l'administrateur & démarrer"
+  },
+  "Error": {
+    "other": "Erreur"
+  },
+  "OopsSomethingWentWrong": {
+    "other": "Oups ! Quelque chose s'est mal passé"
+  },
+  "GoToDashboard": {
+    "other": "Aller au tableau de bord"
+  },
+  "GoBack": {
+    "other": "Retour"
+  },
+  "CreatePart": {
+    "other": "Créer une pièce"
+  },
+  "AddNewPart": {
+    "other": "Ajouter une nouvelle pièce"
+  },
+  "CreateNew": {
+    "other": "Créer nouveau"
+  },
+  "CoreDetails": {
+    "other": "Détails principaux"
+  },
+  "PartName": {
+    "other": "Nom de la pièce"
+  },
+  "EnterDescriptionPlaceholder": {
+    "other": "Saisissez une description détaillée..."
+  },
+  "CoverImage": {
+    "other": "Image de couverture"
+  },
+  "CurrentCoverImage": {
+    "other": "Image de couverture actuelle"
+  },
+  "ReplaceImageNote": {
+    "other": "Remplace l'image actuelle si elle est téléchargée."
+  },
+  "SpecificationsAndSourcing": {
+    "other": "Spécifications & Sourcing"
+  },
+  "PartNumberMPN": {
+    "other": "Référence pièce (MPN)"
+  },
+  "ScanBarcodePlaceholder": {
+    "other": "Scannez un code-barres ici..."
+  },
+  "InventoryControl": {
+    "other": "Contrôle d'inventaire"
+  },
+  "UnitCostLabel": {
+    "other": "Coût unitaire ($)"
+  },
+  "MinStockLevel": {
+    "other": "Niveau de stock min."
+  },
+  "MinStockTooltip": {
+    "other": "Lorsque l'inventaire tombe en dessous de ce nombre, il sera marqué comme « Stock critique »."
+  },
+  "ReorderLevelLabel": {
+    "other": "Niveau de réapprovisionnement"
+  },
+  "ReorderLevelTooltip": {
+    "other": "Lorsque l'inventaire tombe en dessous de ce nombre, il sera marqué comme « Stock bas »."
+  },
+  "ExternalLinks": {
+    "other": "Liens externes"
+  },
+  "Label": {
+    "other": "Étiquette"
+  },
+  "URL": {
+    "other": "URL"
+  },
+  "LinkLabelPlaceholder": {
+    "other": "Étiquette (ex. Fiche technique)"
+  },
+  "AddLink": {
+    "other": "Ajouter un lien"
+  },
+  "Documents": {
+    "other": "Documents"
+  },
+  "SaveChanges": {
+    "other": "Enregistrer les modifications"
+  },
+  "SelectABin": {
+    "other": "Sélectionner un bac..."
+  },
+  "BackToDashboard": {
+    "other": "Retour au tableau de bord"
+  },
+  "EditWallTitle": {
+    "other": "Modifier {{.Name}}"
+  },
+  "WallEditDescription": {
+    "other": "Configurez un mur avec des conteneurs pour organiser votre tableau de bord d'inventaire."
+  },
+  "WallSettings": {
+    "other": "Paramètres du mur"
+  },
+  "DeleteWall": {
+    "other": "Supprimer le mur"
+  },
+  "Containers": {
+    "other": "Conteneurs"
+  },
+  "Linked": {
+    "other": "Lié"
+  },
+  "NoContainersLinked": {
+    "other": "Aucun conteneur lié"
+  },
+  "AddContainerToWallInstructions": {
+    "other": "Sélectionnez un conteneur dans le menu ci-dessous pour l'ajouter à ce mur."
+  },
+  "LinkNewContainer": {
+    "other": "Lier un nouveau conteneur"
+  },
+  "ChooseAContainer": {
+    "other": "Choisir un conteneur..."
+  },
+  "AddToWall": {
+    "other": "Ajouter au mur"
+  },
+  "SearchPartsPlaceholder": {
+    "other": "Rechercher des pièces..."
+  },
+  "BulkImport": {
+    "other": "Importation en masse"
+  },
+  "Import": {
+    "other": "Importer"
+  },
+  "AddPart": {
+    "other": "Ajouter une pièce"
+  },
+  "BulkImportParts": {
+    "other": "Importation de pièces en masse"
+  },
+  "NeedATemplate": {
+    "other": "Besoin d'un modèle ?"
+  },
+  "DownloadSampleCSVPrompt": {
+    "other": "Téléchargez un exemple de fichier CSV pour commencer."
+  },
+  "DownloadCSV": {
+    "other": "Télécharger CSV"
+  },
+  "UploadFile": {
+    "other": "Télécharger le fichier"
+  },
+  "OrPasteCSVData": {
+    "other": "OU COLLER DES DONNÉES CSV (AVEC EN-TÊTES)"
+  },
+  "StartImport": {
+    "other": "Lancer l'importation"
+  },
+  "ImportSuccess": {
+    "other": "Succès !"
+  },
+  "RefreshPage": {
+    "other": "Rafraîchir la page"
+  },
+  "ImportFailed": {
+    "other": "Échec de l'importation"
+  }
+}

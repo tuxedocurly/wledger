@@ -86,6 +86,42 @@
   "es": {
     "other": "Español"
   },
+  "zh": {
+    "other": "Chino Simplificado"
+  },
+  "pt-BR": {
+    "other": "Portugués (Brasil)"
+  },
+  "it": {
+    "other": "Italiano"
+  },
+  "de": {
+    "other": "Alemán"
+  },
+  "fr": {
+    "other": "Francés"
+  },
+  "ru": {
+    "other": "Ruso"
+  },
+  "Chinese": {
+    "other": "Chino Simplificado"
+  },
+  "Portuguese": {
+    "other": "Portugués (Brasil)"
+  },
+  "Italian": {
+    "other": "Italiano"
+  },
+  "German": {
+    "other": "Alemán"
+  },
+  "French": {
+    "other": "Francés"
+  },
+  "Russian": {
+    "other": "Ruso"
+  },
   "Settings": {
     "other": "Configuración"
   },

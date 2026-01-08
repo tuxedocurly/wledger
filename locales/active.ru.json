@@ -1,0 +1,800 @@
+{
+  "Dashboard": {
+    "other": "Панель управления"
+  },
+  "DashboardStatus": {
+    "other": "Визуальный статус инвентаря."
+  },
+  "CreateWall": {
+    "other": "Создать стену"
+  },
+  "UniqueParts": {
+    "other": "Уникальные детали"
+  },
+  "TotalStock": {
+    "other": "Общий запас"
+  },
+  "TotalValue": {
+    "other": "Общая стоимость"
+  },
+  "Controllers": {
+    "other": "Контроллеры"
+  },
+  "NoContainersConfigured": {
+    "other": "Контейнеры не настроены"
+  },
+  "SetupHardwarePrompt": {
+    "other": "Перейдите в раздел Оборудование, чтобы настроить свой первый контроллер WLED и привязать ячейки."
+  },
+  "ShowingAllControllers": {
+    "other": "Отображаются все контроллеры. Создайте Стену, чтобы упорядочить вид."
+  },
+  "Dismiss": {
+    "other": "Скрыть"
+  },
+  "EditWall": {
+    "other": "Редактировать стену"
+  },
+  "NoContainersOnWall": {
+    "other": "На этой стене нет контейнеров"
+  },
+  "AddContainerToWallPrompt": {
+    "other": "Нажмите кнопку Редактировать стену выше, чтобы добавить контейнер."
+  },
+  "CreateNewWall": {
+    "other": "Создать новую стену"
+  },
+  "WallName": {
+    "other": "Название стены"
+  },
+  "DescriptionOptional": {
+    "other": "Описание (необязательно)"
+  },
+  "Cancel": {
+    "other": "Отмена"
+  },
+  "Language": {
+    "other": "Язык"
+  },
+  "English": {
+    "other": "Английский"
+  },
+  "Spanish": {
+    "other": "Испанский"
+  },
+  "en": {
+    "other": "Английский"
+  },
+  "es": {
+    "other": "Испанский"
+  },
+  "zh": {
+    "other": "Китайский упрощенный"
+  },
+  "pt-BR": {
+    "other": "Португальский (Бразилия)"
+  },
+  "it": {
+    "other": "Итальянский"
+  },
+  "de": {
+    "other": "Немецкий"
+  },
+  "fr": {
+    "other": "Французский"
+  },
+  "ru": {
+    "other": "Русский"
+  },
+  "Chinese": {
+    "other": "Китайский упрощенный"
+  },
+  "Portuguese": {
+    "other": "Португальский (Бразилия)"
+  },
+  "Italian": {
+    "other": "Итальянский"
+  },
+  "German": {
+    "other": "Немецкий"
+  },
+  "French": {
+    "other": "Французский"
+  },
+  "Russian": {
+    "other": "Русский"
+  },
+  "Settings": {
+    "other": "Настройки"
+  },
+  "SettingsDescription": {
+    "other": "Настройка поведения приложения, параметров оборудования по умолчанию и многого другого."
+  },
+  "UserManagement": {
+    "other": "Управление пользователями"
+  },
+  "AddUser": {
+    "other": "Добавить пользователя"
+  },
+  "Email": {
+    "other": "Email"
+  },
+  "Role": {
+    "other": "Роль"
+  },
+  "Status": {
+    "other": "Статус"
+  },
+  "Actions": {
+    "other": "Действия"
+  },
+  "ResetPending": {
+    "other": "Сброс в ожидании"
+  },
+  "Active": {
+    "other": "Активен"
+  },
+  "ForceReset": {
+    "other": "Принудительный сброс"
+  },
+  "Delete": {
+    "other": "Удалить"
+  },
+  "ConfirmForceReset": {
+    "other": "Принудительно заставить этого пользователя сменить пароль при следующем входе?"
+  },
+  "ConfirmDeleteUser": {
+    "other": "Удалить этого пользователя?"
+  },
+  "General": {
+    "other": "Общие"
+  },
+  "RequireReadAuthLabel": {
+    "other": "Требовать вход для доступа только на чтение"
+  },
+  "EnableDebugLogs": {
+    "other": "Включить отладочные логи"
+  },
+  "EnableDebugLogsDescription": {
+    "other": "Собирает более подробную информацию для поиска неисправностей."
+  },
+  "HardwareAutomation": {
+    "other": "Автоматизация оборудования"
+  },
+  "AutoTurnOffLocateLED": {
+    "other": "Автовыключение светодиода «Поиск»"
+  },
+  "TurnOffAfter": {
+    "other": "Выключить через:"
+  },
+  "Seconds": {
+    "other": "секунд"
+  },
+  "InterfaceColors": {
+    "other": "Цвета интерфейса"
+  },
+  "LocateAction": {
+    "other": "Действие поиска"
+  },
+  "StockLevelOK": {
+    "other": "Уровень запасов: В норме"
+  },
+  "StockLevelLow": {
+    "other": "Уровень запасов: Низкий"
+  },
+  "StockLevelCritical": {
+    "other": "Уровень запасов: Критический"
+  },
+  "SaveAllSettings": {
+    "other": "Сохранить все настройки"
+  },
+  "ChangeYourPassword": {
+    "other": "Сменить пароль"
+  },
+  "AddNewUser": {
+    "other": "Добавить нового пользователя"
+  },
+  "EmailAddress": {
+    "other": "Адрес электронной почты"
+  },
+  "TemporaryPassword": {
+    "other": "Временный пароль"
+  },
+  "UserMustChangePasswordWarning": {
+    "other": "Пользователь должен изменить его при первом входе"
+  },
+  "RoleViewer": {
+    "other": "Наблюдатель (только чтение)"
+  },
+  "RoleEditor": {
+    "other": "Редактор (операции с инвентарем)"
+  },
+  "RoleAdmin": {
+    "other": "Админ (полный доступ)"
+  },
+  "CreateUser": {
+    "other": "Создать пользователя"
+  },
+  "BackupAndRestore": {
+    "other": "Резервное копирование и восстановление"
+  },
+  "CreateBackup": {
+    "other": "Создать резервную копию"
+  },
+  "CreateBackupDescription": {
+    "other": "Загрузить ZIP-архив, содержащий всю базу данных и все загруженные ресурсы (изображения, документы)."
+  },
+  "Download": {
+    "other": "Скачать"
+  },
+  "RestoreBackup": {
+    "other": "Восстановить из копии"
+  },
+  "RestoreBackupDescription": {
+    "other": "Перезаписать текущую систему файлом резервной копии."
+  },
+  "DestructiveActionWarning": {
+    "other": "Это деструктивное действие, которое нельзя отменить."
+  },
+  "Restore": {
+    "other": "Восстановить"
+  },
+  "DangerZoneSystemRestore": {
+    "other": "Опасная зона: Восстановление системы"
+  },
+  "FullRestoreWarning": {
+    "other": "Вы собираетесь полностью очистить текущую базу данных и заменить ее резервной копией. Все текущие детали, ячейки, пользователи и настройки будут потеряны."
+  },
+  "SelectBackupFile": {
+    "other": "Выбрать файл резервной копии"
+  },
+  "IUnderstandIrreversible": {
+    "other": "Я понимаю, что это действие необратимо."
+  },
+  "PerformFullRestore": {
+    "other": "ВЫПОЛНИТЬ ПОЛНОЕ ВОССТАНОВЛЕНИЕ"
+  },
+  "CurrentPassword": {
+    "other": "Текущий пароль"
+  },
+  "NewPassword": {
+    "other": "Новый пароль"
+  },
+  "PasswordMinLength": {
+    "other": "Должен быть не менее 8 символов"
+  },
+  "ConfirmNewPassword": {
+    "other": "Подтвердите новый пароль"
+  },
+  "ReEnterPassword": {
+    "other": "Введите пароль еще раз"
+  },
+  "PasswordsDoNotMatch": {
+    "other": "Пароли не совпадают"
+  },
+  "UpdatePassword": {
+    "other": "Обновить пароль"
+  },
+  "GuestAccess": {
+    "other": "Гостевой доступ"
+  },
+  "SearchPlaceholder": {
+    "other": "Поиск (Cmd+K)"
+  },
+  "TurnOffAllLEDs": {
+    "other": "Выключить все светодиоды"
+  },
+  "LogOut": {
+    "other": "Выйти"
+  },
+  "LogIn": {
+    "other": "Войти"
+  },
+  "SilkMode": {
+    "other": "Шелковый режим"
+  },
+  "DarkMode": {
+    "other": "Темная тема"
+  },
+  "Community": {
+    "other": "Сообщество"
+  },
+  "Feedback": {
+    "other": "Обратная связь"
+  },
+  "JoinDiscord": {
+    "other": "Присоединиться к Discord"
+  },
+  "SupportOnKofi": {
+    "other": "Поддержать на Ko-Fi"
+  },
+  "Inventory": {
+    "other": "Инвентарь"
+  },
+  "Inspiration": {
+    "other": "Вдохновение"
+  },
+  "Hardware": {
+    "other": "Оборудование"
+  },
+  "AuditLogs": {
+    "other": "Логи аудита"
+  },
+  "ItemsSelected": {
+    "other": "выбрано"
+  },
+  "SelectAllVisible": {
+    "other": "Выбрать все видимые"
+  },
+  "NoPartsFound": {
+    "other": "Детали не найдены"
+  },
+  "NoPartsMatching": {
+    "other": "Мы не смогли найти ничего по запросу «{{.Search}}»."
+  },
+  "ClearSearch": {
+    "other": "Очистить поиск"
+  },
+  "ConfirmBulkDelete": {
+    "other": "Подтверждение массового удаления"
+  },
+  "BulkDeleteConfirmPrefix": {
+    "other": "Вы уверены, что хотите удалить"
+  },
+  "BulkDeleteConfirmSuffix": {
+    "other": "деталей? Это действие нельзя отменить."
+  },
+  "ConfirmDelete": {
+    "other": "Подтвердить удаление"
+  },
+  "Stock": {
+    "other": "Запас"
+  },
+  "EditPart": {
+    "other": "Редактировать деталь"
+  },
+  "ConfirmDeletePart": {
+    "other": "Вы уверены, что хотите удалить эту деталь? Это приведет к удалению всех связанных документов, изображений и назначений инвентаря."
+  },
+  "Specifications": {
+    "other": "Спецификации"
+  },
+  "MPN": {
+    "other": "MPN"
+  },
+  "Manufacturer": {
+    "other": "Производитель"
+  },
+  "Supplier": {
+    "other": "Поставщик"
+  },
+  "Barcode": {
+    "other": "Штрихкод"
+  },
+  "UnitCost": {
+    "other": "Цена за единицу"
+  },
+  "Tags": {
+    "other": "Теги"
+  },
+  "Resources": {
+    "other": "Ресурсы"
+  },
+  "TotalInStock": {
+    "other": "Всего в наличии"
+  },
+  "LowStockWarning": {
+    "other": "Предупреждение о низком запасе"
+  },
+  "Locations": {
+    "other": "Местоположения"
+  },
+  "AddStock": {
+    "other": "Добавить запас"
+  },
+  "Location": {
+    "other": "Местоположение"
+  },
+  "Qty": {
+    "other": "Кол-во"
+  },
+  "NoStockAssigned": {
+    "other": "Запас не назначен."
+  },
+  "Orphaned": {
+    "other": "Потеряно"
+  },
+  "OrphanedStockTitle": {
+    "other": "Этот запас больше не назначен на валидную ячейку"
+  },
+  "Unmanaged": {
+    "other": "Без управления"
+  },
+  "ReassignToValidBin": {
+    "other": "Переназначить на валидную ячейку"
+  },
+  "Fix": {
+    "other": "Исправить"
+  },
+  "ReassignOrphanedStock": {
+    "other": "Переназначить потерянный запас"
+  },
+  "ReassignOrphanedStockDesc": {
+    "other": "Этот запас в данный момент не назначен ни на одну физическую ячейку. Выберите новое местоположение для этих {{.Count}} предметов."
+  },
+  "MoveStock": {
+    "other": "Переместить запас"
+  },
+  "MoveStockDesc": {
+    "other": "Выберите новое местоположение для перемещения этих {{.Count}} предметов."
+  },
+  "Remove": {
+    "other": "Удалить"
+  },
+  "ConfirmRemoveStock": {
+    "other": "Удалить это назначение запаса?"
+  },
+  "SelectWLEDController": {
+    "other": "1. Выберите контроллер WLED"
+  },
+  "ChoosePhysicalBin": {
+    "other": "2. Выберите физическую ячейку"
+  },
+  "SetQuantity": {
+    "other": "3. Установите количество"
+  },
+  "SelectControllerPrompt": {
+    "other": "Выберите контроллер выше, чтобы увидеть доступные ячейки"
+  },
+  "SelectAController": {
+    "other": "Выберите контроллер..."
+  },
+  "SaveStock": {
+    "other": "Сохранить запас"
+  },
+  "AddStockLocation": {
+    "other": "Добавить местоположение запаса"
+  },
+  "AddController": {
+    "other": "Добавить контроллер"
+  },
+  "Checking": {
+    "other": "Проверка..."
+  },
+  "Configure": {
+    "other": "Настроить"
+  },
+  "ConfirmDeleteController": {
+    "other": "Удалить этот контроллер?"
+  },
+  "ViewGrid": {
+    "other": "Просмотр сетки"
+  },
+  "NoControllersFound": {
+    "other": "Контроллеры не найдены"
+  },
+  "AddFirstWLEDDevice": {
+    "other": "Добавьте свое первое устройство WLED!"
+  },
+  "AddNewController": {
+    "other": "Добавить новый контроллер"
+  },
+  "Name": {
+    "other": "Имя"
+  },
+  "IPAddress": {
+    "other": "IP-адрес"
+  },
+  "Port": {
+    "other": "Порт"
+  },
+  "ConfigureGrid": {
+    "other": "Настроить сетку"
+  },
+  "BackToHardware": {
+    "other": "Назад к Оборудованию"
+  },
+  "ConfigureController": {
+    "other": "Настроить {{.Name}}"
+  },
+  "MapLEDsToBins": {
+    "other": "Привяжите физические светодиоды к виртуальным ячейкам."
+  },
+  "AuditLogsDescription": {
+    "other": "Мониторинг системной активности и изменений."
+  },
+  "Search": {
+    "other": "Поиск"
+  },
+  "SearchDetailsPlaceholder": {
+    "other": "Поиск в деталях..."
+  },
+  "AllActions": {
+    "other": "Все действия"
+  },
+  "CREATE": {
+    "other": "СОЗДАНИЕ"
+  },
+  "UPDATE": {
+    "other": "ОБНОВЛЕНИЕ"
+  },
+  "DELETE": {
+    "other": "УДАЛЕНИЕ"
+  },
+  "ADJUST_STOCK": {
+    "other": "КОРРЕКТИРОВКА_ЗАПАСА"
+  },
+  "User": {
+    "other": "Пользователь"
+  },
+  "AllUsers": {
+    "other": "Все пользователи"
+  },
+  "Entity": {
+    "other": "Сущность"
+  },
+  "AllEntities": {
+    "other": "Все сущности"
+  },
+  "PART": {
+    "other": "ДЕТАЛЬ"
+  },
+  "BIN": {
+    "other": "ЯЧЕЙКА"
+  },
+  "CONTROLLER": {
+    "other": "КОНТРОЛЛЕР"
+  },
+  "USER": {
+    "other": "ПОЛЬЗОВАТЕЛЬ"
+  },
+  "SETTINGS": {
+    "other": "НАСТРОЙКИ"
+  },
+  "Filter": {
+    "other": "Фильтр"
+  },
+  "Reset": {
+    "other": "Сброс"
+  },
+  "Timestamp": {
+    "other": "Метка времени"
+  },
+  "NoAuditLogsFound": {
+    "other": "Логи аудита по вашим фильтрам не найдены."
+  },
+  "InspirationDescription": {
+    "other": "Создавайте AI-промпты для своего инвентаря. Вдохновляйтесь или сохраняйте часто используемые промпты."
+  },
+  "AddPrompt": {
+    "other": "Добавить промпт"
+  },
+  "ContextFilter": {
+    "other": "Контекстный фильтр:"
+  },
+  "EntireInventory": {
+    "other": "Весь инвентарь"
+  },
+  "Clear": {
+    "other": "Очистить"
+  },
+  "NoTagsFoundInInventory": {
+    "other": "Теги в инвентаре не найдены."
+  },
+  "InventoryAndControl": {
+    "other": "Инвентарь и Управление"
+  },
+  "Password": {
+    "other": "Пароль"
+  },
+  "Login": {
+    "other": "Вход"
+  },
+  "OR": {
+    "other": "ИЛИ"
+  },
+  "ContinueAsGuest": {
+    "other": "Продолжить как гость"
+  },
+  "PasswordChangeRequired": {
+    "other": "Требуется смена пароля"
+  },
+  "SetYourPassword": {
+    "other": "Установите свой пароль"
+  },
+  "PasswordChangeRequiredDesc": {
+    "other": "Ваша учетная запись требует смены пароля перед продолжением."
+  },
+  "CancelAndLogout": {
+    "other": "Отмена и выход"
+  },
+  "Setup": {
+    "other": "Установка"
+  },
+  "Welcome": {
+    "other": "Добро пожаловать!"
+  },
+  "SetupDesc": {
+    "other": "Создайте учетную запись администратора, чтобы начать."
+  },
+  "AdminEmail": {
+    "other": "Email администратора"
+  },
+  "InvalidEmailWarning": {
+    "other": "Пожалуйста, введите корректный адрес электронной почты"
+  },
+  "PasswordLengthWarning": {
+    "other": "Должен быть не менее 8 символов"
+  },
+  "CreateAdminAndStart": {
+    "other": "Создать админа и начать"
+  },
+  "Error": {
+    "other": "Ошибка"
+  },
+  "OopsSomethingWentWrong": {
+    "other": "Упс! Что-то пошло не так"
+  },
+  "GoToDashboard": {
+    "other": "Перейти в панель"
+  },
+  "GoBack": {
+    "other": "Вернуться"
+  },
+  "CreatePart": {
+    "other": "Создать деталь"
+  },
+  "AddNewPart": {
+    "other": "Добавить новую деталь"
+  },
+  "CreateNew": {
+    "other": "Создать новую"
+  },
+  "CoreDetails": {
+    "other": "Основные детали"
+  },
+  "PartName": {
+    "other": "Название детали"
+  },
+  "EnterDescriptionPlaceholder": {
+    "other": "Введите подробное описание..."
+  },
+  "CoverImage": {
+    "other": "Обложка"
+  },
+  "CurrentCoverImage": {
+    "other": "Текущая обложка"
+  },
+  "ReplaceImageNote": {
+    "other": "Заменяет текущее изображение, если оно загружено."
+  },
+  "SpecificationsAndSourcing": {
+    "other": "Спецификации и закупки"
+  },
+  "PartNumberMPN": {
+    "other": "Номер детали (MPN)"
+  },
+  "ScanBarcodePlaceholder": {
+    "other": "Сканируйте штрихкод здесь..."
+  },
+  "InventoryControl": {
+    "other": "Управление инвентарем"
+  },
+  "UnitCostLabel": {
+    "other": "Цена за единицу ($)"
+  },
+  "MinStockLevel": {
+    "other": "Мин. уровень запаса"
+  },
+  "MinStockTooltip": {
+    "other": "Когда запас упадет ниже этого числа, он будет помечен как «Критический запас»."
+  },
+  "ReorderLevelLabel": {
+    "other": "Уровень дозаказа"
+  },
+  "ReorderLevelTooltip": {
+    "other": "Когда запас упадет ниже этого числа, он будет помечен как «Низкий запас»."
+  },
+  "ExternalLinks": {
+    "other": "Внешние ссылки"
+  },
+  "Label": {
+    "other": "Метка"
+  },
+  "URL": {
+    "other": "URL"
+  },
+  "LinkLabelPlaceholder": {
+    "other": "Метка (например, Datasheet)"
+  },
+  "AddLink": {
+    "other": "Добавить ссылку"
+  },
+  "Documents": {
+    "other": "Документы"
+  },
+  "SaveChanges": {
+    "other": "Сохранить изменения"
+  },
+  "SelectABin": {
+    "other": "Выберите ячейку..."
+  },
+  "BackToDashboard": {
+    "other": "Назад в панель"
+  },
+  "EditWallTitle": {
+    "other": "Редактировать {{.Name}}"
+  },
+  "WallEditDescription": {
+    "other": "Настройте стену с контейнерами для организации панели инвентаря."
+  },
+  "WallSettings": {
+    "other": "Настройки стены"
+  },
+  "DeleteWall": {
+    "other": "Удалить стену"
+  },
+  "Containers": {
+    "other": "Контейнеры"
+  },
+  "Linked": {
+    "other": "Привязано"
+  },
+  "NoContainersLinked": {
+    "other": "Контейнеры не привязаны"
+  },
+  "AddContainerToWallInstructions": {
+    "other": "Выберите контейнер из меню ниже, чтобы добавить его на эту стену."
+  },
+  "LinkNewContainer": {
+    "other": "Привязать новый контейнер"
+  },
+  "ChooseAContainer": {
+    "other": "Выберите контейнер..."
+  },
+  "AddToWall": {
+    "other": "Добавить на стену"
+  },
+  "SearchPartsPlaceholder": {
+    "other": "Поиск деталей..."
+  },
+  "BulkImport": {
+    "other": "Массовый импорт"
+  },
+  "Import": {
+    "other": "Импорт"
+  },
+  "AddPart": {
+    "other": "Добавить деталь"
+  },
+  "BulkImportParts": {
+    "other": "Массовый импорт деталей"
+  },
+  "NeedATemplate": {
+    "other": "Нужен шаблон?"
+  },
+  "DownloadSampleCSVPrompt": {
+    "other": "Скачайте образец CSV-файла, чтобы начать."
+  },
+  "DownloadCSV": {
+    "other": "Скачать CSV"
+  },
+  "UploadFile": {
+    "other": "Загрузить файл"
+  },
+  "OrPasteCSVData": {
+    "other": "ИЛИ ВСТАВЬТЕ ДАННЫЕ CSV (С ЗАГОЛОВКАМИ)"
+  },
+  "StartImport": {
+    "other": "Начать импорт"
+  },
+  "ImportSuccess": {
+    "other": "Успешно!"
+  },
+  "RefreshPage": {
+    "other": "Обновить страницу"
+  },
+  "ImportFailed": {
+    "other": "Ошибка импорта"
+  }
+}

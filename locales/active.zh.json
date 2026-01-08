@@ -1,0 +1,800 @@
+{
+  "Dashboard": {
+    "other": "仪表板"
+  },
+  "DashboardStatus": {
+    "other": "可视化库存状态。"
+  },
+  "CreateWall": {
+    "other": "创建墙面"
+  },
+  "UniqueParts": {
+    "other": "独特零件"
+  },
+  "TotalStock": {
+    "other": "总库存"
+  },
+  "TotalValue": {
+    "other": "总价值"
+  },
+  "Controllers": {
+    "other": "控制器"
+  },
+  "NoContainersConfigured": {
+    "other": "未配置容器"
+  },
+  "SetupHardwarePrompt": {
+    "other": "前往硬件设置以设置您的第一个 WLED 控制器并映射一些料箱。"
+  },
+  "ShowingAllControllers": {
+    "other": "显示所有控制器。创建一个墙面来整理您的视图。"
+  },
+  "Dismiss": {
+    "other": "忽略"
+  },
+  "EditWall": {
+    "other": "编辑墙面"
+  },
+  "NoContainersOnWall": {
+    "other": "此墙面上没有容器"
+  },
+  "AddContainerToWallPrompt": {
+    "other": "点击上方的编辑墙面按钮以添加容器。"
+  },
+  "CreateNewWall": {
+    "other": "创建新墙面"
+  },
+  "WallName": {
+    "other": "墙面名称"
+  },
+  "DescriptionOptional": {
+    "other": "描述（可选）"
+  },
+  "Cancel": {
+    "other": "取消"
+  },
+  "Language": {
+    "other": "语言"
+  },
+  "English": {
+    "other": "英语"
+  },
+  "Spanish": {
+    "other": "西班牙语"
+  },
+  "en": {
+    "other": "英语"
+  },
+  "es": {
+    "other": "西班牙语"
+  },
+  "zh": {
+    "other": "简体中文"
+  },
+  "pt-BR": {
+    "other": "葡萄牙语 (巴西)"
+  },
+  "it": {
+    "other": "意大利语"
+  },
+  "de": {
+    "other": "德语"
+  },
+  "fr": {
+    "other": "法语"
+  },
+  "ru": {
+    "other": "俄语"
+  },
+  "Chinese": {
+    "other": "简体中文"
+  },
+  "Portuguese": {
+    "other": "葡萄牙语 (巴西)"
+  },
+  "Italian": {
+    "other": "意大利语"
+  },
+  "German": {
+    "other": "德语"
+  },
+  "French": {
+    "other": "法语"
+  },
+  "Russian": {
+    "other": "俄语"
+  },
+  "Settings": {
+    "other": "设置"
+  },
+  "SettingsDescription": {
+    "other": "配置应用程序行为、硬件默认值等。"
+  },
+  "UserManagement": {
+    "other": "用户管理"
+  },
+  "AddUser": {
+    "other": "添加用户"
+  },
+  "Email": {
+    "other": "电子邮件"
+  },
+  "Role": {
+    "other": "角色"
+  },
+  "Status": {
+    "other": "状态"
+  },
+  "Actions": {
+    "other": "操作"
+  },
+  "ResetPending": {
+    "other": "重置待处理"
+  },
+  "Active": {
+    "other": "活跃"
+  },
+  "ForceReset": {
+    "other": "强制重置"
+  },
+  "Delete": {
+    "other": "删除"
+  },
+  "ConfirmForceReset": {
+    "other": "强制此用户在下次登录时更改密码？"
+  },
+  "ConfirmDeleteUser": {
+    "other": "删除此用户？"
+  },
+  "General": {
+    "other": "常规"
+  },
+  "RequireReadAuthLabel": {
+    "other": "只读访问需要登录"
+  },
+  "EnableDebugLogs": {
+    "other": "启用调试日志"
+  },
+  "EnableDebugLogsDescription": {
+    "other": "捕获更详细的信息用于故障排除。"
+  },
+  "HardwareAutomation": {
+    "other": "硬件自动化"
+  },
+  "AutoTurnOffLocateLED": {
+    "other": "自动关闭“定位”LED"
+  },
+  "TurnOffAfter": {
+    "other": "关闭延时："
+  },
+  "Seconds": {
+    "other": "秒"
+  },
+  "InterfaceColors": {
+    "other": "界面颜色"
+  },
+  "LocateAction": {
+    "other": "定位操作"
+  },
+  "StockLevelOK": {
+    "other": "库存水平：正常"
+  },
+  "StockLevelLow": {
+    "other": "库存水平：低"
+  },
+  "StockLevelCritical": {
+    "other": "库存水平：严重不足"
+  },
+  "SaveAllSettings": {
+    "other": "保存所有设置"
+  },
+  "ChangeYourPassword": {
+    "other": "更改您的密码"
+  },
+  "AddNewUser": {
+    "other": "添加新用户"
+  },
+  "EmailAddress": {
+    "other": "电子邮件地址"
+  },
+  "TemporaryPassword": {
+    "other": "临时密码"
+  },
+  "UserMustChangePasswordWarning": {
+    "other": "用户必须在首次登录时更改此密码"
+  },
+  "RoleViewer": {
+    "other": "查看者（只读）"
+  },
+  "RoleEditor": {
+    "other": "编辑者（库存操作）"
+  },
+  "RoleAdmin": {
+    "other": "管理员（完全系统访问权限）"
+  },
+  "CreateUser": {
+    "other": "创建用户"
+  },
+  "BackupAndRestore": {
+    "other": "备份与恢复"
+  },
+  "CreateBackup": {
+    "other": "创建备份"
+  },
+  "CreateBackupDescription": {
+    "other": "下载包含整个数据库和所有上传资产（图像、文档）的 ZIP 存档。"
+  },
+  "Download": {
+    "other": "下载"
+  },
+  "RestoreBackup": {
+    "other": "恢复备份"
+  },
+  "RestoreBackupDescription": {
+    "other": "使用备份文件覆盖当前系统。"
+  },
+  "DestructiveActionWarning": {
+    "other": "这是破坏性操作，无法撤消。"
+  },
+  "Restore": {
+    "other": "恢复"
+  },
+  "DangerZoneSystemRestore": {
+    "other": "危险区域：系统恢复"
+  },
+  "FullRestoreWarning": {
+    "other": "您即将完全擦除当前数据库并将其替换为备份。所有当前的零件、料箱、用户和设置都将丢失。"
+  },
+  "SelectBackupFile": {
+    "other": "选择备份文件"
+  },
+  "IUnderstandIrreversible": {
+    "other": "我明白此操作是不可逆的。"
+  },
+  "PerformFullRestore": {
+    "other": "执行完全恢复"
+  },
+  "CurrentPassword": {
+    "other": "当前密码"
+  },
+  "NewPassword": {
+    "other": "新密码"
+  },
+  "PasswordMinLength": {
+    "other": "必须至少 8 个字符"
+  },
+  "ConfirmNewPassword": {
+    "other": "确认新密码"
+  },
+  "ReEnterPassword": {
+    "other": "重新输入密码"
+  },
+  "PasswordsDoNotMatch": {
+    "other": "密码不匹配"
+  },
+  "UpdatePassword": {
+    "other": "更新密码"
+  },
+  "GuestAccess": {
+    "other": "访客访问"
+  },
+  "SearchPlaceholder": {
+    "other": "搜索 (Cmd+K)"
+  },
+  "TurnOffAllLEDs": {
+    "other": "关闭所有 LED"
+  },
+  "LogOut": {
+    "other": "登出"
+  },
+  "LogIn": {
+    "other": "登录"
+  },
+  "SilkMode": {
+    "other": "丝绸模式"
+  },
+  "DarkMode": {
+    "other": "深色模式"
+  },
+  "Community": {
+    "other": "社区"
+  },
+  "Feedback": {
+    "other": "反馈"
+  },
+  "JoinDiscord": {
+    "other": "加入 Discord"
+  },
+  "SupportOnKofi": {
+    "other": "在 Ko-Fi 上支持"
+  },
+  "Inventory": {
+    "other": "库存"
+  },
+  "Inspiration": {
+    "other": "灵感"
+  },
+  "Hardware": {
+    "other": "硬件"
+  },
+  "AuditLogs": {
+    "other": "审计日志"
+  },
+  "ItemsSelected": {
+    "other": "已选择"
+  },
+  "SelectAllVisible": {
+    "other": "选择所有可见"
+  },
+  "NoPartsFound": {
+    "other": "未找到零件"
+  },
+  "NoPartsMatching": {
+    "other": "我们找不到任何匹配 \"{{.Search}}\" 的内容。"
+  },
+  "ClearSearch": {
+    "other": "清除搜索"
+  },
+  "ConfirmBulkDelete": {
+    "other": "确认批量删除"
+  },
+  "BulkDeleteConfirmPrefix": {
+    "other": "您确定要删除"
+  },
+  "BulkDeleteConfirmSuffix": {
+    "other": "个零件吗？此操作无法撤消。"
+  },
+  "ConfirmDelete": {
+    "other": "确认删除"
+  },
+  "Stock": {
+    "other": "库存"
+  },
+  "EditPart": {
+    "other": "编辑零件"
+  },
+  "ConfirmDeletePart": {
+    "other": "您确定要删除此零件吗？这将移除所有相关的文档、图像和库存分配。"
+  },
+  "Specifications": {
+    "other": "规格"
+  },
+  "MPN": {
+    "other": "MPN"
+  },
+  "Manufacturer": {
+    "other": "制造商"
+  },
+  "Supplier": {
+    "other": "供应商"
+  },
+  "Barcode": {
+    "other": "条形码"
+  },
+  "UnitCost": {
+    "other": "单价"
+  },
+  "Tags": {
+    "other": "标签"
+  },
+  "Resources": {
+    "other": "资源"
+  },
+  "TotalInStock": {
+    "other": "库存总计"
+  },
+  "LowStockWarning": {
+    "other": "低库存警告"
+  },
+  "Locations": {
+    "other": "位置"
+  },
+  "AddStock": {
+    "other": "添加库存"
+  },
+  "Location": {
+    "other": "位置"
+  },
+  "Qty": {
+    "other": "数量"
+  },
+  "NoStockAssigned": {
+    "other": "未分配库存。"
+  },
+  "Orphaned": {
+    "other": "孤立"
+  },
+  "OrphanedStockTitle": {
+    "other": "此库存不再分配给有效的料箱"
+  },
+  "Unmanaged": {
+    "other": "未管理"
+  },
+  "ReassignToValidBin": {
+    "other": "重新分配到有效的料箱"
+  },
+  "Fix": {
+    "other": "修复"
+  },
+  "ReassignOrphanedStock": {
+    "other": "重新分配孤立库存"
+  },
+  "ReassignOrphanedStockDesc": {
+    "other": "此库存目前未分配给任何物理料箱。为这些 {{.Count}} 个物品选择一个新位置。"
+  },
+  "MoveStock": {
+    "other": "移动库存"
+  },
+  "MoveStockDesc": {
+    "other": "为这些 {{.Count}} 个物品选择一个新位置。"
+  },
+  "Remove": {
+    "other": "移除"
+  },
+  "ConfirmRemoveStock": {
+    "other": "移除此库存分配？"
+  },
+  "SelectWLEDController": {
+    "other": "1. 选择 WLED 控制器"
+  },
+  "ChoosePhysicalBin": {
+    "other": "2. 选择物理料箱"
+  },
+  "SetQuantity": {
+    "other": "3. 设置数量"
+  },
+  "SelectControllerPrompt": {
+    "other": "在上放选择一个控制器以查看可用料箱"
+  },
+  "SelectAController": {
+    "other": "选择一个控制器..."
+  },
+  "SaveStock": {
+    "other": "保存库存"
+  },
+  "AddStockLocation": {
+    "other": "添加库存位置"
+  },
+  "AddController": {
+    "other": "添加控制器"
+  },
+  "Checking": {
+    "other": "正在检查..."
+  },
+  "Configure": {
+    "other": "配置"
+  },
+  "ConfirmDeleteController": {
+    "other": "删除此控制器？"
+  },
+  "ViewGrid": {
+    "other": "查看网格"
+  },
+  "NoControllersFound": {
+    "other": "未找到控制器"
+  },
+  "AddFirstWLEDDevice": {
+    "other": "添加您的第一个 WLED 设备！"
+  },
+  "AddNewController": {
+    "other": "添加新控制器"
+  },
+  "Name": {
+    "other": "名称"
+  },
+  "IPAddress": {
+    "other": "IP 地址"
+  },
+  "Port": {
+    "other": "端口"
+  },
+  "ConfigureGrid": {
+    "other": "配置网格"
+  },
+  "BackToHardware": {
+    "other": "返回硬件"
+  },
+  "ConfigureController": {
+    "other": "配置 {{.Name}}"
+  },
+  "MapLEDsToBins": {
+    "other": "将您的物理 LED 映射到虚拟料箱。"
+  },
+  "AuditLogsDescription": {
+    "other": "监控系统活动和变更。"
+  },
+  "Search": {
+    "other": "搜索"
+  },
+  "SearchDetailsPlaceholder": {
+    "other": "搜索详情..."
+  },
+  "AllActions": {
+    "other": "所有操作"
+  },
+  "CREATE": {
+    "other": "创建"
+  },
+  "UPDATE": {
+    "other": "更新"
+  },
+  "DELETE": {
+    "other": "删除"
+  },
+  "ADJUST_STOCK": {
+    "other": "调整库存"
+  },
+  "User": {
+    "other": "用户"
+  },
+  "AllUsers": {
+    "other": "所有用户"
+  },
+  "Entity": {
+    "other": "实体"
+  },
+  "AllEntities": {
+    "other": "所有实体"
+  },
+  "PART": {
+    "other": "零件"
+  },
+  "BIN": {
+    "other": "料箱"
+  },
+  "CONTROLLER": {
+    "other": "控制器"
+  },
+  "USER": {
+    "other": "用户"
+  },
+  "SETTINGS": {
+    "other": "设置"
+  },
+  "Filter": {
+    "other": "筛选"
+  },
+  "Reset": {
+    "other": "重置"
+  },
+  "Timestamp": {
+    "other": "时间戳"
+  },
+  "NoAuditLogsFound": {
+    "other": "未找到匹配您筛选条件的审计日志。"
+  },
+  "InspirationDescription": {
+    "other": "为您的库存创建 AI 提示。获取灵感或保存常用的提示。"
+  },
+  "AddPrompt": {
+    "other": "添加提示"
+  },
+  "ContextFilter": {
+    "other": "上下文筛选："
+  },
+  "EntireInventory": {
+    "other": "整个库存"
+  },
+  "Clear": {
+    "other": "清除"
+  },
+  "NoTagsFoundInInventory": {
+    "other": "库存中未找到标签。"
+  },
+  "InventoryAndControl": {
+    "other": "库存与控制"
+  },
+  "Password": {
+    "other": "密码"
+  },
+  "Login": {
+    "other": "登录"
+  },
+  "OR": {
+    "other": "或"
+  },
+  "ContinueAsGuest": {
+    "other": "以访客身份继续"
+  },
+  "PasswordChangeRequired": {
+    "other": "需要更改密码"
+  },
+  "SetYourPassword": {
+    "other": "设置您的密码"
+  },
+  "PasswordChangeRequiredDesc": {
+    "other": "在继续之前，您的帐户需要更改密码。"
+  },
+  "CancelAndLogout": {
+    "other": "取消并登出"
+  },
+  "Setup": {
+    "other": "设置"
+  },
+  "Welcome": {
+    "other": "欢迎！"
+  },
+  "SetupDesc": {
+    "other": "创建您的管理员帐户以开始使用。"
+  },
+  "AdminEmail": {
+    "other": "管理员电子邮件"
+  },
+  "InvalidEmailWarning": {
+    "other": "请输入有效的电子邮件地址"
+  },
+  "PasswordLengthWarning": {
+    "other": "必须至少 8 个字符长"
+  },
+  "CreateAdminAndStart": {
+    "other": "创建管理员并开始"
+  },
+  "Error": {
+    "other": "错误"
+  },
+  "OopsSomethingWentWrong": {
+    "other": "糟糕！出错了"
+  },
+  "GoToDashboard": {
+    "other": "前往仪表板"
+  },
+  "GoBack": {
+    "other": "返回"
+  },
+  "CreatePart": {
+    "other": "创建零件"
+  },
+  "AddNewPart": {
+    "other": "添加新零件"
+  },
+  "CreateNew": {
+    "other": "创建新"
+  },
+  "CoreDetails": {
+    "other": "核心详情"
+  },
+  "PartName": {
+    "other": "零件名称"
+  },
+  "EnterDescriptionPlaceholder": {
+    "other": "输入详细描述..."
+  },
+  "CoverImage": {
+    "other": "封面图像"
+  },
+  "CurrentCoverImage": {
+    "other": "当前封面图像"
+  },
+  "ReplaceImageNote": {
+    "other": "如果已上传，则替换当前图像。"
+  },
+  "SpecificationsAndSourcing": {
+    "other": "规格与采购"
+  },
+  "PartNumberMPN": {
+    "other": "零件编号 (MPN)"
+  },
+  "ScanBarcodePlaceholder": {
+    "other": "在此处扫描条形码..."
+  },
+  "InventoryControl": {
+    "other": "库存控制"
+  },
+  "UnitCostLabel": {
+    "other": "单价 ($)"
+  },
+  "MinStockLevel": {
+    "other": "最低库存水平"
+  },
+  "MinStockTooltip": {
+    "other": "当库存低于此数字时，将被标记为“严重不足”。"
+  },
+  "ReorderLevelLabel": {
+    "other": "再订货水平"
+  },
+  "ReorderLevelTooltip": {
+    "other": "当库存低于此数字时，将被标记为“低库存”。"
+  },
+  "ExternalLinks": {
+    "other": "外部链接"
+  },
+  "Label": {
+    "other": "标签"
+  },
+  "URL": {
+    "other": "URL"
+  },
+  "LinkLabelPlaceholder": {
+    "other": "标签（例如 数据表）"
+  },
+  "AddLink": {
+    "other": "添加链接"
+  },
+  "Documents": {
+    "other": "文档"
+  },
+  "SaveChanges": {
+    "other": "保存更改"
+  },
+  "SelectABin": {
+    "other": "选择一个料箱..."
+  },
+  "BackToDashboard": {
+    "other": "返回仪表板"
+  },
+  "EditWallTitle": {
+    "other": "编辑 {{.Name}}"
+  },
+  "WallEditDescription": {
+    "other": "配置带有容器的墙面以整理您的库存仪表板。"
+  },
+  "WallSettings": {
+    "other": "墙面设置"
+  },
+  "DeleteWall": {
+    "other": "删除墙面"
+  },
+  "Containers": {
+    "other": "容器"
+  },
+  "Linked": {
+    "other": "已链接"
+  },
+  "NoContainersLinked": {
+    "other": "未链接容器"
+  },
+  "AddContainerToWallInstructions": {
+    "other": "从下面的菜单中选择一个容器以将其添加到此墙面。"
+  },
+  "LinkNewContainer": {
+    "other": "链接新容器"
+  },
+  "ChooseAContainer": {
+    "other": "选择一个容器..."
+  },
+  "AddToWall": {
+    "other": "添加到墙面"
+  },
+  "SearchPartsPlaceholder": {
+    "other": "搜索零件..."
+  },
+  "BulkImport": {
+    "other": "批量导入"
+  },
+  "Import": {
+    "other": "导入"
+  },
+  "AddPart": {
+    "other": "添加零件"
+  },
+  "BulkImportParts": {
+    "other": "批量导入零件"
+  },
+  "NeedATemplate": {
+    "other": "需要模板吗？"
+  },
+  "DownloadSampleCSVPrompt": {
+    "other": "下载示例 CSV 文件以开始使用。"
+  },
+  "DownloadCSV": {
+    "other": "下载 CSV"
+  },
+  "UploadFile": {
+    "other": "上传文件"
+  },
+  "OrPasteCSVData": {
+    "other": "或粘贴 CSV 数据（带标题）"
+  },
+  "StartImport": {
+    "other": "开始导入"
+  },
+  "ImportSuccess": {
+    "other": "成功！"
+  },
+  "RefreshPage": {
+    "other": "刷新页面"
+  },
+  "ImportFailed": {
+    "other": "导入失败"
+  }
+}
