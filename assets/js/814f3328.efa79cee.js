@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkwebsite=globalThis.webpackChunkwebsite||[]).push([[472],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome to WLEDger","permalink":"/wledger/blog/welcome-to-wledger","unlisted":false,"date":"2026-01-14T00:00:00.000Z"}]}')}}]);
