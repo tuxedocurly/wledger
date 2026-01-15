@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
     <channel>
         <title>WLEDger Blog</title>
-        <link>https://tuxedocurly.github.io/wledger/blog</link>
+        <link>https://tuxedocurly.github.io/blog</link>
         <description>WLEDger Blog</description>
         <lastBuildDate>Wed, 14 Jan 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
@@ -10,22 +10,22 @@
         <language>en</language>
         <item>
             <title><![CDATA[Welcome to WLEDger]]></title>
-            <link>https://tuxedocurly.github.io/wledger/blog/welcome-to-wledger</link>
-            <guid>https://tuxedocurly.github.io/wledger/blog/welcome-to-wledger</guid>
+            <link>https://tuxedocurly.github.io/blog/welcome-to-wledger</link>
+            <guid>https://tuxedocurly.github.io/blog/welcome-to-wledger</guid>
             <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
             <description><![CDATA[The story behind WLEDger - CTRL + F for physical objects.]]></description>
             <content:encoded><![CDATA[<p>The story behind WLEDger - CTRL + F for physical objects.</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-problem">The Problem<a href="https://tuxedocurly.github.io/wledger/blog/welcome-to-wledger#the-problem" class="hash-link" aria-label="Direct link to The Problem" title="Direct link to The Problem" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-problem">The Problem<a href="https://tuxedocurly.github.io/blog/welcome-to-wledger#the-problem" class="hash-link" aria-label="Direct link to The Problem" title="Direct link to The Problem" translate="no">​</a></h3>
 <p>As a maker and serial hobbyist, I've accumulated a massive amount of "stuff" to support my cycle of making.</p>
 <p>Over time, this accumulation led to a major bottleneck: I couldn't remember what parts I had or where they were stored. This resulted in accidental over-buying and under-utilizing the parts I already owned. I wanted a system that solved these problems so I could get back to doing what I love: <strong>making things.</strong></p>
 <p>I needed an inventory system that was self-hostable and privacy-respecting. Most tools I found were either closed source, expensive commercial software, or abandonware.</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="inspiration">Inspiration<a href="https://tuxedocurly.github.io/wledger/blog/welcome-to-wledger#inspiration" class="hash-link" aria-label="Direct link to Inspiration" title="Direct link to Inspiration" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="inspiration">Inspiration<a href="https://tuxedocurly.github.io/blog/welcome-to-wledger#inspiration" class="hash-link" aria-label="Direct link to Inspiration" title="Direct link to Inspiration" translate="no">​</a></h3>
 <p>WLEDger stands on the shoulders of giants. Two projects specifically inspired this journey:</p>
 <ol>
 <li class=""><strong><a href="https://youtu.be/7WAhquGQq3o?si=W-1QXX9IZ2f_B7Vp" target="_blank" rel="noopener noreferrer" class="">Zack Freedman's LED Gridfinity Project</a>:</strong> Zack's approach is cool, but expensive and impractical. I store things in random containers, shelves, and boxes, so I needed a more flexible solution.</li>
 <li class=""><strong><a href="https://github.com/FireMarshmellow/Spotlight_Storage" target="_blank" rel="noopener noreferrer" class="">MIMOSA / Spotlight Storage</a>:</strong> This was much closer to my needs. It utilizes WLED to help users search for <em>and</em> locate items. However, the project hasn't been updated in over two years.</li>
 </ol>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="introducing-wledger">Introducing WLEDger<a href="https://tuxedocurly.github.io/wledger/blog/welcome-to-wledger#introducing-wledger" class="hash-link" aria-label="Direct link to Introducing WLEDger" title="Direct link to Introducing WLEDger" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="introducing-wledger">Introducing WLEDger<a href="https://tuxedocurly.github.io/blog/welcome-to-wledger#introducing-wledger" class="hash-link" aria-label="Direct link to Introducing WLEDger" title="Direct link to Introducing WLEDger" translate="no">​</a></h3>
 <p>Given the state of the existing ecosystem, I decided to build the tool I wanted to use. WLEDger is a modern inventory system that features:</p>
 <ul>
 <li class=""><strong>Visual Stock Location:</strong> Use WLED to light up the location of your parts, and view your entire inventory status at a glance.</li>
