@@ -140,7 +140,30 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 						}
 					</span>
 				</h2>
-				<p class="text-xs opacity-70 truncate">{ part.Description.String }</p>
+				<div class="relative">
+			        <!-- Truncated description (default view) -->
+				        <p class="text-xs opacity-70 truncate"> part.Description.String}</p>
+
+        <!-- Hover popup with full description -->
+        if part.Description.String != "" {
+                <div
+                        class="
+                                absolute z-50 mt-1
+                                hidden group-hover:block
+                                transition-opacity duration-200 delay-200
+                                bg-base-100 text-base-content
+                                shadow-xl rounded-lg
+                                p-3 text-xs
+                                max-w-xs
+                                max-h-40 overflow-y-auto
+                                border border-base-300
+                        "
+                >
+                        { part.Description.String }
+                </div>
+        }
+</div>
+				
 				<div class="flex justify-between items-end mt-4">
 					<div class="flex flex-col">
 						<span class="text-s font-mono opacity-50"># { part.PartNumber.String }</span>
