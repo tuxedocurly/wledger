@@ -219,6 +219,116 @@ func TestUpdatePartStockThresholdsToZero(t *testing.T) {
 	}
 }
 
+func TestClonePart(t *testing.T) {
+	database, s, dbCleanup := setupTestDB(t)
+	defer dbCleanup()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tagSvc := tags.NewService(database, s)
+	docSvc := documents.NewService(s, logger)
+	svc := NewService(database, s, logger, tagSvc, docSvc)
+
+	_, err := s.CreateUser(context.Background(), db.CreateUserParams{
+		Email:        "admin@test.com",
+		PasswordHash: "hash",
+		Role:         "admin",
+	})
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), middleware.UserContextKey, int64(1))
+
+	// Create original part with tags
+	origID, err := svc.CreatePart(ctx, CreatePartRequest{
+		Name:         "Original Part",
+		Description:  "A description",
+		PartNumber:   "PN-001",
+		Manufacturer: "Acme",
+		Tags:         []string{"tagA", "tagB"},
+	})
+	if err != nil {
+		t.Fatalf("CreatePart failed: %v", err)
+	}
+
+	// Add a link to the original
+	err = s.CreatePartLink(ctx, db.CreatePartLinkParams{
+		PartID: origID,
+		Url:    "https://example.com",
+		Label:  sql.NullString{String: "Example", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreatePartLink failed: %v", err)
+	}
+
+	// Clone
+	newID, err := svc.ClonePart(ctx, origID)
+	if err != nil {
+		t.Fatalf("ClonePart failed: %v", err)
+	}
+	if newID == origID {
+		t.Fatal("expected new part ID to differ from original")
+	}
+
+	// Verify cloned part fields
+	cloned, err := svc.GetPart(ctx, newID)
+	if err != nil {
+		t.Fatalf("GetPart (clone) failed: %v", err)
+	}
+	if cloned.Name != "Original Part (Copy)" {
+		t.Errorf("expected name 'Original Part (Copy)', got %q", cloned.Name)
+	}
+	if cloned.Description.String != "A description" {
+		t.Errorf("expected description copied, got %q", cloned.Description.String)
+	}
+	if cloned.PartNumber.String != "PN-001" {
+		t.Errorf("expected part number copied, got %q", cloned.PartNumber.String)
+	}
+	if cloned.Manufacturer.String != "Acme" {
+		t.Errorf("expected manufacturer copied, got %q", cloned.Manufacturer.String)
+	}
+
+	// Verify tags copied
+	clonedTags, err := s.GetTagsForPart(ctx, newID)
+	if err != nil {
+		t.Fatalf("GetTagsForPart failed: %v", err)
+	}
+	if len(clonedTags) != 2 {
+		t.Errorf("expected 2 tags on clone, got %d", len(clonedTags))
+	}
+
+	// Verify links copied
+	clonedLinks, err := s.GetPartLinks(ctx, newID)
+	if err != nil {
+		t.Fatalf("GetPartLinks failed: %v", err)
+	}
+	if len(clonedLinks) != 1 {
+		t.Errorf("expected 1 link on clone, got %d", len(clonedLinks))
+	}
+	if len(clonedLinks) == 1 && clonedLinks[0].Url != "https://example.com" {
+		t.Errorf("expected link URL copied, got %q", clonedLinks[0].Url)
+	}
+
+	// Verify original is untouched
+	orig, err := svc.GetPart(ctx, origID)
+	if err != nil {
+		t.Fatalf("original part missing after clone")
+	}
+	if orig.Name != "Original Part" {
+		t.Errorf("original part name changed: %q", orig.Name)
+	}
+
+	// Verify audit log (CREATE for original + CREATE for clone)
+	logs, _ := s.GetAllAuditLogs(ctx)
+	if len(logs) != 2 {
+		t.Fatalf("expected 2 audit logs, got %d", len(logs))
+	}
+	cloneLog := logs[1]
+	if cloneLog.ActionType != "CREATE" || cloneLog.EntityType != "PART" {
+		t.Errorf("unexpected clone audit log: %+v", cloneLog)
+	}
+}
+
 func TestUpdatePartClearFields(t *testing.T) {
 	database, s, dbCleanup := setupTestDB(t)
 	defer dbCleanup()
