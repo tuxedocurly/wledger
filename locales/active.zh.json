@@ -353,6 +353,9 @@
   "EditPart": {
     "other": "编辑零件"
   },
+  "ClonePart": {
+    "other": "克隆零件"
+  },
   "ConfirmDeletePart": {
     "other": "您确定要删除此零件吗？这将移除所有相关的文档、图像和库存分配。"
   },

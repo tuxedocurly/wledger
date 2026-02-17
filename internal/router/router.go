@@ -111,6 +111,7 @@ func New(mw *middleware.Manager, sessionManager *scs.SessionManager, h *handler.
 			r.Get("/parts/{id}/edit", h.HandlePartEdit)
 			r.Post("/parts/{id}/update", h.HandlePartUpdate)
 			r.Post("/parts/{id}/delete", h.HandlePartDelete)
+			r.Get("/parts/{id}/clone", h.HandlePartClone)
 
 			// Sub-Resources
 			r.Delete("/parts/links/{id}", h.HandleLinkDelete)

@@ -152,6 +152,20 @@ func (h *Handler) HandlePartDelete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/parts", http.StatusSeeOther)
 }
 
+// GET /parts/{id}/clone
+func (h *Handler) HandlePartClone(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	partID := int64(id)
+
+	newID, err := h.Parts.ClonePart(r.Context(), partID)
+	if err != nil {
+		h.UIError.Respond(w, r, err, "Failed to clone part", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/parts/%d/edit", newID), http.StatusSeeOther)
+}
+
 // DELETE /parts/bulk
 func (h *Handler) HandlePartsBulkDelete(w http.ResponseWriter, r *http.Request) {
 	user := auth.GetUserFromRequest(r)

@@ -353,6 +353,9 @@
   "EditPart": {
     "other": "Teil bearbeiten"
   },
+  "ClonePart": {
+    "other": "Teil klonen"
+  },
   "ConfirmDeletePart": {
     "other": "Sind Sie sicher, dass Sie dieses Teil löschen möchten? Dies entfernt alle zugehörigen Dokumente, Bilder und Bestandszuweisungen."
   },
