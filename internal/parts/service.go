@@ -25,6 +25,7 @@ type Service interface {
 	UpdatePart(ctx context.Context, req UpdatePartRequest) error
 	DeletePart(ctx context.Context, id int64) error
 	DeleteParts(ctx context.Context, ids []int64) error
+	ClonePart(ctx context.Context, id int64) (int64, error)
 	GetPart(ctx context.Context, id int64) (db.Part, error)
 	ListParts(ctx context.Context, search string, page int, binID *int64) ([]pages.PartView, error)
 	GetPartDetail(ctx context.Context, id int64) (PartDetail, error)
@@ -456,6 +457,66 @@ func (s *service) DeletePart(ctx context.Context, id int64) error {
 	}
 	audit.Log(ctx, s.store, "DELETE", "PART", id, "Deleted part", summary, nil)
 	return s.store.DeletePart(ctx, id)
+}
+
+func (s *service) ClonePart(ctx context.Context, id int64) (int64, error) {
+	p, err := s.store.GetPart(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+
+	links, err := s.store.GetPartLinks(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+
+	tags, err := s.store.GetTagsForPart(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	tagNames := make([]string, len(tags))
+	for i, t := range tags {
+		tagNames[i] = t.Name
+	}
+
+	var newID int64
+	err = s.store.ExecTx(ctx, func(q db.Querier) error {
+		var err error
+		newID, err = q.CreatePart(ctx, db.CreatePartParams{
+			Name:              p.Name + " (Copy)",
+			Description:       p.Description,
+			PartNumber:        p.PartNumber,
+			Manufacturer:      p.Manufacturer,
+			Supplier:          p.Supplier,
+			BarcodeData:       p.BarcodeData,
+			UnitCost:          p.UnitCost,
+			ReorderLevel:      p.ReorderLevel,
+			MinStockThreshold: p.MinStockThreshold,
+			ImagePath:         p.ImagePath,
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, l := range links {
+			if err := s.docs.AddLink(ctx, q, newID, l.Url, l.Label.String); err != nil {
+				return err
+			}
+		}
+
+		if err := s.tags.SyncTags(ctx, q, newID, tagNames); err != nil {
+			return err
+		}
+
+		summary := map[string]any{
+			"id":          newID,
+			"name":        p.Name,
+			"part_number": p.PartNumber.String,
+		}
+		audit.Log(ctx, q, "CREATE", "PART", newID, "Cloned part from "+p.Name, nil, summary)
+		return nil
+	})
+	return newID, err
 }
 
 func (s *service) DeleteParts(ctx context.Context, ids []int64) error {

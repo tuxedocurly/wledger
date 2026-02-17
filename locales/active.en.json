@@ -371,6 +371,9 @@
   "EditPart": {
     "other": "Edit Part"
   },
+  "ClonePart": {
+    "other": "Clone Part"
+  },
   "ConfirmDeletePart": {
     "other": "Are you sure you want to delete this part? This will remove all associated documents, images, and inventory assignments."
   },

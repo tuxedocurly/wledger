@@ -353,6 +353,9 @@
   "EditPart": {
     "other": "Modifier la pièce"
   },
+  "ClonePart": {
+    "other": "Cloner la pièce"
+  },
   "ConfirmDeletePart": {
     "other": "Êtes-vous sûr de vouloir supprimer cette pièce ? Cela supprimera tous les documents, images et affectations d'inventaire associés."
   },

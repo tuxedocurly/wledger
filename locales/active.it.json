@@ -353,6 +353,9 @@
   "EditPart": {
     "other": "Modifica Parte"
   },
+  "ClonePart": {
+    "other": "Clona Parte"
+  },
   "ConfirmDeletePart": {
     "other": "Sei sicuro di voler eliminare questa parte? Questo rimuoverà tutti i documenti, le immagini e le assegnazioni di stock associati."
   },

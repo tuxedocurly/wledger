@@ -561,3 +561,57 @@ func TestPartStockMove_Merge_Rollback(t *testing.T) {
 		t.Error("Source quantity changed!")
 	}
 }
+
+func TestHandlePartClone(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	// Create a part to clone
+	origID, err := h.Queries.CreatePart(ctx, db.CreatePartParams{
+		Name:        "Clone Me",
+		Description: sql.NullString{String: "A description", Valid: true},
+		PartNumber:  sql.NullString{String: "PN-999", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", fmt.Sprintf("/parts/%d/clone", origID), nil)
+	r := chi.NewRouter()
+	r.Get("/parts/{id}/clone", h.HandlePartClone)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("expected 303, got %d. Body: %s", rr.Code, rr.Body.String())
+	}
+
+	// Verify redirect goes to edit page
+	location := rr.Header().Get("Location")
+	if !strings.HasSuffix(location, "/edit") {
+		t.Errorf("expected redirect to edit page, got %q", location)
+	}
+
+	// Verify new part was created
+	var count int
+	dbConn.QueryRow("SELECT count(*) FROM parts").Scan(&count)
+	if count != 2 {
+		t.Errorf("expected 2 parts, got %d", count)
+	}
+
+	// Verify clone has correct name
+	var clonedName string
+	dbConn.QueryRow("SELECT name FROM parts WHERE id != ?", origID).Scan(&clonedName)
+	if clonedName != "Clone Me (Copy)" {
+		t.Errorf("expected 'Clone Me (Copy)', got %q", clonedName)
+	}
+
+	// Verify original is untouched
+	var origName string
+	dbConn.QueryRow("SELECT name FROM parts WHERE id = ?", origID).Scan(&origName)
+	if origName != "Clone Me" {
+		t.Errorf("original part name changed: %q", origName)
+	}
+}

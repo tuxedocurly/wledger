@@ -371,6 +371,9 @@
   "EditPart": {
     "other": "Editar Pieza"
   },
+  "ClonePart": {
+    "other": "Clonar Pieza"
+  },
   "ConfirmDeletePart": {
     "other": "¿Está seguro de que desea eliminar esta pieza? Esto eliminará todos los documentos, imágenes y asignaciones de inventario asociados."
   },
