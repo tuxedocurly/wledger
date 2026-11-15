@@ -16,7 +16,6 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/hardware"
 	"github.com/tuxedocurly/wledger/internal/middleware"
@@ -27,8 +26,7 @@ import (
 
 // openTestDB opens an in-memory database with Foreign Keys enabled.
 func openTestDB(t *testing.T) *sql.DB {
-	dsn := "file::memory:?cache=shared&_foreign_keys=on"
-	dbConn, err := sql.Open("sqlite3", dsn)
+	dbConn, err := db.Open("file::memory:?cache=shared")
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}
@@ -42,7 +40,7 @@ func setupTestSchema(t *testing.T, dbConn *sql.DB) {
 	}
 }
 
-func TestControllerDeleteCascadesToBins(t *testing.T) {
+func TestControllerDeleteOrphansContainersPreservingBins(t *testing.T) {
 	// Setup Environment
 	dbConn := openTestDB(t)
 	defer dbConn.Close()
@@ -80,7 +78,7 @@ func TestControllerDeleteCascadesToBins(t *testing.T) {
 
 	// Create Container
 	cont, err := s.CreateContainer(ctx, db.CreateContainerParams{
-		Name: "C1", ControllerID: ctrl.ID, SegmentID: 0,
+		Name: "C1", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}, SegmentID: 0,
 	})
 	if err != nil {
 		t.Fatalf("failed to create container: %v", err)
@@ -111,7 +109,7 @@ func TestControllerDeleteCascadesToBins(t *testing.T) {
 	}
 
 	// Delete Controller via HTTP Handler
-	// This exercises the `HandleHardwareDelete` method, ensuring the transaction logic works
+	// This exercises the `HandleHardwareDelete` method
 	r := chi.NewRouter()
 	r.Post("/hardware/{id}/delete", h.HandleHardwareDelete)
 
@@ -126,26 +124,31 @@ func TestControllerDeleteCascadesToBins(t *testing.T) {
 		t.Errorf("Handler returned wrong status code: got %v want %v", rr.Code, http.StatusSeeOther)
 	}
 
-	// Assertions
+	// Assertions (v2: controller deletion orphans container instead of cascading to bins)
+	contAfter, err := s.GetContainer(ctx, cont)
+	if err != nil {
+		t.Fatalf("expected container %d to remain orphaned after controller delete: %v", cont, err)
+	}
+	if contAfter.ControllerID.Valid {
+		t.Errorf("expected container controller_id to be NULL, got %d", contAfter.ControllerID.Int64)
+	}
 
-	// Check Bins by Container (Should be 0)
+	// Check Bins by Container (Should preserve all 8 bins)
 	binsAfter, err := s.GetBinsByContainer(ctx, cont)
 	if err != nil {
 		t.Fatalf("failed to fetch bins after delete: %v", err)
 	}
-	if len(binsAfter) != 0 {
-		t.Errorf("expected 0 bins for controller, got %d", len(binsAfter))
+	if len(binsAfter) != 8 {
+		t.Errorf("expected 8 bins preserved in orphaned container, got %d", len(binsAfter))
 	}
 
-	// Check Global Bin Count (Should be 0 - ensuring no orphans/ghosts)
-	// This confirms that bins were DELETED, not just set to NULL
 	var count int
 	err = dbConn.QueryRow("SELECT count(*) FROM bins").Scan(&count)
 	if err != nil {
 		t.Fatalf("failed to count bins: %v", err)
 	}
-	if count != 0 {
-		t.Errorf("Ghost Bins Detected! Expected 0 total bins, got %d. They may have been orphaned.", count)
+	if count != 8 {
+		t.Errorf("Expected 8 preserved bins, got %d", count)
 	}
 }
 
@@ -211,7 +214,7 @@ func TestHardwareAuditLogging(t *testing.T) {
 	id := ctrl[0].ID
 
 	// Fetch the default container created during controller creation
-	containers, _ := s.GetContainersByController(ctx, id)
+	containers, _ := s.GetContainersByController(ctx, sql.NullInt64{Int64: id, Valid: true})
 	contID := containers[0].ID
 
 	r2 := chi.NewRouter()

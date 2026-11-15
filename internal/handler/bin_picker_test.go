@@ -21,7 +21,7 @@ func TestBinPicker_HappyPath(t *testing.T) {
 
 	// Setup: Controller, Container, Bin A, Bin B
 	c, _ := h.Queries.CreateController(ctx, db.CreateControllerParams{Name: "C", IpAddress: "1.1.1.1"})
-	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: c.ID, SegmentID: 0})
+	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: sql.NullInt64{Int64: c.ID, Valid: true}, SegmentID: 0})
 
 	_, _ = h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont, GridX: sql.NullInt64{Int64: 1, Valid: true}, GridY: sql.NullInt64{Int64: 1, Valid: true}})
 	_, _ = h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin B", ContainerID: cont, GridX: sql.NullInt64{Int64: 2, Valid: true}, GridY: sql.NullInt64{Int64: 2, Valid: true}})

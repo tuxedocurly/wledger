@@ -17,7 +17,7 @@ func TestListParts_BinFilter(t *testing.T) {
 	// Setup
 	// Need Controller -> Container -> Bin
 	ctrl, _ := q.CreateController(ctx, db.CreateControllerParams{Name: "C1", IpAddress: "1.2.3.4"})
-	cont, _ := q.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: ctrl.ID})
+	cont, _ := q.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}})
 
 	binA, _ := q.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 	binB, _ := q.CreateBin(ctx, db.CreateBinParams{Name: "Bin B", ContainerID: cont})
@@ -102,7 +102,7 @@ func TestSearchParts_BinFilter(t *testing.T) {
 
 	// Setup
 	ctrl, _ := q.CreateController(ctx, db.CreateControllerParams{Name: "C1", IpAddress: "1.2.3.4"})
-	cont, _ := q.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: ctrl.ID})
+	cont, _ := q.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}})
 	binA, _ := q.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 
 	// Setup Parts (Prefix names to ensure FTS match)

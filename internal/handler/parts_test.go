@@ -21,7 +21,6 @@ import (
 	_ "image/png"
 
 	"github.com/go-chi/chi/v5"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/tuxedocurly/wledger/internal/dashboard"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/documents"
@@ -402,7 +401,7 @@ func TestPartStockMove_Move(t *testing.T) {
 	p, _ := h.Queries.CreatePart(ctx, db.CreatePartParams{Name: "Part A"})
 
 	c, _ := h.Queries.CreateController(ctx, db.CreateControllerParams{Name: "C", IpAddress: "1.1.1.1"})
-	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: c.ID})
+	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: sql.NullInt64{Int64: c.ID, Valid: true}})
 
 	binA, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 	binB, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin B", ContainerID: cont})
@@ -465,7 +464,7 @@ func TestPartStockMove_Merge(t *testing.T) {
 	p, _ := h.Queries.CreatePart(ctx, db.CreatePartParams{Name: "Part A"})
 
 	c, _ := h.Queries.CreateController(ctx, db.CreateControllerParams{Name: "C", IpAddress: "1.1.1.1"})
-	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: c.ID})
+	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: sql.NullInt64{Int64: c.ID, Valid: true}})
 
 	binA, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 	binB, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin B", ContainerID: cont})
@@ -523,7 +522,7 @@ func TestPartStockMove_Merge_Rollback(t *testing.T) {
 	p, _ := h.Queries.CreatePart(ctx, db.CreatePartParams{Name: "Part A"})
 
 	c, _ := h.Queries.CreateController(ctx, db.CreateControllerParams{Name: "C", IpAddress: "1.1.1.1"})
-	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: c.ID})
+	cont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont", ControllerID: sql.NullInt64{Int64: c.ID, Valid: true}})
 
 	binA, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 

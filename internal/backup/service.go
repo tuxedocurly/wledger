@@ -403,15 +403,18 @@ func (s *service) Restore(ctx context.Context, zipReader io.ReaderAt, size int64
 func (s *service) restoreData(ctx context.Context, qtx db.Querier, manifest Manifest) error {
 	// Settings
 	err := qtx.RestoreSettings(ctx, db.RestoreSettingsParams{
-		RequireAuthForRead:   manifest.Settings.RequireAuthForRead,
-		LocateTimeoutSeconds: manifest.Settings.LocateTimeoutSeconds,
-		EnableLocateTimeout:  manifest.Settings.EnableLocateTimeout,
-		ColorLocate:          manifest.Settings.ColorLocate,
-		ColorStockOk:         manifest.Settings.ColorStockOk,
-		ColorStockLow:        manifest.Settings.ColorStockLow,
-		ColorStockCritical:   manifest.Settings.ColorStockCritical,
-		CreatedAt:            manifest.Settings.CreatedAt,
-		UpdatedAt:            manifest.Settings.UpdatedAt,
+		RequireAuthForRead:      manifest.Settings.RequireAuthForRead,
+		LocateTimeoutSeconds:    manifest.Settings.LocateTimeoutSeconds,
+		EnableLocateTimeout:     manifest.Settings.EnableLocateTimeout,
+		EnableDebugLogs:         manifest.Settings.EnableDebugLogs,
+		ColorLocate:             manifest.Settings.ColorLocate,
+		ColorStockOk:            manifest.Settings.ColorStockOk,
+		ColorStockLow:           manifest.Settings.ColorStockLow,
+		ColorStockCritical:      manifest.Settings.ColorStockCritical,
+		CreatedAt:               manifest.Settings.CreatedAt,
+		UpdatedAt:               manifest.Settings.UpdatedAt,
+		InspirationSeedsApplied: manifest.Settings.InspirationSeedsApplied,
+		LocateColorByStock:      manifest.Settings.LocateColorByStock,
 	})
 	if err != nil {
 		return fmt.Errorf("settings restore: %w", err)

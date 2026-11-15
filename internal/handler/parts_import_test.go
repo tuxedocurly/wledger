@@ -23,7 +23,7 @@ func TestHandlePartsImport_WithLocation(t *testing.T) {
 		Name: "Test Controller", IpAddress: "192.168.1.100",
 	})
 	containerID, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{
-		Name: "Test Container", ControllerID: controller.ID, SegmentID: 2,
+		Name: "Test Container", ControllerID: sql.NullInt64{Int64: controller.ID, Valid: true}, SegmentID: 2,
 	})
 	binID, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{
 		Name: "Bin 5", ContainerID: containerID, LedIndex: sql.NullInt64{Int64: 5, Valid: true},

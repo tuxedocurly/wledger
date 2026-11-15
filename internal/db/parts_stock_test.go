@@ -36,7 +36,7 @@ func TestPartStockBreakdown(t *testing.T) {
 	// Create Container
 	containerID, err := q.CreateContainer(ctx, db.CreateContainerParams{
 		Name:         "Test Container",
-		ControllerID: controllerRow.ID,
+		ControllerID: sql.NullInt64{Int64: controllerRow.ID, Valid: true},
 		SegmentID:    0,
 	})
 	if err != nil {

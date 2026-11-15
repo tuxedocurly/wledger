@@ -2,6 +2,7 @@ package wled
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -74,7 +75,7 @@ func (s *service) LocatePart(ctx context.Context, partID int64) error {
 		}
 
 		// Fetch containers for this controller to calculate global index
-		containers, err := s.store.GetContainersByController(ctx, a.ControllerID.Int64)
+		containers, err := s.store.GetContainersByController(ctx, a.ControllerID)
 		if err != nil {
 			s.logger.Error("failed to fetch containers for locate", "controller_id", a.ControllerID.Int64, "err", err)
 			continue
@@ -120,7 +121,7 @@ func (s *service) LocateBin(ctx context.Context, controllerID, binID int64) erro
 	}
 
 	// Fetch containers for this controller
-	containers, err := s.store.GetContainersByController(ctx, controllerID)
+	containers, err := s.store.GetContainersByController(ctx, sql.NullInt64{Int64: controllerID, Valid: true})
 	if err != nil {
 		return fmt.Errorf("failed to fetch containers for controller: %w", err)
 	}

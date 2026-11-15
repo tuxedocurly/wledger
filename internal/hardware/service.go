@@ -39,7 +39,7 @@ func NewService(store db.Store, wledClient *wled.Client, logger *slog.Logger) Se
 }
 
 func (s *service) GetContainers(ctx context.Context, controllerID int64) ([]db.Container, error) {
-	containers, err := s.store.GetContainersByController(ctx, controllerID)
+	containers, err := s.store.GetContainersByController(ctx, sql.NullInt64{Int64: controllerID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (s *service) CreateController(ctx context.Context, params db.CreateControll
 	// Create Default Container for the new controller
 	_, err = s.store.CreateContainer(ctx, db.CreateContainerParams{
 		Name:          row.Name + " (Main)",
-		ControllerID:  row.ID,
+		ControllerID:  sql.NullInt64{Int64: row.ID, Valid: true},
 		SegmentID:     0,
 		PositionIndex: 0,
 		ConfigJson:    sql.NullString{String: `{"type":"grid","rows":8,"cols":8}`, Valid: true},
@@ -137,7 +137,7 @@ func (s *service) UpdateStatus(ctx context.Context, id int64) (bool, error) {
 }
 
 func (s *service) GetBinsByController(ctx context.Context, id int64) ([]db.Bin, error) {
-	containers, err := s.store.GetContainersByController(ctx, id)
+	containers, err := s.store.GetContainersByController(ctx, sql.NullInt64{Int64: id, Valid: true})
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (s *service) SaveGrid(ctx context.Context, controllerID int64, gridDataJSON
 
 	err := s.store.ExecTx(ctx, func(q db.Querier) error {
 		// Sync Containers
-		existingContainers, err := q.GetContainersByController(ctx, controllerID)
+		existingContainers, err := q.GetContainersByController(ctx, sql.NullInt64{Int64: controllerID, Valid: true})
 		if err != nil {
 			return err
 		}
@@ -214,7 +214,7 @@ func (s *service) SaveGrid(ctx context.Context, controllerID int64, gridDataJSON
 				// Create new
 				newID, err := q.CreateContainer(ctx, db.CreateContainerParams{
 					Name:          c.Name,
-					ControllerID:  controllerID,
+					ControllerID:  sql.NullInt64{Int64: controllerID, Valid: true},
 					SegmentID:     c.SegmentID,
 					PositionIndex: int64(i), // Use loop index as position
 					ConfigJson:    sql.NullString{String: configStr, Valid: true},
