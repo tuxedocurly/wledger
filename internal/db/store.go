@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 )
 
 // Store defines all functions to execute db queries and transactions
@@ -14,7 +15,8 @@ type Store interface {
 
 // SQLStore provides all functions to execute SQL queries and transactions
 type SQLStore struct {
-	db *sql.DB
+	db   *sql.DB
+	txMu sync.Mutex
 	*Queries
 }
 
@@ -26,8 +28,13 @@ func NewStore(dbConn *sql.DB) Store {
 	}
 }
 
-// ExecTx executes a function within a database transaction
+// ExecTx executes a function within a database transaction.
+// In-process write transactions are serialized with txMu and combined with
+// _txlock=immediate / busy_timeout to eliminate SQLITE_BUSY under contention.
 func (s *SQLStore) ExecTx(ctx context.Context, fn func(Querier) error) error {
+	s.txMu.Lock()
+	defer s.txMu.Unlock()
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

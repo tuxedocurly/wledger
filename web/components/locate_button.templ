@@ -7,13 +7,24 @@ import (
 
 templ LocateButton(controllerID int64, binID int64, className string) {
 	<object class="inline-block" onClick="event.preventDefault(); event.stopPropagation()">
-		<button
-			hx-post={ fmt.Sprintf("/hardware/%d/locate?bin_id=%d", controllerID, binID) }
-			hx-swap="none"
-			class={ "btn btn-ghost text-accent z-10", className }
-			title="Locate"
-		>
-			@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
-		</button>
+		if controllerID > 0 {
+			<button
+				hx-post={ fmt.Sprintf("/hardware/%d/locate?bin_id=%d", controllerID, binID) }
+				hx-swap="none"
+				class={ "btn btn-ghost text-accent z-10", className }
+				title="Locate"
+			>
+				@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
+			</button>
+		} else {
+			<button
+				type="button"
+				disabled
+				class={ "btn btn-ghost text-base-content/30 z-10", className }
+				title="Standalone (no LED controller)"
+			>
+				@icons.Eye(templ.Attributes{"class": "w-5 h-5"})
+			</button>
+		}
 	</object>
 }

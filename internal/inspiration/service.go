@@ -56,6 +56,32 @@ func (s *service) DeleteTemplate(ctx context.Context, id int64) error {
 	return s.store.DeleteInspirationTemplate(ctx, id)
 }
 
+type inspirationPartRow struct {
+	Name          string
+	PartNumber    sql.NullString
+	TotalQuantity int64
+}
+
+func normalizeTagFilters(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(tags))
+	cleaned := make([]string, 0, len(tags))
+	for _, t := range tags {
+		trimmed := strings.TrimSpace(t)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := seen[trimmed]; exists {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		cleaned = append(cleaned, trimmed)
+	}
+	return cleaned
+}
+
 func (s *service) ConstructPrompt(ctx context.Context, templateID int64, tagFilters []string) (string, error) {
 	// Fetch template
 	tmpl, err := s.store.GetInspirationTemplate(ctx, templateID)
@@ -63,46 +89,26 @@ func (s *service) ConstructPrompt(ctx context.Context, templateID int64, tagFilt
 		return "", fmt.Errorf("failed to get template: %w", err)
 	}
 
-	// Fetch Parts based on filters
-	var parts []struct {
-		Name          string
-		PartNumber    sql.NullString
-		TotalQuantity int64
-	}
+	cleanedTags := normalizeTagFilters(tagFilters)
+	var parts []inspirationPartRow
 
-	if len(tagFilters) > 0 {
-		rows, err := s.store.GetPartsForInspirationFiltered(ctx, tagFilters)
+	if len(cleanedTags) > 0 {
+		rows, err := s.store.GetPartsForInspirationFiltered(ctx, cleanedTags)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch filtered parts: %w", err)
 		}
-		parts = make([]struct {
-			Name          string
-			PartNumber    sql.NullString
-			TotalQuantity int64
-		}, len(rows))
+		parts = make([]inspirationPartRow, len(rows))
 		for i, r := range rows {
-			parts[i] = struct {
-				Name          string
-				PartNumber    sql.NullString
-				TotalQuantity int64
-			}{r.Name, r.PartNumber, r.TotalQuantity}
+			parts[i] = inspirationPartRow{r.Name, r.PartNumber, r.TotalQuantity}
 		}
 	} else {
 		rows, err := s.store.GetPartsForInspirationAll(ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch all parts: %w", err)
 		}
-		parts = make([]struct {
-			Name          string
-			PartNumber    sql.NullString
-			TotalQuantity int64
-		}, len(rows))
+		parts = make([]inspirationPartRow, len(rows))
 		for i, r := range rows {
-			parts[i] = struct {
-				Name          string
-				PartNumber    sql.NullString
-				TotalQuantity int64
-			}{r.Name, r.PartNumber, r.TotalQuantity}
+			parts[i] = inspirationPartRow{r.Name, r.PartNumber, r.TotalQuantity}
 		}
 	}
 

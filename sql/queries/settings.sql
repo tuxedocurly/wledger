@@ -1,20 +1,24 @@
 -- name: RestoreSettings :exec
 INSERT OR REPLACE INTO settings (
-    id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout, 
-    color_locate, color_stock_ok, color_stock_low, color_stock_critical, 
-    created_at, updated_at, enable_debug_logs
+    id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout,
+    enable_debug_logs, color_locate, color_stock_ok, color_stock_low, color_stock_critical,
+    created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock
 ) VALUES (
-    1, ?, ?, ?, 
-    ?, ?, ?, ?, 
-    ?, ?, ?
+    1, ?, ?, ?,
+    ?, ?, ?, ?, ?,
+    ?, ?, ?, ?
 );
 
 -- name: GetSettings :one
 SELECT * FROM settings WHERE id = 1;
 
 -- name: InitSettings :exec
-INSERT OR IGNORE INTO settings (id, require_auth_for_read, color_locate, color_stock_ok, color_stock_low, color_stock_critical, locate_timeout_seconds, enable_locate_timeout, enable_debug_logs)
-VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0);
+INSERT OR IGNORE INTO settings (
+    id, require_auth_for_read, color_locate, color_stock_ok, color_stock_low,
+    color_stock_critical, locate_timeout_seconds, enable_locate_timeout,
+    enable_debug_logs, inspiration_seeds_applied, locate_color_by_stock
+)
+VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0, 0, 0);
 
 -- name: UpdateGeneralSettings :exec
 UPDATE settings 
@@ -22,7 +26,8 @@ SET
     require_auth_for_read = COALESCE(sqlc.narg('require_auth_for_read'), require_auth_for_read), 
     locate_timeout_seconds = COALESCE(sqlc.narg('locate_timeout_seconds'), locate_timeout_seconds), 
     enable_locate_timeout = COALESCE(sqlc.narg('enable_locate_timeout'), enable_locate_timeout), 
-    enable_debug_logs = COALESCE(sqlc.narg('enable_debug_logs'), enable_debug_logs), 
+    enable_debug_logs = COALESCE(sqlc.narg('enable_debug_logs'), enable_debug_logs),
+    locate_color_by_stock = COALESCE(sqlc.narg('locate_color_by_stock'), locate_color_by_stock),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = 1;
 

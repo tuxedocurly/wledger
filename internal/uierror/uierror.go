@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/pages"
 )
 
 // Responder handles logging and rendering errors for the UI.
-// It supports both full-page error rendering and HTMX partials.
+// It supports both full-page error rendering and HTMX out-of-band error toasts.
 type Responder struct {
 	logger *slog.Logger
 }
@@ -23,23 +24,30 @@ func New(logger *slog.Logger) *Responder {
 
 // Respond standardizes error handling across handlers and middleware.
 // It logs the error with context and renders a user-friendly response.
-// If the request is an HTMX request, it returns an HTMX-compatible partial.
+// If the request is an HTMX request, it sets HX-Reswap: none and returns an
+// out-of-band Error Toast targeting #toast-container so both hx-swap="none"
+// actions and targeted swaps display the error without clobbering page content.
 func (r *Responder) Respond(w http.ResponseWriter, req *http.Request, err error, message string, code int) {
-	// Log the error with context
-	r.logger.Error(message, "err", err, "path", req.URL.Path, "method", req.Method)
+	if r.logger != nil {
+		r.logger.Error(message, "err", err, "path", req.URL.Path, "method", req.Method)
+	}
 
-	// Check for HTMX request
 	isHTMX := req.Header.Get("HX-Request") == "true"
 
 	if isHTMX {
-		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("HX-Reswap", "none")
 		w.WriteHeader(code)
-		pages.ErrorPartial(message).Render(req.Context(), w)
+		_ = components.Toast(components.ToastProps{
+			Message: message,
+			Type:    components.ToastError,
+		}).Render(req.Context(), w)
 		return
 	}
 
 	// Standard Response (Full Page)
 	user := auth.GetUserFromRequest(req)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(code)
-	pages.ErrorPage(user, message, code).Render(req.Context(), w)
+	_ = pages.ErrorPage(user, message, code).Render(req.Context(), w)
 }

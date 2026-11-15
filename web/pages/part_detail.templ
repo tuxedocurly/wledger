@@ -11,7 +11,8 @@ import (
 	"strings"
 )
 
-templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow, links []db.PartLink, docs []db.PartDoc, controllers []db.Controller) {
+templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow, links []db.PartLink, docs []db.PartDoc, controllers []db.Controller, hasStandalone ...bool) {
+	{{ standalone := len(hasStandalone) > 0 && hasStandalone[0] }}
 	@layouts.Base(part.Name, user) {
 		<div class="max-w-5xl mx-auto w-full">
 			@components.PageHeader(
@@ -126,15 +127,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 				</div>
 				<div class="lg:col-span-2 space-y-6">
 					<div class="stats shadow-xl border border-base-300 w-full bg-base-200">
-						<div class="stat">
-							<div class="stat-title">{ i18n.T(ctx, "TotalInStock") }</div>
-							<div class="stat-value text-primary">
-								{ fmt.Sprintf("%d", calculateTotalStock(stock)) }
-							</div>
-							if part.MinStockThreshold.Valid && calculateTotalStock(stock) <= part.MinStockThreshold.Int64 {
-								<div class="stat-desc text-warning font-bold">{ i18n.T(ctx, "LowStockWarning") }</div>
-							}
-						</div>
+						@PartTotalStock(part, CalculateTotalStock(stock), false)
 					</div>
 					<div class="card bg-base-200 shadow-xl border border-base-300">
 						<div class="card-body p-0">
@@ -166,7 +159,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 											</tr>
 										}
 										for _, s := range stock {
-											@StockRow(part.ID, s, user, controllers)
+											@StockRow(part.ID, s, user, controllers, standalone)
 										}
 									</tbody>
 								</table>
@@ -200,10 +193,7 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 								required
 								@change="hasSelection = false"
 							>
-								<option value="" disabled selected>{ i18n.T(ctx, "SelectAController") }</option>
-								for _, c := range controllers {
-									<option value={ fmt.Sprintf("%d", c.ID) }>{ c.Name }</option>
-								}
+								@components.ControllerSelectOptions(controllers, standalone, i18n.T(ctx, "SelectAController"))
 							</select>
 						</div>
 						<div class="form-control w-full">
@@ -261,7 +251,28 @@ templ PartDetail(user auth.User, part db.Part, stock []db.GetPartAssignmentsRow,
 	}
 }
 
-templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, controllers []db.Controller) {
+// PartTotalStock renders the TotalInStock stat card, optionally marked with
+// hx-swap-oob="true" so stock adjustments refresh the hero badge out-of-band.
+templ PartTotalStock(part db.Part, total int64, oob bool) {
+	<div
+		id="part-total-stock"
+		class="stat"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		<div class="stat-title">{ i18n.T(ctx, "TotalInStock") }</div>
+		<div class="stat-value text-primary">
+			{ fmt.Sprintf("%d", total) }
+		</div>
+		if part.MinStockThreshold.Valid && total <= part.MinStockThreshold.Int64 {
+			<div class="stat-desc text-warning font-bold">{ i18n.T(ctx, "LowStockWarning") }</div>
+		}
+	</div>
+}
+
+templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, controllers []db.Controller, hasStandalone ...bool) {
+	{{ standalone := len(hasStandalone) > 0 && hasStandalone[0] }}
 	<tr>
 		<td class="font-medium">
 			if s.BinName.Valid {
@@ -279,6 +290,9 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 		<td class="text-sm opacity-70">
 			if s.ControllerName.Valid {
 				{ s.ControllerName.String }
+			} else if s.BinID.Valid && s.ContainerName.Valid {
+				<span>{ s.ContainerName.String }</span>
+				<span class="badge badge-xs badge-ghost ml-1">Standalone</span>
 			} else {
 				<span class="italic">{ i18n.T(ctx, "Unmanaged") }</span>
 			}
@@ -314,7 +328,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 					@components.LocateButton(s.ControllerID.Int64, s.BinID.Int64, "btn-xs")
 				}
 				if user.CanWrite() {
-					if !s.BinName.Valid || !s.ControllerID.Valid {
+					if !s.BinID.Valid || !s.BinName.Valid {
 						<button
 							{ templ.Attributes{"onclick": fmt.Sprintf("move_stock_modal_%d.showModal()", s.ID)}... }
 							class="btn btn-xs btn-outline btn-warning"
@@ -329,6 +343,7 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 							fmt.Sprintf("/parts/%d/stock/%d/move", partID, s.ID),
 							s.Quantity,
 							controllers,
+							standalone,
 						)
 					} else {
 						<button
@@ -345,21 +360,23 @@ templ StockRow(partID int64, s db.GetPartAssignmentsRow, user auth.User, control
 							fmt.Sprintf("/parts/%d/stock/%d/move", partID, s.ID),
 							s.Quantity,
 							controllers,
+							standalone,
 						)
-					                                        }
-					                                        <form action={ templ.SafeURL(fmt.Sprintf("/parts/%d/stock/%d/delete", partID, s.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmRemoveStock"))}... }>
-					                                                <button class="btn btn-xs btn-ghost text-error" title={ i18n.T(ctx, "Remove") }>
-					                                                        @icons.Trash(templ.Attributes{"class": "w-5 h-5"})
-					                                                </button>
-					                                        </form>
-					                                }
-					                        </div>
-					                </td>
-					        </tr>
 					}
-// Helper to sum stock
-func calculateTotalStock(stock []db.GetPartAssignmentsRow) int64 {
-	var total int64 = 0
+					<form action={ templ.SafeURL(fmt.Sprintf("/parts/%d/stock/%d/delete", partID, s.ID)) } method="POST" data-confirm={ i18n.T(ctx, "ConfirmRemoveStock") } onsubmit="return confirm(this.dataset.confirm)">
+						<button class="btn btn-xs btn-ghost text-error" title={ i18n.T(ctx, "Remove") }>
+							@icons.Trash(templ.Attributes{"class": "w-5 h-5"})
+						</button>
+					</form>
+				}
+			</div>
+		</td>
+	</tr>
+}
+
+// CalculateTotalStock sums stock quantities across all part assignments.
+func CalculateTotalStock(stock []db.GetPartAssignmentsRow) int64 {
+	var total int64
 	for _, s := range stock {
 		total += s.Quantity
 	}

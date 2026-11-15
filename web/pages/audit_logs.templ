@@ -1,15 +1,45 @@
 package pages
 
 import (
+	"database/sql"
 	"fmt"
+	"net/url"
+
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
-	"net/url"
 )
+
+var auditActionFilterOptions = []string{
+	"CREATE",
+	"UPDATE",
+	"DELETE",
+	"BULK_DELETE",
+	"IMPORT",
+	"BACKUP",
+	"RESTORE",
+	"STOCK_ADD",
+	"STOCK_INC",
+	"STOCK_DEC",
+	"STOCK_MOVE",
+	"STOCK_MERGE",
+	"STOCK_REMOVE",
+}
+
+var auditEntityFilterOptions = []string{
+	"PART",
+	"PARTS",
+	"STOCK",
+	"HARDWARE",
+	"WALL",
+	"SETTINGS",
+	"USER",
+	"SYSTEM",
+	"PROJECT",
+}
 
 templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsersRow, filters db.ListAuditLogsParams, totalCount int64, currentPage int) {
 	@layouts.Base(i18n.T(ctx, "AuditLogs"), user) {
@@ -18,7 +48,7 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 			<!-- Filters -->
 			<div class="card bg-base-200 shadow-sm border border-base-300 mb-6">
 				<div class="card-body p-4">
-					<form action="/audit-logs" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+					<form action="/audit-logs" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
 						<div class="form-control">
 							<label class="label pt-0 pb-1">
 								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "Search") }</span>
@@ -31,10 +61,9 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 							</label>
 							<select name="action_type" class="select select-bordered select-md w-full">
 								<option value="">{ i18n.T(ctx, "AllActions") }</option>
-								<option value="CREATE" selected?={ filters.ActionType.String == "CREATE" }>{ i18n.T(ctx, "CREATE") }</option>
-								<option value="UPDATE" selected?={ filters.ActionType.String == "UPDATE" }>{ i18n.T(ctx, "UPDATE") }</option>
-								<option value="DELETE" selected?={ filters.ActionType.String == "DELETE" }>{ i18n.T(ctx, "DELETE") }</option>
-								<option value="ADJUST_STOCK" selected?={ filters.ActionType.String == "ADJUST_STOCK" }>{ i18n.T(ctx, "ADJUST_STOCK") }</option>
+								for _, action := range auditActionFilterOptions {
+									<option value={ action } selected?={ filters.ActionType.String == action }>{ i18n.T(ctx, action) }</option>
+								}
 							</select>
 						</div>
 						<div class="form-control">
@@ -54,12 +83,22 @@ templ AuditLogs(user auth.User, logs []db.ListAuditLogsRow, users []db.ListUsers
 							</label>
 							<select name="entity_type" class="select select-bordered select-md w-full">
 								<option value="">{ i18n.T(ctx, "AllEntities") }</option>
-								<option value="PART" selected?={ filters.EntityType.String == "PART" }>{ i18n.T(ctx, "PART") }</option>
-								<option value="BIN" selected?={ filters.EntityType.String == "BIN" }>{ i18n.T(ctx, "BIN") }</option>
-								<option value="CONTROLLER" selected?={ filters.EntityType.String == "CONTROLLER" }>{ i18n.T(ctx, "CONTROLLER") }</option>
-								<option value="USER" selected?={ filters.EntityType.String == "USER" }>{ i18n.T(ctx, "USER") }</option>
-								<option value="SETTINGS" selected?={ filters.EntityType.String == "SETTINGS" }>{ i18n.T(ctx, "SETTINGS") }</option>
+								for _, entity := range auditEntityFilterOptions {
+									<option value={ entity } selected?={ filters.EntityType.String == entity }>{ i18n.T(ctx, entity) }</option>
+								}
 							</select>
+						</div>
+						<div class="form-control">
+							<label class="label pt-0 pb-1">
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "Start Date") }</span>
+							</label>
+							<input type="date" name="start_date" value={ formatAuditFilterDate(filters.StartDate) } class="input input-bordered input-md w-full"/>
+						</div>
+						<div class="form-control">
+							<label class="label pt-0 pb-1">
+								<span class="label-text text-md font-bold uppercase opacity-50">{ i18n.T(ctx, "End Date") }</span>
+							</label>
+							<input type="date" name="end_date" value={ formatAuditFilterDate(filters.EndDate) } class="input input-bordered input-md w-full"/>
 						</div>
 						<div class="flex gap-2 lg:col-span-2">
 							<button type="submit" class="btn btn-primary btn-md flex-1">{ i18n.T(ctx, "Filter") }</button>
@@ -124,6 +163,7 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 			</td>
 			<td class="text-right">
 				<button
+					type="button"
 					class="btn btn-ghost btn-xs"
 					data-old={ string(log.OldValue) }
 					data-new={ string(log.NewValue) }
@@ -157,15 +197,22 @@ templ AuditLogRows(logs []db.ListAuditLogsRow, filters db.ListAuditLogsParams, c
 	}
 }
 
+func formatAuditFilterDate(t sql.NullTime) string {
+	if !t.Valid {
+		return ""
+	}
+	return t.Time.UTC().Format("2006-01-02")
+}
+
 func getActionBadgeClass(action string) string {
 	switch action {
-	case "CREATE":
+	case "CREATE", "IMPORT", "STOCK_ADD", "STOCK_INC":
 		return "badge-success"
-	case "UPDATE":
+	case "UPDATE", "BACKUP", "STOCK_MOVE", "STOCK_MERGE":
 		return "badge-info"
-	case "DELETE":
+	case "DELETE", "BULK_DELETE", "STOCK_REMOVE":
 		return "badge-error"
-	case "ADJUST_STOCK":
+	case "RESTORE", "STOCK_DEC", "ADJUST_STOCK":
 		return "badge-warning"
 	default:
 		return "badge-ghost"
@@ -185,6 +232,12 @@ func getFilterQuery(f db.ListAuditLogsParams) string {
 	}
 	if f.Search.Valid && f.Search.String != "" {
 		v.Set("search", f.Search.String)
+	}
+	if f.StartDate.Valid {
+		v.Set("start_date", f.StartDate.Time.UTC().Format("2006-01-02"))
+	}
+	if f.EndDate.Valid {
+		v.Set("end_date", f.EndDate.Time.UTC().Format("2006-01-02"))
 	}
 	return v.Encode()
 }

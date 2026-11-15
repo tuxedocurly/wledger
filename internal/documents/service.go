@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,14 +37,37 @@ func NewService(store db.Store, logger *slog.Logger) Service {
 	}
 }
 
-func (s *service) AddLink(ctx context.Context, q db.Querier, partID int64, url, label string) error {
-	if url == "" {
+// ValidateLinkURL verifies that a part link uses http/https with a non-empty host
+// and returns the trimmed URL string.
+func ValidateLinkURL(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", fmt.Errorf("invalid link URL: empty URL")
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("invalid link URL: %w", err)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if (scheme != "http" && scheme != "https") || u.Host == "" {
+		return "", fmt.Errorf("invalid link URL: must use http or https with a valid host")
+	}
+	return trimmed, nil
+}
+
+func (s *service) AddLink(ctx context.Context, q db.Querier, partID int64, rawURL, label string) error {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
 		return nil
 	}
-	s.logger.Debug("adding part link", "part_id", partID, "url", url)
+	validURL, err := ValidateLinkURL(trimmed)
+	if err != nil {
+		return err
+	}
+	s.logger.Debug("adding part link", "part_id", partID, "url", validURL)
 	return q.CreatePartLink(ctx, db.CreatePartLinkParams{
 		PartID: partID,
-		Url:    url,
+		Url:    validURL,
 		Label:  sql.NullString{String: label, Valid: label != ""},
 	})
 }
@@ -78,19 +104,66 @@ func (s *service) DeleteDocument(ctx context.Context, id int64) error {
 	return s.store.DeletePartDoc(ctx, id)
 }
 
+var allowedDocMimeTypes = map[string]string{
+	".pdf":  "application/pdf",
+	".txt":  "text/plain",
+	".md":   "text/plain",
+	".csv":  "text/plain",
+	".json": "text/plain",
+	".png":  "image/png",
+	".jpg":  "image/jpeg",
+	".jpeg": "image/jpeg",
+	".webp": "image/webp",
+	".gif":  "image/gif",
+}
+
+func validateDocumentUpload(src io.Reader, filename string) (string, []byte, error) {
+	ext := strings.ToLower(filepath.Ext(filename))
+	expectedMime, ok := allowedDocMimeTypes[ext]
+	if !ok {
+		return "", nil, fmt.Errorf("unsupported document extension %q", ext)
+	}
+
+	sniffBuf := make([]byte, 512)
+	n, err := io.ReadFull(src, sniffBuf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return "", nil, fmt.Errorf("failed to read document header: %w", err)
+	}
+	head := sniffBuf[:n]
+
+	detected := http.DetectContentType(head)
+	mediaType, _, parseErr := mime.ParseMediaType(detected)
+	if parseErr != nil {
+		mediaType = strings.TrimSpace(strings.SplitN(detected, ";", 2)[0])
+	}
+	if mediaType != expectedMime {
+		return "", nil, fmt.Errorf("document content type %q does not match extension %q", mediaType, ext)
+	}
+
+	return ext, head, nil
+}
+
 func (s *service) saveDocument(src io.Reader, filename string) (string, error) {
+	ext, head, err := validateDocumentUpload(src, filename)
+	if err != nil {
+		return "", err
+	}
+
 	if err := os.MkdirAll(config.DirUploadsDocs, 0755); err != nil {
 		return "", err
 	}
 
-	ext := filepath.Ext(filename)
-	base := strings.TrimSuffix(filename, ext)
+	rawExt := filepath.Ext(filename)
+	base := strings.TrimSuffix(filepath.Base(filename), rawExt)
 	base = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
 			return r
 		}
 		return '_'
 	}, base)
+	if base == "" {
+		base = "document"
+	}
 
 	cleanName := fmt.Sprintf("%s_%d%s", base, time.Now().Unix(), ext)
 	destPath := filepath.Join(config.DirUploadsDocs, cleanName)
@@ -100,6 +173,12 @@ func (s *service) saveDocument(src io.Reader, filename string) (string, error) {
 		return "", err
 	}
 	defer dst.Close()
+
+	if len(head) > 0 {
+		if _, err := dst.Write(head); err != nil {
+			return "", err
+		}
+	}
 
 	if _, err := io.Copy(dst, src); err != nil {
 		return "", err

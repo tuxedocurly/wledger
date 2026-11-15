@@ -13,43 +13,17 @@ templ Base(title string, user auth.User) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<meta name="htmx-config" content={ `{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}` }/>
 			<title>{ title } | WLEDger</title>
 			<link rel="icon" href="/static/img/favicon.ico"/>
 			<link href="/static/css/output.css" rel="stylesheet"/>
-			<script src={ "https://unpkg.com/htmx.org@2.0.4" }></script>
-			<script src={ "https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" } defer></script>
-			<script src={ "https://unpkg.com/sortablejs@1.15.2/Sortable.min.js" }></script>
-			<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+			<script src="/static/vendor/htmx.min.js"></script>
+			<script src="/static/vendor/alpine.min.js" defer></script>
+			<script src="/static/vendor/Sortable.min.js"></script>
+			<script src="/static/vendor/html5-qrcode.min.js"></script>
 			<script src="/static/js/theme.js"></script>
 			<script src="/static/js/toast.js"></script>
-			<style id="dynamic-colors">
-		    :root {
-                --color-locate: #0000FF;
-                --color-stock-ok: #00FF00;
-                --color-stock-low: #FFFF00;
-                --color-stock-critical: #FF0000;
-            }
-            [x-cloak] { display: none !important; }
-            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-            .custom-scrollbar::-webkit-scrollbar-thumb { background: oklch(var(--bc) / 0.2); border-radius: 4px; }
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: oklch(var(--bc) / 0.4); }
-
-            /* SortableJS Classes */
-            .sortable-ghost {
-                opacity: 0.4;
-                background: oklch(var(--p) / 0.1) !important;
-                border: 2px dashed oklch(var(--p)) !important;
-            }
-            .sortable-chosen {
-                background: oklch(var(--b1)) !important;
-            }
-            .sortable-drag {
-                opacity: 0.9;
-                cursor: grabbing !important;
-                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
-            }
-            </style>
+			@DynamicColorsStyle(ctx)
 		</head>
 		<body class="bg-base-100 text-base-content font-sans" x-data="{}">
 			<div id="toast-container" class="toast toast-top toast-end z-[100]"></div>

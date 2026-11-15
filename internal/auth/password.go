@@ -20,8 +20,11 @@ const (
 	MaxBcryptBytes     = 72 // bcrypt has a hard limit of 72 bytes
 )
 
-// HashPassword generates a bcrypt hash of the password
+// HashPassword validates the password length and generates a bcrypt hash.
 func HashPassword(password string) (string, error) {
+	if err := ValidatePassword(password); err != nil {
+		return "", err
+	}
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptPasswordCost)
 	return string(bytes), err
 }

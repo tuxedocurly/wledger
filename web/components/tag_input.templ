@@ -37,6 +37,9 @@ templ TagInput(currentTags []db.Tag, allTags []db.Tag) {
 				class="bg-transparent border-none outline-none flex-grow min-w-32 text-sm px-2 py-1"
 				x-model="inputValue"
 				@keydown.enter.prevent="addTag()"
+				@keydown="handleKeydown($event)"
+				@input="handleInput()"
+				@blur="addTag()"
 				list="tag-suggestions"
 			/>
 		</div>

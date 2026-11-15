@@ -13,6 +13,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/hardware"
 	"github.com/tuxedocurly/wledger/internal/inspiration"
 	"github.com/tuxedocurly/wledger/internal/parts"
+	"github.com/tuxedocurly/wledger/internal/projects"
 	"github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/internal/stock"
 	"github.com/tuxedocurly/wledger/internal/tags"
@@ -38,6 +39,8 @@ type Handler struct {
 	Dashboard   dashboard.Service
 	Stock       stock.Service
 	Documents   documents.Service
+	Projects    projects.Service
+	APITokens   *APITokenHandler
 }
 
 // New creates a new Handler with dependencies
@@ -59,6 +62,10 @@ func New(
 	stockService stock.Service,
 	docsService documents.Service,
 ) *Handler {
+	var projectsService projects.Service
+	if queries != nil {
+		projectsService = projects.NewService(queries, wledService, logger)
+	}
 	return &Handler{
 		Logger:      logger,
 		Queries:     queries,
@@ -76,5 +83,18 @@ func New(
 		Dashboard:   dashboardService,
 		Stock:       stockService,
 		Documents:   docsService,
+		Projects:    projectsService,
 	}
+}
+
+// WithProjects sets the Projects service (for example configured with projects.WithWLEDClient) on the Handler.
+func (h *Handler) WithProjects(s projects.Service) *Handler {
+	h.Projects = s
+	return h
+}
+
+// WithAPITokens sets the APITokenHandler on the Handler.
+func (h *Handler) WithAPITokens(th *APITokenHandler) *Handler {
+	h.APITokens = th
+	return h
 }

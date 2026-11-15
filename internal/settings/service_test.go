@@ -3,10 +3,12 @@ package settings
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func setupTest(t *testing.T) (Service, db.Store, *sql.DB) {
@@ -100,5 +102,69 @@ func TestService_UserFlow(t *testing.T) {
 	usersAfter, _ := s.ListUsers(ctx)
 	if len(usersAfter) != 0 {
 		t.Errorf("expected 0 users, got %d", len(usersAfter))
+	}
+}
+
+func TestService_PasswordHashingAndValidation(t *testing.T) {
+	s, _, dbConn := setupTest(t)
+	defer dbConn.Close()
+	ctx := context.Background()
+
+	// Reject short and >72 byte passwords on CreateUser.
+	if _, err := s.CreateUser(ctx, CreateUserParams{Email: "bad@test.com", Role: "viewer", Password: ""}); err == nil {
+		t.Fatal("expected empty password to be rejected on CreateUser")
+	}
+	if _, err := s.CreateUser(ctx, CreateUserParams{Email: "bad@test.com", Role: "viewer", Password: "short"}); err == nil {
+		t.Fatal("expected short password to be rejected on CreateUser")
+	}
+	if _, err := s.CreateUser(ctx, CreateUserParams{Email: "bad@test.com", Role: "viewer", Password: strings.Repeat("a", 73)}); err == nil {
+		t.Fatal("expected >72 byte password to be rejected on CreateUser")
+	}
+
+	user, err := s.CreateUser(ctx, CreateUserParams{
+		Email:    "cost@test.com",
+		Role:     "editor",
+		Password: "valid-password-1",
+	})
+	if err != nil {
+		t.Fatalf("CreateUser failed: %v", err)
+	}
+
+	fetched, err := s.GetUser(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetUser failed: %v", err)
+	}
+	cost, err := bcrypt.Cost([]byte(fetched.PasswordHash))
+	if err != nil {
+		t.Fatalf("bcrypt.Cost failed: %v", err)
+	}
+	if cost != auth.BcryptPasswordCost {
+		t.Fatalf("CreateUser bcrypt cost = %d, want %d", cost, auth.BcryptPasswordCost)
+	}
+
+	// Reject short and >72 byte passwords on UpdateUserPassword.
+	if err := s.UpdateUserPassword(ctx, user.ID, "short"); err == nil {
+		t.Fatal("expected short password to be rejected on UpdateUserPassword")
+	}
+	if err := s.UpdateUserPassword(ctx, user.ID, strings.Repeat("b", 73)); err == nil {
+		t.Fatal("expected >72 byte password to be rejected on UpdateUserPassword")
+	}
+
+	if err := s.UpdateUserPassword(ctx, user.ID, "valid-password-2"); err != nil {
+		t.Fatalf("UpdateUserPassword failed: %v", err)
+	}
+	updated, err := s.GetUser(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetUser after update failed: %v", err)
+	}
+	cost, err = bcrypt.Cost([]byte(updated.PasswordHash))
+	if err != nil {
+		t.Fatalf("bcrypt.Cost after update failed: %v", err)
+	}
+	if cost != auth.BcryptPasswordCost {
+		t.Fatalf("UpdateUserPassword bcrypt cost = %d, want %d", cost, auth.BcryptPasswordCost)
+	}
+	if !auth.CheckPassword("valid-password-2", updated.PasswordHash) {
+		t.Fatal("updated password hash did not verify")
 	}
 }

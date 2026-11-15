@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -21,10 +24,13 @@ import (
 // GET /parts
 func (h *Handler) HandlePartsList(w http.ResponseWriter, r *http.Request) {
 	user := auth.GetUserFromRequest(r)
-	search := r.URL.Query().Get("q")
-	pageStr := r.URL.Query().Get("page")
-	binStr := r.URL.Query().Get("bin")
-	scroll := r.URL.Query().Get("scroll") == "true"
+	q := r.URL.Query()
+	search := q.Get("q")
+	pageStr := q.Get("page")
+	binStr := q.Get("bin")
+	binIDStr := q.Get("bin_id")
+	controllerIDStr := q.Get("controller_id")
+	scroll := q.Get("scroll") == "true"
 
 	page, _ := strconv.Atoi(pageStr)
 	if page < 1 {
@@ -32,13 +38,38 @@ func (h *Handler) HandlePartsList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var binID *int64
-	if binStr != "" {
-		if id, err := strconv.ParseInt(binStr, 10, 64); err == nil {
+	activeBin := binStr
+	if activeBin == "" {
+		activeBin = binIDStr
+	}
+	if activeBin != "" {
+		if id, err := strconv.ParseInt(activeBin, 10, 64); err == nil {
 			binID = &id
 		}
 	}
 
-	viewParts, err := h.Parts.ListParts(r.Context(), search, page, binID)
+	var controllerID *int64
+	if controllerIDStr != "" {
+		if id, err := strconv.ParseInt(controllerIDStr, 10, 64); err == nil {
+			controllerID = &id
+		}
+	}
+
+	filters := components.PartSearchFilters{
+		Tag:          q.Get("tag"),
+		Bin:          binStr,
+		BinID:        binIDStr,
+		ControllerID: controllerIDStr,
+		Stock:        q.Get("stock"),
+		Sort:         q.Get("sort"),
+	}
+
+	viewParts, err := h.Parts.ListPartsFiltered(r.Context(), parts.ListPartsFilter{
+		Search:       search,
+		Page:         page,
+		BinID:        binID,
+		ControllerID: controllerID,
+	})
 	if err != nil {
 		h.UIError.Respond(w, r, err, "Failed to fetch parts", http.StatusInternalServerError)
 		return
@@ -47,10 +78,10 @@ func (h *Handler) HandlePartsList(w http.ResponseWriter, r *http.Request) {
 	// Render logic
 	if scroll {
 		// If infinite scroll, return JUST the new cards (appended to bottom)
-		pages.PartCards(viewParts, search, page, binID).Render(r.Context(), w)
+		pages.PartCards(viewParts, search, page, binID, filters).Render(r.Context(), w)
 	} else {
 		// If full page load or search replacement, return the full wrapper
-		pages.PartsList(user, viewParts, search, page, binID).Render(r.Context(), w)
+		pages.PartsList(user, viewParts, search, page, binID, filters).Render(r.Context(), w)
 	}
 }
 
@@ -65,7 +96,7 @@ func (h *Handler) HandlePartDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pages.PartDetail(user, detail.Part, detail.Stock, detail.Links, detail.Docs, detail.Controllers).Render(r.Context(), w)
+	pages.PartDetail(user, detail.Part, detail.Stock, detail.Links, detail.Docs, detail.Controllers, len(detail.StandaloneContainers) > 0).Render(r.Context(), w)
 }
 
 // -----------------------------------------------------------
@@ -224,11 +255,17 @@ func (h *Handler) HandleDocDelete(w http.ResponseWriter, r *http.Request) {
 // -----------------------------------------------------------
 
 func (h *Handler) HandleBinOptions(w http.ResponseWriter, r *http.Request) {
-	cid, _ := strconv.Atoi(r.URL.Query().Get("controller_id"))
-
-	containers, err := h.Queries.GetContainersByController(r.Context(), int64(cid))
+	cidStr := r.URL.Query().Get("controller_id")
+	var containers []db.Container
+	var err error
+	if cidStr == "standalone" {
+		containers, err = h.Queries.GetStandaloneContainers(r.Context())
+	} else {
+		cid, _ := strconv.Atoi(cidStr)
+		containers, err = h.Queries.GetContainersByController(r.Context(), sql.NullInt64{Int64: int64(cid), Valid: true})
+	}
 	if err != nil {
-		h.Logger.Error("failed to fetch containers", "err", err, "controller_id", cid)
+		h.Logger.Error("failed to fetch containers", "err", err, "controller_id", cidStr)
 		components.BinOptions([]db.Bin{}).Render(r.Context(), w)
 		return
 	}
@@ -246,6 +283,12 @@ func (h *Handler) HandleBinOptions(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HandleBinPicker(w http.ResponseWriter, r *http.Request) {
 	cidStr := r.URL.Query().Get("controller_id")
+	if cidStr == "standalone" {
+		grid := h.buildStandaloneBinPickerGrid(r.Context())
+		components.BinPickerGrid(grid).Render(r.Context(), w)
+		return
+	}
+
 	cid, _ := strconv.ParseInt(cidStr, 10, 64)
 
 	if cid == 0 {
@@ -263,6 +306,87 @@ func (h *Handler) HandleBinPicker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	components.BinPickerGrid(*grid).Render(r.Context(), w)
+}
+
+func (h *Handler) buildStandaloneBinPickerGrid(ctx context.Context) components.DashboardController {
+	ctrl := components.DashboardController{
+		ID:   0,
+		Name: "Standalone",
+	}
+	containers, err := h.Queries.GetStandaloneContainers(ctx)
+	if err != nil {
+		h.Logger.Error("failed to fetch standalone containers", "err", err)
+		return ctrl
+	}
+
+	partByID := make(map[int64]db.Part)
+	if allParts, err := h.Queries.GetAllParts(ctx); err == nil {
+		for _, p := range allParts {
+			partByID[p.ID] = p
+		}
+	}
+	binStatuses := make(map[int64][]string)
+	if assignments, err := h.Queries.GetAllPartAssignments(ctx); err == nil {
+		for _, a := range assignments {
+			if !a.BinID.Valid {
+				continue
+			}
+			status := "ok"
+			if p, ok := partByID[a.PartID]; ok {
+				if p.MinStockThreshold.Valid && a.Quantity <= p.MinStockThreshold.Int64 {
+					status = "critical"
+				} else if p.ReorderLevel.Valid && a.Quantity <= p.ReorderLevel.Int64 {
+					status = "low"
+				}
+			}
+			binStatuses[a.BinID.Int64] = append(binStatuses[a.BinID.Int64], status)
+		}
+	}
+
+	for _, c := range containers {
+		bins, err := h.Queries.GetBinsByContainer(ctx, c.ID)
+		if err != nil {
+			continue
+		}
+		dBins := make([]components.DashboardBin, 0, len(bins))
+		for idx, b := range bins {
+			gx, gy := idx%8, idx/8
+			if b.GridX.Valid {
+				gx = int(b.GridX.Int64)
+			}
+			if b.GridY.Valid {
+				gy = int(b.GridY.Int64)
+			}
+			statuses := binStatuses[b.ID]
+			if statuses == nil {
+				statuses = []string{}
+			}
+			dBins = append(dBins, components.DashboardBin{
+				ID:       b.ID,
+				Name:     b.Name,
+				GridX:    gx,
+				GridY:    gy,
+				Statuses: statuses,
+			})
+		}
+		sort.Slice(dBins, func(i, j int) bool {
+			if dBins[i].GridY == dBins[j].GridY {
+				if dBins[i].GridX == dBins[j].GridX {
+					return dBins[i].ID < dBins[j].ID
+				}
+				return dBins[i].GridX < dBins[j].GridX
+			}
+			return dBins[i].GridY < dBins[j].GridY
+		})
+		ctrl.Containers = append(ctrl.Containers, components.DashboardContainer{
+			ID:             c.ID,
+			Name:           c.Name,
+			SegmentID:      c.SegmentID,
+			ControllerName: "Standalone",
+			Bins:           dBins,
+		})
+	}
+	return ctrl
 }
 
 func (h *Handler) HandlePartAssign(w http.ResponseWriter, r *http.Request) {
@@ -372,9 +496,12 @@ func (h *Handler) HandlePartStockAdjust(w http.ResponseWriter, r *http.Request) 
 		}
 
 		controllers, _ := h.Queries.GetControllers(r.Context())
+		standaloneContainers, _ := h.Queries.GetStandaloneContainers(r.Context())
+		part, _ := h.Parts.GetPart(r.Context(), int64(partID))
 		user := auth.GetUserFromRequest(r)
 
-		pages.StockRow(int64(partID), targetRow, user, controllers).Render(r.Context(), w)
+		pages.StockRow(int64(partID), targetRow, user, controllers, len(standaloneContainers) > 0).Render(r.Context(), w)
+		pages.PartTotalStock(part, pages.CalculateTotalStock(stock), true).Render(r.Context(), w)
 		return
 	}
 

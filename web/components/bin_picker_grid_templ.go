@@ -34,12 +34,27 @@ func BinPickerGrid(ctrl DashboardController) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(ctrl.Containers) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-12 opacity-50 border-2 border-dashed border-base-300 rounded-xl\"><p class=\"text-lg font-medium\">No containers configured</p><p class=\"text-sm\">This controller has no containers or mapped bins.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"text-center py-12 opacity-50 border-2 border-dashed border-base-300 rounded-xl\"><p class=\"text-lg font-medium\">No containers configured</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if ctrl.Name == "Standalone" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"text-sm\">No standalone containers or bins configured.</p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p class=\"text-sm\">This controller has no containers or mapped bins.</p>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"grid grid-cols-1 gap-8\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"grid grid-cols-1 gap-8\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -49,12 +64,12 @@ func BinPickerGrid(ctrl DashboardController) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><!-- Legend --> <div class=\"flex flex-wrap justify-center gap-4 mt-4 pt-6 border-t border-base-300\"><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-success\"></div>OK</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-warning\"></div>Low</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-error\"></div>Critical</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-base-200 border border-base-300\"></div>Empty</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><!-- Legend --> <div class=\"flex flex-wrap justify-center gap-4 mt-4 pt-6 border-t border-base-300\"><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-success\"></div>OK</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-warning\"></div>Low</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-error\"></div>Critical</div><div class=\"flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider opacity-60\"><div class=\"w-3 h-3 rounded-md bg-base-200 border border-base-300\"></div>Empty</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

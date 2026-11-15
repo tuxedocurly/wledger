@@ -11,7 +11,6 @@ import (
 	"github.com/tuxedocurly/wledger/internal/logger"
 	"github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/web/pages"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // GET /settings
@@ -21,6 +20,7 @@ func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
 
 	var settings db.Setting
 	var users []db.ListUsersRow
+	var apiTokens []db.ListAPITokensByUserRow
 	var err error
 
 	// Fetch Admin Data (Only if User is Admin)
@@ -41,8 +41,18 @@ func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
 		users = []db.ListUsersRow{}
 	}
 
+	if user.IsAuthenticated() && h.Queries != nil {
+		apiTokens, err = h.Queries.ListAPITokensByUser(r.Context(), user.ID)
+		if err != nil {
+			if h.Logger != nil {
+				h.Logger.Error("failed to list api tokens", "err", err, "user_id", user.ID)
+			}
+			apiTokens = []db.ListAPITokensByUserRow{}
+		}
+	}
+
 	// Render with User object
-	pages.Settings(user, settings, users).Render(r.Context(), w)
+	pages.Settings(user, settings, users, apiTokens).Render(r.Context(), w)
 }
 
 // POST /settings
@@ -94,8 +104,14 @@ func (h *Handler) HandleSettingsPassword(w http.ResponseWriter, r *http.Request)
 	confirmPw := r.FormValue("confirm_password")
 
 	if newPw != confirmPw {
-		h.Logger.Warn("password change failed: mismatch")
-		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+		h.Logger.Warn("password change failed: mismatch", "user_id", userID)
+		h.UIError.Respond(w, r, nil, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	if err := auth.ValidatePassword(newPw); err != nil {
+		h.Logger.Warn("password change failed: invalid new password", "user_id", userID, "err", err)
+		h.UIError.Respond(w, r, err, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -105,10 +121,9 @@ func (h *Handler) HandleSettingsPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPw))
-	if err != nil {
+	if !auth.CheckPassword(currentPw, user.PasswordHash) {
 		h.Logger.Warn("password change failed: wrong current password", "user_id", userID)
-		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+		h.UIError.Respond(w, r, nil, "Current password is incorrect", http.StatusBadRequest)
 		return
 	}
 
@@ -118,6 +133,11 @@ func (h *Handler) HandleSettingsPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/settings")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
@@ -126,6 +146,11 @@ func (h *Handler) HandleUserCreate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	role := r.FormValue("role")
 	tempPw := r.FormValue("temp_password")
+
+	if err := auth.ValidatePassword(tempPw); err != nil {
+		h.UIError.Respond(w, r, err, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	_, err := h.Settings.CreateUser(r.Context(), settings.CreateUserParams{
 		Email:    email,

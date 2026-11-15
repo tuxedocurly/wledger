@@ -4,10 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/config"
 	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 )
 
 type PartView struct {
@@ -24,7 +29,7 @@ type PartView struct {
 }
 
 // PartsList is the full page wrapper
-templ PartsList(user auth.User, parts []PartView, search string, page int, binID *int64) {
+templ PartsList(user auth.User, parts []PartView, search string, page int, binID *int64, filters ...components.PartSearchFilters) {
 	@layouts.Base(i18n.T(ctx, "Inventory"), user) {
 		<div
 			x-data="{ 
@@ -49,7 +54,7 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 			@components.PageHeader(i18n.T(ctx, "Inventory"), "", nil)
 			<div class="flex flex-col md:flex-row justify-end items-center mb-6 gap-4">
 				<div x-show="selectedIds.length === 0" class="w-full md:w-auto">
-					@components.PartSearchBar(search, user.CanWrite())
+					@components.PartSearchBar(search, user.CanWrite(), filters...)
 				</div>
 				<div x-show="selectedIds.length > 0" class="w-full" x-cloak>
 					<!-- Bulk Toolbar -->
@@ -77,7 +82,7 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 						}
 					}
 				} else {
-					@PartCards(parts, search, page, binID)
+					@PartCards(parts, search, page, binID, filters...)
 				}
 			</div>
 			@components.ImportModal()
@@ -104,7 +109,7 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 }
 
 // TODO: refactor into a standalone component
-templ PartCards(parts []PartView, search string, page int, binID *int64) {
+templ PartCards(parts []PartView, search string, page int, binID *int64, filters ...components.PartSearchFilters) {
 	// Render the cards
 	for _, part := range parts {
 		<div
@@ -123,7 +128,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 			<figure class="h-48 bg-base-300 relative overflow-hidden">
 				if part.ImagePath.Valid && part.ImagePath.String != "" {
 					<img
-						src={ part.ImagePath.String }
+						src={ ImageThumbURL(part.ImagePath.String) }
 						alt={ part.Name }
 						class="object-cover w-full h-full transform transition-transform duration-500 group-hover:scale-110"
 					/>
@@ -159,7 +164,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 				</div>
 				<div class="flex justify-between items-end mt-4">
 					<div class="flex flex-col">
-						<span class="text-s font-mono opacity-50"># { part.PartNumber.String }</span>
+						<span class="text-sm font-mono opacity-50"># { part.PartNumber.String }</span>
 						<span class="badge badge-info font-semibold mt-1">{ i18n.T(ctx, "Stock") }: { fmt.Sprintf("%d", part.TotalStock) }</span>
 					</div>
 					<div class="flex items-center gap-2">
@@ -177,7 +182,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 	// sentinel for loading more parts
 	if len(parts) >= 20 {
 		<div
-			hx-get={ fmt.Sprintf("/parts?page=%d&q=%s&scroll=true%s", page+1, url.QueryEscape(search), binQuery(binID)) }
+			hx-get={ partsScrollURL(page+1, search, binID, filters...) }
 			hx-trigger="intersect once"
 			hx-swap="outerHTML"
 			class="col-span-full h-12 w-full flex justify-center items-center opacity-50 text-xs"
@@ -187,11 +192,60 @@ templ PartCards(parts []PartView, search string, page int, binID *int64) {
 	}
 }
 
-func binQuery(binID *int64) string {
-	if binID == nil {
-		return ""
+// ImageThumbURL returns the thumbnail web path (<base>_thumb.jpg) when
+// imagePath references an uploaded file whose thumbnail exists on disk, or
+// falls back to imagePath otherwise.
+func ImageThumbURL(imagePath string) string {
+	if imagePath == "" || !strings.HasPrefix(imagePath, config.UrlPrefixUploads) {
+		return imagePath
 	}
-	return fmt.Sprintf("&bin=%d", *binID)
+	ext := path.Ext(imagePath)
+	if ext == "" {
+		return imagePath
+	}
+	base := strings.TrimSuffix(imagePath, ext)
+	if strings.HasSuffix(base, "_thumb") {
+		return imagePath
+	}
+	thumbWebPath := base + "_thumb.jpg"
+	relPath := strings.TrimPrefix(thumbWebPath, config.UrlPrefixUploads)
+	diskPath := filepath.Join(config.DirUploads, filepath.FromSlash(relPath))
+	info, err := os.Stat(diskPath)
+	if err != nil || info.IsDir() {
+		return imagePath
+	}
+	return thumbWebPath
+}
+
+func partsScrollURL(page int, search string, binID *int64, filters ...components.PartSearchFilters) string {
+	vals := url.Values{}
+	vals.Set("page", fmt.Sprintf("%d", page))
+	vals.Set("q", search)
+	vals.Set("scroll", "true")
+	var f components.PartSearchFilters
+	if len(filters) > 0 {
+		f = filters[0]
+	}
+	if f.Bin != "" {
+		vals.Set("bin", f.Bin)
+	} else if f.BinID != "" {
+		vals.Set("bin_id", f.BinID)
+	} else if binID != nil {
+		vals.Set("bin", fmt.Sprintf("%d", *binID))
+	}
+	if f.Tag != "" {
+		vals.Set("tag", f.Tag)
+	}
+	if f.ControllerID != "" {
+		vals.Set("controller_id", f.ControllerID)
+	}
+	if f.Stock != "" {
+		vals.Set("stock", f.Stock)
+	}
+	if f.Sort != "" {
+		vals.Set("sort", f.Sort)
+	}
+	return "/parts?" + vals.Encode()
 }
 
 script navigateTo(url string) {

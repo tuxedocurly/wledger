@@ -9,12 +9,10 @@
 
 </div>
 
-
-
 > **The Ultimate Inventory Management System for Makers.**
 > *Organize your electronic components and find them instantly with WLED.*
 
-Check out the official WLEDger documentation site [here](https://tuxedocurly.github.io/wledger/)
+Check out the official WLEDger documentation site at [https://wledger.app](https://wledger.app).
 
 ## What is WLEDger?
 
@@ -26,80 +24,74 @@ When you search for a component, WLEDger doesn't just tell you "Bin A1" — **it
 <summary><strong>Why I Made WLEDger</strong></summary>
 I have hundreds of electronic components in my lab. I couldn't remember what parts I had or where they were stored, leading to over-buying and under-utilizing. I wanted a system that solved these problems and got me back to doing what I love: making!
 <br><br>
-Existing tools were expensive, closed source or lacking in features/WLED integration. WLEDger bridges these gaps, providing a purpose-built, open source inventory manager that's simple to use and feature rich.
+Existing tools were expensive, closed source, or lacking in features and WLED integration. WLEDger bridges these gaps, providing a purpose-built, open-source inventory manager that's simple to use and feature-rich.
 </details>
 
 ---
 
 ## Core Features
 
-### Visual LED Locating System
+### Visual LED Locating System (WLED v2)
 
-Connect your WLED-powered LED strips or matrices to your storage.
+Connect your WLED-powered LED strips or matrices to your storage — or manage controller-less storage racks natively.
 
-- **Visual Locate:** Click "Locate" on a part, and its bin glows instantly.
-- **Grid Painter:** Use the visual Grid Painter tool to easily map LEDs to bins using Matrix, Strip, or Compound layouts.
-- **Walls / Dashboards:** Organize your containers and controllers into customizable "Walls" for a clean, organized dashboard view.
-- **Stock Status Colors:** Configure different colors for "Locate", "In Stock", "Low Stock", and "Critical".
+- **Visual Locate & Multi-LED Bins:** Click "Locate" on a part and its bin glows instantly, supporting multi-LED wide bins (`Width >= 1`).
+- **Standalone Containers:** Create and organize controller-less containers without any fake controller IP workarounds, mount them on Dashboard Walls, and attach/detach them to WLED controllers anytime.
+- **mDNS Auto-Discovery:** Discover `_wled._tcp.local.` devices on your LAN automatically, add them in one click, and self-heal DHCP IP changes matched by MAC address.
+- **Controller Editing & State Restoration:** Configure HTTP ports, per-controller **UDP Realtime (DNRGB)** streaming, pre-locate WLED state snapshots with automatic restoration, or fall back to an **Idle Preset ID** when locating finishes.
+- **Stock-Health Locate Colors:** Optionally illuminate located bins using stock status colors (`OK`, `Low`, `Critical`) alongside custom Walls / Dashboards.
 
-### Powerful Inventory Management
+### Powerful Inventory & 2D Supplier Barcode Scanning
 
-- **Fast Search:** Instant results using SQLite FTS5 (Full-Text Search).
-- **Barcode Scanning:** Built-in support for scanning parts via your phone's camera.
-- **Rich Data:** Store datasheets (PDFs), images, supplier links, and cost data.
-- **Tagging:** Organize parts with flexible tagging.
+- **Fast Search:** Instant results using pure-Go SQLite **FTS5** (Full-Text Search) with safe query sanitization for technical part strings like `ESP32-S3`, `0.1uF`, or `10k/1%`.
+- **2D Supplier Bag Scanning:** Scan or paste **DigiKey** and **Mouser** ANSI MH10.8.2 / TIA-1063 DataMatrix/PDF417 labels, **LCSC** QR/DataMatrix labels, and 1D barcodes (EAN/UPC/Code128) to auto-fill MPN, Manufacturer, Supplier, and detect existing parts.
+- **Built-In Mobile Camera Scanner:** Uses native `BarcodeDetector` with `html5-qrcode` fallback. Enable built-in self-signed HTTPS (`WLEDGER_TLS_SELF_SIGNED=true`) so mobile devices on your LAN have camera & clipboard access out of the box.
+- **Rich Data & Tagging:** Store datasheets (PDFs), thumbnails, external links, cost data, and flexible tags.
 
-### LLM Prompt Templates
+### Projects & BOM Kitting ("Pick Mode")
 
-Don't let your parts gather dust. Copy the prompt. paste it into your favorite LLM, and get inspired or informed about your inventory.
+- **KiCad & CSV BOM Import:** Upload or paste a BOM and auto-link rows to inventory by MPN, barcode, or part name.
+- **Multi-Board Shortage Tracking:** Calculate component availability and shortages for `N` boards at a glance.
+- **Pick Mode (`Locate All`):** Light up every bin needed for a project simultaneously across all WLED controllers, or locate individual BOM lines.
+- **Atomic Project Builds:** Verify full BOM stock in a single transaction, deduct inventory across bins, and record full audit logs.
 
-WLEDger comes with some great default prompts to get you started.
+### REST API v1 & Personal Access Tokens
 
-- **Project Ideas:** High quality project ideas to inpsire you to build with your *current* inventory.
-- **Integration Guides:** Quick guidance on how to use your parts in a real circuit.
-- **Learning Paths:** Curriculum based on the hardware you own to learn new skills.
+- **Scoped API Tokens:** Create `wlg_...` personal access tokens (`read`, `write`, `admin` scopes with optional expiry) in Settings, stored as SHA-256 hashes at rest.
+- **JSON REST API (`/api/v1/*`):** Automate inventory queries, low-stock checks, stock adjustments, 2D barcode parsing, WLED locating, and project builds using `Authorization: Bearer wlg_...`.
 
-### Enterprise-Grade Usability
+### LLM Prompt Templates, Security & Backups
 
-- **Role-Based Access Control:** Admin, Editor, viewer, and (optional) Guest roles.
-- **Audit Logging:** Track every change, stock adjustment, and deletion.
-- **Responsive Design:** Designed with desktop and mobile in mind.
-
-### Bulk Import, Backup, and Restore
-
-Flexibility in how you manage your parts, and the data you create in WLEDger.
-
-- **Bulk Import:** Import all your parts at once! No UI clickin' required.
-- **Backup:** Easily backup all your data. Exports include all your images, docs, and part info in a human-readable format.
-- **Restore:** Restore your database from a backup in a single click.
+- **Inspiration Prompts:** Generate structured prompts populated with your live inventory for Gemini, ChatGPT, Claude, or local LLMs.
+- **Hardened Auth & RBAC:** Admin, Editor, Viewer, and optional Guest roles, CSRF protection, login rate limiting, protected document/image uploads, and full audit logging.
+- **Portable Backups & Bulk Import:** Export/restore full ZIP backups and bulk-import parts via CSV (including standalone containers).
 
 ### Localization
 
-WLEDger supports multiple languages:
+WLEDger supports 8 languages out of the box (embedded directly into the binary):
 
-- English
-- German (Deutsch)
-- Spanish (Español)
-- French (Français)
-- Italian (Italiano)
-- Portuguese (Português - Brasil)
-- Russian (Русский)
-- Simplified Chinese (简体中文)
+- English (`en`)
+- German / Deutsch (`de`)
+- Spanish / Español (`es`)
+- French / Français (`fr`)
+- Italian / Italiano (`it`)
+- Portuguese / Português - Brasil (`pt-BR`)
+- Russian / Русский (`ru`)
+- Simplified Chinese / 简体中文 (`zh`)
 
-> Non-English translations are auto-generated and may contain inaccuracies. If you notice any translation errors or have suggestions for improvements, please [file an issue on GitHub](https://github.com/tuxedocurly/wledger/issues).
+> Non-English translations may contain inaccuracies. If you notice any translation errors or have suggestions for improvements, please [file an issue on GitHub](https://github.com/tuxedocurly/wledger/issues).
 
 ---
 
 ## The Tech Stack
 
-WLEDger V2 has been written for performance, type safety, and extensibility.
+WLEDger V2 is built as a self-contained, single-binary application with zero external runtime dependencies:
 
-- **Backend:** [Go](https://go.dev/) (1.25+) - Fast, compiled, and robust.
-- **Database:** [SQLite](https://www.sqlite.org/) + `sqlc` + `goose` - Zero-config, reliable storage with type-safe queries and versioned migrations.
-- **Frontend:** [Templ](https://templ.guide/) + [HTMX](https://htmx.org/) - Server-side rendering with SPA-like interactivity.
-- **Interactivity:** [Alpine.js](https://alpinejs.dev/) - Lightweight JavaScript for UI state.
+- **Backend:** [Go](https://go.dev/) (1.25+) — Pure-Go static compilation (`CGO_ENABLED=0`), embedded assets, locales, and migrations.
+- **Database:** Pure-Go [SQLite](https://www.sqlite.org/) (`modernc.org/sqlite` with FTS5) + `sqlc` + `goose`.
+- **Frontend:** [Templ](https://templ.guide/) + [HTMX](https://htmx.org/) + [Alpine.js](https://alpinejs.dev/) (all vendor JS bundled offline).
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) + [DaisyUI v5](https://daisyui.com/).
-- **Hardware:** [WLED](https://kno.wled.ge/) - The gold standard for controlling LEDs.
+- **Hardware:** [WLED](https://kno.wled.ge/) JSON API + UDP Realtime DNRGB + mDNS auto-discovery.
 
 ---
 
@@ -107,118 +99,76 @@ WLEDger V2 has been written for performance, type safety, and extensibility.
 
 ### Option 1: Docker (Recommended)
 
-The easiest way to run WLEDger is via Docker.
+The easiest way to run WLEDger is via Docker. The container runs as a hardened non-root user (`wledger`) with all static assets, locales, and database migrations embedded inside the binary.
 
-1. Create a directory for your WLEDger data: `mkdir wledger && cd wledger && mkdir data uploads logs`
+1. Create a directory for your WLEDger data:
 
-2. Inside this folder, create a file named `docker-compose.yaml` with the following contents:
+```bash
+mkdir -p wledger/data wledger/uploads && cd wledger
+```
+
+2. Create `docker-compose.yaml`:
 
 ```yaml
 services:
   wledger:
-    # Format: user/repository:tag
     image: tuxedomakes/wledger:latest
-
-    # A custom name for the container instance.
     container_name: wledger
-
     ports:
-      # Maps ports in the format "HOST:CONTAINER"
       - "8080:8080"
-
+    # Optional: enable built-in HTTPS for mobile camera scanning & clipboard over LAN
+    # environment:
+    #   WLEDGER_TLS_SELF_SIGNED: "true"
     volumes:
-      # Maps files in the format "HOST_PATH:CONTAINER_PATH"
       - ./data:/wledger/data
       - ./uploads:/wledger/app/uploads
-      - ./logs:/wledger/app/logs
-
-    # Restart policy
     restart: unless-stopped
 ```
 
-3. Run the following command to start the container:
+3. Start the container:
 
-```BASH
+```bash
 docker compose up -d
 ```
 
-Visit `http://localhost:8080` to see the WLEDger UI.
->Tip: Save the website as a shortcut on Android or iOS for quick access!
+Visit `http://localhost:8080` (or `https://<host-ip>:8080` if `WLEDGER_TLS_SELF_SIGNED=true` is enabled) to complete the Setup Wizard.
 
-### Option 2: Build from Source
+> **mDNS Discovery in Docker:** On Linux hosts, set `network_mode: host` (and remove `ports:`) in [docker-compose.yaml](docker-compose.yaml) so WLEDger can send/receive LAN mDNS (`_wled._tcp.local.`) and resolve `.local` hostnames. On macOS/Windows, Docker containers run inside a Linux VM whose NAT bridge does not forward multicast, so add controllers by LAN IP address (or run the native binary for mDNS auto-discovery).
+
+### Option 2: Pre-Built Pure-Go Single Binary
+
+Download the static archive for your platform (`linux/amd64`, `linux/arm64`, `darwin/arm64`, `darwin/amd64`, or `windows/amd64`) from [GitHub Releases](https://github.com/tuxedocurly/wledger/releases):
+
+```bash
+tar -xzf wledger_v*_linux_amd64.tar.gz
+./wledger
+```
+
+No Node.js, CGO, or SQLite shared libraries are required at runtime. Configure paths, port, TLS, or reverse-proxy behavior via environment variables (`WLEDGER_PORT`, `WLEDGER_DATA_DIR`, `WLEDGER_UPLOADS_DIR`, `WLEDGER_TLS_SELF_SIGNED`, `WLEDGER_TLS_CERT`, `WLEDGER_TLS_KEY`, `WLEDGER_TRUST_PROXY`, `WLEDGER_COOKIE_SECURE`).
+
+### Option 3: Build from Source
 
 **Prerequisites:**
 
-- **Go:** Version 1.25+
-- **Node.js:** Version 23+ (for running `npm`)
-- **Make:** A `make` compatible command line tool.
-
-> Before running `make generate` or `make dev` be sure that Go is installed and in your system path, or the commands will not work.
-
-<details>
-<summary><strong>How to add Go to your system path</strong></summary>
-<h2>Bash</h2>
-
-Add the path to your `.bashrc` (or `.bash_profile` on macOS):
-```bash
-echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.bashrc
-source ~/.bashrc
-```
-
-<h2>ZSH</h2>
-
-Add the path to your `.zshrc`:
-
-```bash
-echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.zshrc
-source ~/.zshrc
-```
-<h2>Fish</h2>
-
-Run the following command once (this persists automatically):
-
-```bash
-fish_add_path /usr/local/go/bin $HOME/go/bin
-```
-</details>
-
-<br>
-
-These tools are provided for convenience to install dependencies, generate code, and run the dev server.
+- **Go:** Version 1.25+ (no C compiler/CGO needed for production builds)
+- **Node.js:** Version 22+ (for Tailwind CSS compilation)
+- **Make:** A `make` compatible command line tool
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/tuxedocurly/wledger.git
 cd wledger
 
-# 2. Install dependencies
-# This will install the required Go tools and npm packages.
+# 2. Install Go codegen tools (templ, sqlc) and Node dependencies
 make install_dependencies
 
-# 3. auto-gen code to ensure it's up to date
+# 3. Generate templ, sqlc, and minified Tailwind CSS
 make generate
 
-# 4. Run the application
-make dev
+# 4. Build a static pure-Go binary (CGO_ENABLED=0) or start the dev server
+make build   # outputs ./bin/wledger
+make dev     # live reload server + Tailwind watcher
 ```
-> Once you've verified things are working on the dev server, run `make build` to generate the binary, then run it.
-
-### Development
-
-WLEDger uses `Templ` for live reloading on `localhost:7331` and `make` for task orchestration.
-
-Example (run dev server):
-
-```bash
-make dev
-```
-Review the [Makefile](./Makefile) for a list of available commands.
-
-This will start:
-
-- Go server (with Templ watcher)
-- Templ + Go change watcher
-- Tailwind CSS watcher
 
 ---
 
@@ -240,9 +190,9 @@ Contributions are welcome!
 
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes.
-4. Open a Pull Request.
+3. Run `make generate`, `make vet`, and `make test`.
+4. Commit your changes and open a Pull Request.
 
 ## License
 
-WLEDger is released under AGPL-3.0-only - see the `LICENSE` file for details.
+WLEDger is released under AGPL-3.0-only — see the [LICENSE](LICENSE) file for details.

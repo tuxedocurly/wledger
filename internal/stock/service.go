@@ -66,10 +66,9 @@ func (s *service) AssignStock(ctx context.Context, req AssignStockRequest) error
 			}
 
 			newQty := existing.Quantity + int64(req.Quantity)
-			err = q.UpdatePartAssignmentQuantity(ctx, db.UpdatePartAssignmentQuantityParams{
+			err = q.UpdatePartAssignmentQuantityByID(ctx, db.UpdatePartAssignmentQuantityByIDParams{
 				Quantity: newQty,
-				PartID:   req.PartID,
-				BinID:    nullBinID,
+				ID:       existingID,
 			})
 			if err != nil {
 				return err
@@ -113,10 +112,9 @@ func (s *service) AdjustStock(ctx context.Context, assignmentID int64, delta int
 			newQty = 0
 		}
 
-		err = q.UpdatePartAssignmentQuantity(ctx, db.UpdatePartAssignmentQuantityParams{
+		err = q.UpdatePartAssignmentQuantityByID(ctx, db.UpdatePartAssignmentQuantityByIDParams{
 			Quantity: newQty,
-			PartID:   assignment.PartID,
-			BinID:    assignment.BinID,
+			ID:       assignment.ID,
 		})
 
 		if err != nil {
@@ -166,10 +164,9 @@ func (s *service) MoveStock(ctx context.Context, req MoveStockRequest) error {
 
 			newQty := target.Quantity + source.Quantity
 
-			err = q.UpdatePartAssignmentQuantity(ctx, db.UpdatePartAssignmentQuantityParams{
+			err = q.UpdatePartAssignmentQuantityByID(ctx, db.UpdatePartAssignmentQuantityByIDParams{
 				Quantity: newQty,
-				PartID:   req.PartID,
-				BinID:    sql.NullInt64{Int64: req.TargetBinID, Valid: true},
+				ID:       targetID,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update target stock: %w", err)

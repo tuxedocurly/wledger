@@ -907,5 +907,128 @@
   },
   "Confirm": {
     "other": "Confirmer"
+  },
+  "Action": {
+    "other": "Action"
+  },
+  "Data": {
+    "other": "Données"
+  },
+  "Description": {
+    "other": "Description"
+  },
+  "Details": {
+    "other": "Détails"
+  },
+  "Edit": {
+    "other": "Modifier"
+  },
+  "End Date": {
+    "other": "Date de fin"
+  },
+  "Start Date": {
+    "other": "Date de début"
+  },
+  "View": {
+    "other": "Voir"
+  },
+  "admin": {
+    "other": "Administrateur"
+  },
+  "editor": {
+    "other": "Éditeur"
+  },
+  "viewer": {
+    "other": "Observateur"
+  },
+  "BULK_DELETE": {
+    "other": "SUPPRESSION_MASSE"
+  },
+  "IMPORT": {
+    "other": "IMPORTER"
+  },
+  "BACKUP": {
+    "other": "SAUVEGARDE"
+  },
+  "RESTORE": {
+    "other": "RESTAURER"
+  },
+  "STOCK_ADD": {
+    "other": "AJOUT_STOCK"
+  },
+  "STOCK_INC": {
+    "other": "AUGMENTER_STOCK"
+  },
+  "STOCK_DEC": {
+    "other": "RÉDUIRE_STOCK"
+  },
+  "STOCK_MOVE": {
+    "other": "DÉPLACER_STOCK"
+  },
+  "STOCK_MERGE": {
+    "other": "FUSIONNER_STOCK"
+  },
+  "STOCK_REMOVE": {
+    "other": "RETIRER_STOCK"
+  },
+  "PARTS": {
+    "other": "PIÈCES"
+  },
+  "STOCK": {
+    "other": "STOCK"
+  },
+  "HARDWARE": {
+    "other": "MATÉRIEL"
+  },
+  "WALL": {
+    "other": "MUR"
+  },
+  "SYSTEM": {
+    "other": "SYSTÈME"
+  },
+  "PROJECT": {
+    "other": "PROJET"
+  },
+  "Projects": {
+    "other": "Projets"
+  },
+  "NavProjects": {
+    "other": "Projets"
+  },
+  "APITokens": {
+    "other": "Jetons API"
+  },
+  "StandaloneContainers": {
+    "other": "Conteneurs autonomes"
+  },
+  "DiscoverWLED": {
+    "other": "Découvrir WLED"
+  },
+  "ParseBarcode": {
+    "other": "Analyser le code-barres"
+  },
+  "CreateToken": {
+    "other": "Créer un jeton"
+  },
+  "RevokeToken": {
+    "other": "Révoquer le jeton"
+  },
+  "BuildProject": {
+    "other": "Assembler le projet"
+  },
+  "LocateAll": {
+    "other": "Tout localiser"
+  },
+  "PickMode": {
+    "other": "Mode prélèvement"
+  },
+  "ImportBOM": {
+    "other": "Importer une nomenclature"
+  },
+  "Shortage": {
+    "other": "Manquant"
+  },
+  "TokenCreatedWarning": {
+    "other": "Assurez-vous de copier votre jeton API maintenant. Vous ne pourrez plus le voir par la suite !"
   }
 }

@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/tuxedocurly/wledger/internal/audit"
@@ -19,8 +21,8 @@ import (
 func (h *Handler) HandlePartsImportTemplate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment;filename=wledger_import_template.csv")
-	w.Write([]byte("Name,Description,Part Number,Manufacturer,Supplier,Unit Cost,Reorder Level,Min Stock,Barcode,Quantity,Tags,Links,Controller IP,Segment ID,LED Index\n"))
-	w.Write([]byte("Example Part,Resistor 10-K,MPN123,TI,DigiKey,0.05,50,10,12345678,100,Resistor|SMD,https://example.com/resistor,192.168.1.100,0,5\n"))
+	w.Write([]byte("Name,Description,Part Number,Manufacturer,Supplier,Unit Cost,Reorder Level,Min Stock,Barcode,Quantity,Tags,Links,Controller IP,Segment ID,LED Index,Container,Bin Name\n"))
+	w.Write([]byte("Example Part,Resistor 10-K,MPN123,TI,DigiKey,0.05,50,10,12345678,100,Resistor|SMD,https://example.com/resistor,192.168.1.100,0,5,,\n"))
 }
 
 // POST /parts/import
@@ -117,21 +119,9 @@ func (h *Handler) HandlePartsImport(w http.ResponseWriter, r *http.Request) {
 			count++
 
 			// Resolve Bin ID if location is provided
-			var binID sql.NullInt64
-			if row.ControllerIP != "" {
-				resolvedBinID, err := q.GetBinByLocation(r.Context(), db.GetBinByLocationParams{
-					IpAddress: row.ControllerIP,
-					SegmentID: int64(*row.SegmentID),
-					LedIndex:  sql.NullInt64{Int64: int64(*row.LEDIndex), Valid: true},
-				})
-				if err != nil {
-					h.Logger.Error("failed to resolve bin location during import", "err", err, "row", row.RowNumber, "ip", row.ControllerIP, "seg", *row.SegmentID, "led", *row.LEDIndex)
-					if err == sql.ErrNoRows {
-						return fmt.Errorf("Row %d Error: Location not found (IP: %s, Seg: %d, LED: %d)", row.RowNumber, row.ControllerIP, *row.SegmentID, *row.LEDIndex)
-					}
-					return fmt.Errorf("Row %d Error resolving location: %v", row.RowNumber, err)
-				}
-				binID = sql.NullInt64{Int64: resolvedBinID, Valid: true}
+			binID, err := h.resolveImportBinID(r.Context(), q, row)
+			if err != nil {
+				return err
 			}
 
 			// Insert Stock if Quantity > 0
@@ -161,4 +151,62 @@ func (h *Handler) HandlePartsImport(w http.ResponseWriter, r *http.Request) {
 	// Success Response
 	msg := fmt.Sprintf("Successfully imported %d parts.", count)
 	components.ImportResult(true, msg, nil).Render(r.Context(), w)
+}
+
+func (h *Handler) resolveImportBinID(ctx context.Context, q db.Querier, row importer.PartImportRow) (sql.NullInt64, error) {
+	if row.ControllerIP != "" {
+		resolvedBinID, err := q.GetBinByLocation(ctx, db.GetBinByLocationParams{
+			IpAddress: row.ControllerIP,
+			SegmentID: int64(*row.SegmentID),
+			LedIndex:  sql.NullInt64{Int64: int64(*row.LEDIndex), Valid: true},
+		})
+		if err != nil {
+			h.Logger.Error("failed to resolve bin location during import", "err", err, "row", row.RowNumber, "ip", row.ControllerIP, "seg", *row.SegmentID, "led", *row.LEDIndex)
+			if err == sql.ErrNoRows {
+				return sql.NullInt64{}, fmt.Errorf("Row %d Error: Location not found (IP: %s, Seg: %d, LED: %d)", row.RowNumber, row.ControllerIP, *row.SegmentID, *row.LEDIndex)
+			}
+			return sql.NullInt64{}, fmt.Errorf("Row %d Error resolving location: %v", row.RowNumber, err)
+		}
+		return sql.NullInt64{Int64: resolvedBinID, Valid: true}, nil
+	}
+
+	if row.ContainerName == "" {
+		return sql.NullInt64{}, nil
+	}
+
+	containers, err := q.GetStandaloneContainers(ctx)
+	if err != nil {
+		return sql.NullInt64{}, fmt.Errorf("Row %d Error loading standalone containers: %v", row.RowNumber, err)
+	}
+
+	var matchedContainer *db.Container
+	for i := range containers {
+		if strings.EqualFold(containers[i].Name, row.ContainerName) {
+			if row.SegmentID == nil || containers[i].SegmentID == int64(*row.SegmentID) {
+				matchedContainer = &containers[i]
+				break
+			}
+		}
+	}
+	if matchedContainer == nil {
+		return sql.NullInt64{}, fmt.Errorf("Row %d Error: Location not found (Standalone container '%s')", row.RowNumber, row.ContainerName)
+	}
+
+	bins, err := q.GetBinsByContainer(ctx, matchedContainer.ID)
+	if err != nil {
+		return sql.NullInt64{}, fmt.Errorf("Row %d Error loading bins for container '%s': %v", row.RowNumber, row.ContainerName, err)
+	}
+
+	for _, b := range bins {
+		if row.BinName != "" && strings.EqualFold(b.Name, row.BinName) {
+			return sql.NullInt64{Int64: b.ID, Valid: true}, nil
+		}
+		if row.LEDIndex != nil {
+			if (b.LedIndex.Valid && b.LedIndex.Int64 == int64(*row.LEDIndex)) || b.Name == strconv.Itoa(*row.LEDIndex) {
+				return sql.NullInt64{Int64: b.ID, Valid: true}, nil
+			}
+		}
+	}
+
+	return sql.NullInt64{}, fmt.Errorf("Row %d Error: Location not found in standalone container '%s'", row.RowNumber, row.ContainerName)
 }

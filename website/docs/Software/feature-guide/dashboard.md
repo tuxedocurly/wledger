@@ -5,32 +5,33 @@ sidebar_position: 1
 
 # The Dashboard
 
-The Dashboard gives you a visual overview of your inventory and provides statistics such as WLED controller status, unique part count, total stock count, and total inventory value.
+The Dashboard gives you a real-time visual overview of your inventory, displaying WLED controller connectivity, unique part count, total stock count, total inventory value, and color-coded storage bin maps.
 
-You can leave your dashboard as is with the [default view](#default-dashboard), or organize your dashboard using [Walls](#walls).
+You can use the [Default View](#default-view) or build custom [Walls](#walls).
 
 ## Default View
+
 <a href="/img/feature-guide/dashboard_default.png" target="_blank">
    <img src="/img/feature-guide/dashboard_default.png" style={{maxWidth: '600px', width:
      '100%'}} alt="Dashboard Default" />
 </a>
 
-By default, the dashboard is organized by WLED controller. Each controller will show a visual representation of each container that belongs to it. Each container will show all of the bins associated with that container. Each bin will show the stock status of the inventory it contains (if any).
+By default, the dashboard groups your containers by WLED controller alongside any controller-less **Standalone Containers**. Each bin reflects the live stock status of the parts inside it.
 
-### Visual Heirarchy
-```
+### Visual Hierarchy
+
+```text
 Dashboard/
 ├── WLED Controller 01
 │   ├── Container A (Drawers)
-│   │   ├── Bin 1
-│   │   ├── Bin 2
-│   │   └── Bin 3
+│   │   ├── Bin 1 (Width: 1 LED)
+│   │   └── Bin 2 (Width: 2 LEDs)
 │   └── Container B (Box)
-│       ├── Bin 1
-│       └── Bin 2
-└── WLED Controller B (Shelves)
-    └── Container C
-        └── Bin 1
+│       └── Bin 1
+└── Standalone Containers (No WLED Controller)
+    └── Travel Case #1
+        ├── Bin A1
+        └── Bin A2
 ```
 
 ## Walls
@@ -40,12 +41,7 @@ Dashboard/
      '100%'}} alt="Dashboard Wall" />
 </a>
 
-Walls are logic groupings of containers. You may consider using Walls if you:
-
-  1. have many controllers / containers
-  2. want a more compact dashboard view
-
-You can add any container to any wall, regardless of which WLED controller it belongs to.
+Walls let you group any mix of WLED-attached containers and Standalone Containers into custom workshop views (for example, `SMD Rack`, `Bench Top`, or `Travel Kit`).
 
 ### Creating a Wall
 
@@ -56,16 +52,18 @@ You can add any container to any wall, regardless of which WLED controller it be
 
 ## Status Indicators
 
-Bins and Wall cards change color on the based on stock levels:
+Bin and Wall colors dynamically pull from your customized colors in [Settings](./settings.md):
 
-*   🟢 **Green:** OK
-*   🟡 **Yellow:** Low Stock
-*   🔴 **Red:** Critical/Out of Stock
-*   ⚫ **Black** Empty / No Inventory Assigned
+* 🟢 **OK (`--color-stock-ok`):** Above reorder threshold
+* 🟡 **Low (`--color-stock-low`):** At or below reorder level
+* 🔴 **Critical (`--color-stock-critical`):** At or below minimum stock level
+* ⚫ **Empty:** No inventory assigned
+
+Standalone containers display a clean **Standalone** badge instead of an offline controller status dot.
 
 ## Inventory Stats
 
-View total unique parts, total stock value (if configured), and the real-time connectivity status of your WLED controllers.
+View total unique parts, total unit stock, total inventory value, and real-time online/offline status across your WLED controllers.
 
 <a href="/img/feature-guide/dashboard_stat_cards.png" target="_blank">
    <img src="/img/feature-guide/dashboard_stat_cards.png" style={{maxWidth: '800px', width:

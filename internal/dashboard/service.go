@@ -39,15 +39,105 @@ func (s *service) GetWalls(ctx context.Context) ([]db.Wall, error) {
 	return s.store.GetWalls(ctx)
 }
 
+func calcStockStatus(qty, minThresh, reorder int64) string {
+	if qty <= minThresh {
+		return "critical"
+	}
+	if qty <= reorder {
+		return "low"
+	}
+	return "ok"
+}
+
+func sortDashboardBins(bins []components.DashboardBin) {
+	sort.Slice(bins, func(i, j int) bool {
+		if bins[i].GridY == bins[j].GridY {
+			return bins[i].GridX < bins[j].GridX
+		}
+		return bins[i].GridY < bins[j].GridY
+	})
+}
+
+type standaloneLookup struct {
+	partsByID        map[int64]db.Part
+	assignmentsByBin map[int64][]db.PartAssignment
+}
+
+func (s *service) loadStandaloneLookup(ctx context.Context) standaloneLookup {
+	lookup := standaloneLookup{
+		partsByID:        make(map[int64]db.Part),
+		assignmentsByBin: make(map[int64][]db.PartAssignment),
+	}
+
+	parts, err := s.store.GetAllParts(ctx)
+	if err == nil {
+		for _, p := range parts {
+			lookup.partsByID[p.ID] = p
+		}
+	}
+
+	assignments, err := s.store.GetAllPartAssignments(ctx)
+	if err == nil {
+		for _, a := range assignments {
+			if a.BinID.Valid {
+				lookup.assignmentsByBin[a.BinID.Int64] = append(lookup.assignmentsByBin[a.BinID.Int64], a)
+			}
+		}
+	}
+	return lookup
+}
+
+func (s *service) buildStandaloneDashboardContainer(ctx context.Context, c db.Container, lookup standaloneLookup) components.DashboardContainer {
+	binsRows, err := s.store.GetBinsByContainer(ctx, c.ID)
+	var bins []components.DashboardBin
+	if err == nil {
+		bins = make([]components.DashboardBin, 0, len(binsRows))
+		for _, b := range binsRows {
+			dbin := components.DashboardBin{
+				ID:       b.ID,
+				Name:     b.Name,
+				GridX:    int(b.GridX.Int64),
+				GridY:    int(b.GridY.Int64),
+				Statuses: []string{},
+			}
+			for _, a := range lookup.assignmentsByBin[b.ID] {
+				if p, ok := lookup.partsByID[a.PartID]; ok {
+					dbin.Statuses = append(dbin.Statuses, calcStockStatus(a.Quantity, p.MinStockThreshold.Int64, p.ReorderLevel.Int64))
+				}
+			}
+			bins = append(bins, dbin)
+		}
+		sortDashboardBins(bins)
+	}
+
+	return components.DashboardContainer{
+		ID:               c.ID,
+		Name:             c.Name,
+		SegmentID:        c.SegmentID,
+		ControllerName:   "Standalone",
+		ControllerOnline: false,
+		IsStandalone:     true,
+		Bins:             bins,
+	}
+}
+
 func (s *service) GetWallWithContainers(ctx context.Context, wallID int64) ([]components.DashboardContainer, error) {
 	rows, err := s.store.GetWallContainerBins(ctx, wallID)
 	if err != nil {
 		return nil, err
 	}
+	wallCards, err := s.store.GetWallCards(ctx, wallID)
+	if err != nil {
+		return nil, err
+	}
 
-	// Group by Container
 	containerMap := make(map[int64]*components.DashboardContainer)
-	binMap := make(map[int64]map[int64]*components.DashboardBin) // containerID -> binID -> DashboardBin
+	binMap := make(map[int64]map[int64]*components.DashboardBin)
+	posMap := make(map[int64]int64, len(wallCards))
+
+	for _, card := range wallCards {
+		posMap[card.ContainerID] = card.PositionIndex
+	}
 
 	for _, row := range rows {
 		if _, exists := containerMap[row.ContainerID]; !exists {
@@ -60,7 +150,6 @@ func (s *service) GetWallWithContainers(ctx context.Context, wallID int64) ([]co
 			}
 			binMap[row.ContainerID] = make(map[int64]*components.DashboardBin)
 		}
-
 		if !row.BinID.Valid {
 			continue
 		}
@@ -75,39 +164,46 @@ func (s *service) GetWallWithContainers(ctx context.Context, wallID int64) ([]co
 				Statuses: []string{},
 			}
 		}
-		bin := cBins[row.BinID.Int64]
-
 		if row.PartID.Valid {
-			status := "ok"
-			if row.Quantity.Int64 <= row.MinStockThreshold.Int64 {
-				status = "critical"
-			} else if row.Quantity.Int64 <= row.ReorderLevel.Int64 {
-				status = "low"
-			}
-			bin.Statuses = append(bin.Statuses, status)
+			bin := cBins[row.BinID.Int64]
+			bin.Statuses = append(bin.Statuses, calcStockStatus(row.Quantity.Int64, row.MinStockThreshold.Int64, row.ReorderLevel.Int64))
 		}
 	}
 
-	var results = []components.DashboardContainer{}
+	// Include mounted standalone containers (dropped by inner JOIN on controllers in SQL query).
+	hasMissing := false
+	for _, card := range wallCards {
+		if _, exists := containerMap[card.ContainerID]; !exists {
+			hasMissing = true
+			break
+		}
+	}
+	if hasMissing {
+		lookup := s.loadStandaloneLookup(ctx)
+		for _, card := range wallCards {
+			if _, exists := containerMap[card.ContainerID]; exists {
+				continue
+			}
+			c, err := s.store.GetContainer(ctx, card.ContainerID)
+			if err != nil {
+				continue
+			}
+			dc := s.buildStandaloneDashboardContainer(ctx, c, lookup)
+			containerMap[c.ID] = &dc
+		}
+	}
+
+	results := make([]components.DashboardContainer, 0, len(containerMap))
 	for cID, c := range containerMap {
-		var bins []components.DashboardBin
-		for _, b := range binMap[cID] {
-			bins = append(bins, *b)
-		}
-		sort.Slice(bins, func(i, j int) bool {
-			if bins[i].GridY == bins[j].GridY {
-				return bins[i].GridX < bins[j].GridX
+		if bMap, ok := binMap[cID]; ok {
+			bins := make([]components.DashboardBin, 0, len(bMap))
+			for _, b := range bMap {
+				bins = append(bins, *b)
 			}
-			return bins[i].GridY < bins[j].GridY
-		})
-		c.Bins = bins
+			sortDashboardBins(bins)
+			c.Bins = bins
+		}
 		results = append(results, *c)
-	}
-
-	// re-fetch position mapping to sort correctly
-	posMap := make(map[int64]int64)
-	for _, row := range rows {
-		posMap[row.ContainerID] = row.PositionIndex
 	}
 
 	sort.Slice(results, func(i, j int) bool {
@@ -118,25 +214,26 @@ func (s *service) GetWallWithContainers(ctx context.Context, wallID int64) ([]co
 }
 
 func (s *service) GetAllWallsWithContainers(ctx context.Context) ([]components.DashboardWall, error) {
-	// Get all walls
 	walls, err := s.store.GetWalls(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get all cards (bins for all walls)
 	rows, err := s.store.GetAllWallContainerBins(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group by Wall -> Container -> Bin
-	// Map: WallID -> (Map: ContainerID -> *DashboardContainer)
-	wallMap := make(map[int64]*components.DashboardWall)
-	wallContainerMap := make(map[int64]map[int64]*components.DashboardContainer)
-	binMap := make(map[int64]map[int64]*components.DashboardBin) // containerID -> binID -> Bin
+	allCards, err := s.store.GetAllWallCards(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// Initialize Walls
+	wallMap := make(map[int64]*components.DashboardWall, len(walls))
+	wallContainerMap := make(map[int64]map[int64]*components.DashboardContainer, len(walls))
+	binMap := make(map[int64]map[int64]*components.DashboardBin)
+	posMap := make(map[int64]map[int64]int64, len(walls))
+
 	for _, w := range walls {
 		wallMap[w.ID] = &components.DashboardWall{
 			ID:          w.ID,
@@ -145,15 +242,21 @@ func (s *service) GetAllWallsWithContainers(ctx context.Context) ([]components.D
 			Containers:  []components.DashboardContainer{},
 		}
 		wallContainerMap[w.ID] = make(map[int64]*components.DashboardContainer)
+		posMap[w.ID] = make(map[int64]int64)
+	}
+
+	for _, card := range allCards {
+		if _, ok := posMap[card.WallID]; ok {
+			posMap[card.WallID][card.ContainerID] = card.PositionIndex
+		}
 	}
 
 	for _, row := range rows {
-		wallID := row.WallID
-		if _, ok := wallMap[wallID]; !ok {
-			continue // Should not happen if walls fetched correctly
+		if _, ok := wallMap[row.WallID]; !ok {
+			continue
 		}
 
-		cMap := wallContainerMap[wallID]
+		cMap := wallContainerMap[row.WallID]
 		if _, exists := cMap[row.ContainerID]; !exists {
 			cMap[row.ContainerID] = &components.DashboardContainer{
 				ID:               row.ContainerID,
@@ -162,7 +265,9 @@ func (s *service) GetAllWallsWithContainers(ctx context.Context) ([]components.D
 				ControllerName:   row.ControllerName,
 				ControllerOnline: row.IsOnline.Bool,
 			}
-			binMap[row.ContainerID] = make(map[int64]*components.DashboardBin)
+			if _, ok := binMap[row.ContainerID]; !ok {
+				binMap[row.ContainerID] = make(map[int64]*components.DashboardBin)
+			}
 		}
 
 		if !row.BinID.Valid {
@@ -179,54 +284,58 @@ func (s *service) GetAllWallsWithContainers(ctx context.Context) ([]components.D
 				Statuses: []string{},
 			}
 		}
-		bin := cBins[row.BinID.Int64]
-
 		if row.PartID.Valid {
-			status := "ok"
-			if row.Quantity.Int64 <= row.MinStockThreshold.Int64 {
-				status = "critical"
-			} else if row.Quantity.Int64 <= row.ReorderLevel.Int64 {
-				status = "low"
+			bin := cBins[row.BinID.Int64]
+			bin.Statuses = append(bin.Statuses, calcStockStatus(row.Quantity.Int64, row.MinStockThreshold.Int64, row.ReorderLevel.Int64))
+		}
+	}
+
+	// Hydrate standalone containers mounted on any wall.
+	var missingCards []db.WallCard
+	for _, card := range allCards {
+		cMap, ok := wallContainerMap[card.WallID]
+		if !ok {
+			continue
+		}
+		if _, exists := cMap[card.ContainerID]; !exists {
+			missingCards = append(missingCards, card)
+		}
+	}
+
+	standaloneBuilt := make(map[int64]components.DashboardContainer)
+	if len(missingCards) > 0 {
+		lookup := s.loadStandaloneLookup(ctx)
+		for _, card := range missingCards {
+			dc, cached := standaloneBuilt[card.ContainerID]
+			if !cached {
+				c, err := s.store.GetContainer(ctx, card.ContainerID)
+				if err != nil {
+					continue
+				}
+				dc = s.buildStandaloneDashboardContainer(ctx, c, lookup)
+				standaloneBuilt[card.ContainerID] = dc
 			}
-			bin.Statuses = append(bin.Statuses, status)
+			dcCopy := dc
+			wallContainerMap[card.WallID][card.ContainerID] = &dcCopy
 		}
 	}
 
-	// Flatten and Sort
-	var result []components.DashboardWall
-
-	// Create map of position indices for sorting
-	// Map: WallID -> (Map: ContainerID -> PositionIndex)
-	posMap := make(map[int64]map[int64]int64)
-	for _, row := range rows {
-		if _, ok := posMap[row.WallID]; !ok {
-			posMap[row.WallID] = make(map[int64]int64)
-		}
-		posMap[row.WallID][row.ContainerID] = row.PositionIndex
-	}
-
+	result := make([]components.DashboardWall, 0, len(walls))
 	for _, w := range walls {
 		dashboardWall := wallMap[w.ID]
-
-		// Flatten containers for this wall
-		var containers []components.DashboardContainer
+		containers := make([]components.DashboardContainer, 0, len(wallContainerMap[w.ID]))
 		for cID, c := range wallContainerMap[w.ID] {
-			// Flatten bins
-			var bins []components.DashboardBin
-			for _, b := range binMap[cID] {
-				bins = append(bins, *b)
-			}
-			sort.Slice(bins, func(i, j int) bool {
-				if bins[i].GridY == bins[j].GridY {
-					return bins[i].GridX < bins[j].GridX
+			if bMap, ok := binMap[cID]; ok {
+				bins := make([]components.DashboardBin, 0, len(bMap))
+				for _, b := range bMap {
+					bins = append(bins, *b)
 				}
-				return bins[i].GridY < bins[j].GridY
-			})
-			c.Bins = bins
+				sortDashboardBins(bins)
+				c.Bins = bins
+			}
 			containers = append(containers, *c)
 		}
 
-		// Sort Containers by Position
 		wallPosMap := posMap[w.ID]
 		sort.Slice(containers, func(i, j int) bool {
 			return wallPosMap[containers[i].ID] < wallPosMap[containers[j].ID]
@@ -235,8 +344,6 @@ func (s *service) GetAllWallsWithContainers(ctx context.Context) ([]components.D
 		dashboardWall.Containers = containers
 		result = append(result, *dashboardWall)
 	}
-
-	// If additional Wall sorting is needed at some point, implement here or modify query directly.
 
 	return result, nil
 }
@@ -254,29 +361,25 @@ func (s *service) CreateWall(ctx context.Context, name, description string) (int
 
 func (s *service) UpdateWall(ctx context.Context, id int64, name, description string, containerIDs []int64) error {
 	return s.store.ExecTx(ctx, func(q db.Querier) error {
-		// Update wall metadata
-		err := q.UpdateWall(ctx, db.UpdateWallParams{
+		if err := q.UpdateWall(ctx, db.UpdateWallParams{
 			ID:          id,
 			Name:        name,
 			Description: sql.NullString{String: description, Valid: description != ""},
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 
-		err = q.DeleteWallCardsByWallID(ctx, id)
-		if err != nil {
+		if err := q.DeleteWallCardsByWallID(ctx, id); err != nil {
 			return err
 		}
 
 		for i, cID := range containerIDs {
-			err = q.AddContainerToWall(ctx, db.AddContainerToWallParams{
+			if err := q.AddContainerToWall(ctx, db.AddContainerToWallParams{
 				WallID:        id,
 				ContainerID:   cID,
 				PositionIndex: int64(i),
 				ConfigJson:    sql.NullString{Valid: false},
-			})
-			if err != nil {
+			}); err != nil {
 				return err
 			}
 		}
@@ -291,7 +394,48 @@ func (s *service) GetGrid(ctx context.Context) ([]components.DashboardController
 		return nil, err
 	}
 
-	return s.newDashboardViewModel(gridRows), nil
+	flat := make([]gridRowData, 0, len(gridRows))
+	for _, r := range gridRows {
+		flat = append(flat, gridRowData{
+			ControllerID:      r.ControllerID,
+			ControllerName:    r.ControllerName,
+			IsOnline:          r.IsOnline,
+			ContainerID:       r.ContainerID,
+			ContainerName:     r.ContainerName,
+			SegmentID:         r.SegmentID,
+			BinID:             r.BinID,
+			BinName:           r.BinName,
+			GridX:             r.GridX,
+			GridY:             r.GridY,
+			PartID:            r.PartID,
+			Quantity:          r.Quantity,
+			ReorderLevel:      r.ReorderLevel,
+			MinStockThreshold: r.MinStockThreshold,
+		})
+	}
+	controllers := buildDashboardGridView(flat)
+
+	// Append standalone containers (that have bins) as a "Standalone Storage" section in legacy fallback view.
+	standaloneList, err := s.store.GetStandaloneContainers(ctx)
+	if err == nil && len(standaloneList) > 0 {
+		lookup := s.loadStandaloneLookup(ctx)
+		var standaloneCards []components.DashboardContainer
+		for _, c := range standaloneList {
+			dc := s.buildStandaloneDashboardContainer(ctx, c, lookup)
+			if len(dc.Bins) > 0 {
+				standaloneCards = append(standaloneCards, dc)
+			}
+		}
+		if len(standaloneCards) > 0 {
+			controllers = append(controllers, components.DashboardController{
+				ID:         0,
+				Name:       "Standalone Storage",
+				Containers: standaloneCards,
+			})
+		}
+	}
+
+	return controllers, nil
 }
 
 func (s *service) GetGridByController(ctx context.Context, controllerID int64) (*components.DashboardController, error) {
@@ -304,8 +448,26 @@ func (s *service) GetGridByController(ctx context.Context, controllerID int64) (
 		return nil, sql.ErrNoRows
 	}
 
-	// Reusing newDashboardViewModel logic but for a single controller
-	controllers := s.newDashboardViewModelFromRows(rows)
+	flat := make([]gridRowData, 0, len(rows))
+	for _, r := range rows {
+		flat = append(flat, gridRowData{
+			ControllerID:      r.ControllerID,
+			ControllerName:    r.ControllerName,
+			IsOnline:          r.IsOnline,
+			ContainerID:       r.ContainerID,
+			ContainerName:     r.ContainerName,
+			SegmentID:         r.SegmentID,
+			BinID:             r.BinID,
+			BinName:           r.BinName,
+			GridX:             r.GridX,
+			GridY:             r.GridY,
+			PartID:            r.PartID,
+			Quantity:          r.Quantity,
+			ReorderLevel:      r.ReorderLevel,
+			MinStockThreshold: r.MinStockThreshold,
+		})
+	}
+	controllers := buildDashboardGridView(flat)
 	if len(controllers) == 0 {
 		return nil, sql.ErrNoRows
 	}
@@ -313,130 +475,37 @@ func (s *service) GetGridByController(ctx context.Context, controllerID int64) (
 	return &controllers[0], nil
 }
 
-func (s *service) newDashboardViewModel(gridRows []db.GetDashboardGridRow) []components.DashboardController {
-	// Map: ControllerID -> *DashboardController
-	ctrlMap := make(map[int64]*components.DashboardController)
-	// Map: ControllerID -> (Map: ContainerID -> *DashboardContainer)
-	ctrlContainerMap := make(map[int64]map[int64]*components.DashboardContainer)
-	// Map: ContainerID -> (Map: BinID -> *DashboardBin)
-	containerBinMap := make(map[int64]map[int64]*components.DashboardBin)
-
-	for _, row := range gridRows {
-		// Get or Create Controller
-		if _, exists := ctrlMap[row.ControllerID]; !exists {
-			ctrlMap[row.ControllerID] = &components.DashboardController{
-				ID:         row.ControllerID,
-				Name:       row.ControllerName,
-				Containers: nil,
-			}
-			ctrlContainerMap[row.ControllerID] = make(map[int64]*components.DashboardContainer)
-		}
-
-		// Get or create container within controller
-		cContainers := ctrlContainerMap[row.ControllerID]
-		if _, exists := cContainers[row.ContainerID]; !exists {
-			cContainers[row.ContainerID] = &components.DashboardContainer{
-				ID:               row.ContainerID,
-				Name:             row.ContainerName,
-				SegmentID:        row.SegmentID,
-				ControllerName:   row.ControllerName,
-				ControllerOnline: row.IsOnline.Bool,
-			}
-			containerBinMap[row.ContainerID] = make(map[int64]*components.DashboardBin)
-		}
-
-		// Get or create bin within container
-		cBins := containerBinMap[row.ContainerID]
-		if _, exists := cBins[row.BinID]; !exists {
-			cBins[row.BinID] = &components.DashboardBin{
-				ID:       row.BinID,
-				Name:     row.BinName,
-				GridX:    int(row.GridX.Int64),
-				GridY:    int(row.GridY.Int64),
-				Statuses: []string{},
-			}
-		}
-		bin := cBins[row.BinID]
-
-		// Calculate and append status (if part exists)
-		if row.PartID.Valid {
-			status := "ok"
-			qty := row.Quantity.Int64
-			min := row.MinStockThreshold.Int64
-			reorder := row.ReorderLevel.Int64
-
-			if qty <= min {
-				status = "critical"
-			} else if qty <= reorder {
-				status = "low"
-			}
-			bin.Statuses = append(bin.Statuses, status)
-		}
-	}
-
-	// Flatten maps to slices and sort
-	var controllers = []components.DashboardController{}
-	for cID, ctrl := range ctrlMap {
-		var containers []components.DashboardContainer
-		for contID, cont := range ctrlContainerMap[cID] {
-			// Flatten bins for this container
-			var bins []components.DashboardBin
-			for _, b := range containerBinMap[contID] {
-				bins = append(bins, *b)
-			}
-
-			// Sort Bins (Grid Order: Y then X)
-			sort.Slice(bins, func(i, j int) bool {
-				if bins[i].GridY == bins[j].GridY {
-					return bins[i].GridX < bins[j].GridX
-				}
-				return bins[i].GridY < bins[j].GridY
-			})
-
-			cont.Bins = bins
-			containers = append(containers, *cont)
-		}
-
-		// Sort containers by SegmentID (primary) then Name (secondary)
-		sort.Slice(containers, func(i, j int) bool {
-			if containers[i].SegmentID == containers[j].SegmentID {
-				return containers[i].Name < containers[j].Name
-			}
-			return containers[i].SegmentID < containers[j].SegmentID
-		})
-
-		ctrl.Containers = containers
-		controllers = append(controllers, *ctrl)
-	}
-
-	// Sort Controllers by Name
-	sort.Slice(controllers, func(i, j int) bool {
-		return controllers[i].Name < controllers[j].Name
-	})
-
-	return controllers
+type gridRowData struct {
+	ControllerID      int64
+	ControllerName    string
+	IsOnline          sql.NullBool
+	ContainerID       int64
+	ContainerName     string
+	SegmentID         int64
+	BinID             int64
+	BinName           string
+	GridX             sql.NullInt64
+	GridY             sql.NullInt64
+	PartID            sql.NullInt64
+	Quantity          sql.NullInt64
+	ReorderLevel      sql.NullInt64
+	MinStockThreshold sql.NullInt64
 }
 
-func (s *service) newDashboardViewModelFromRows(rows []db.GetDashboardGridByControllerRow) []components.DashboardController {
-	// Map: ControllerID -> *DashboardController
+func buildDashboardGridView(rows []gridRowData) []components.DashboardController {
 	ctrlMap := make(map[int64]*components.DashboardController)
-	// Map: ControllerID -> (Map: ContainerID -> *DashboardContainer)
 	ctrlContainerMap := make(map[int64]map[int64]*components.DashboardContainer)
-	// Map: ContainerID -> (Map: BinID -> *DashboardBin)
 	containerBinMap := make(map[int64]map[int64]*components.DashboardBin)
 
 	for _, row := range rows {
-		// Get or create controller
 		if _, exists := ctrlMap[row.ControllerID]; !exists {
 			ctrlMap[row.ControllerID] = &components.DashboardController{
-				ID:         row.ControllerID,
-				Name:       row.ControllerName,
-				Containers: nil,
+				ID:   row.ControllerID,
+				Name: row.ControllerName,
 			}
 			ctrlContainerMap[row.ControllerID] = make(map[int64]*components.DashboardContainer)
 		}
 
-		// Get or create container within controller
 		cContainers := ctrlContainerMap[row.ControllerID]
 		if _, exists := cContainers[row.ContainerID]; !exists {
 			cContainers[row.ContainerID] = &components.DashboardContainer{
@@ -449,7 +518,6 @@ func (s *service) newDashboardViewModelFromRows(rows []db.GetDashboardGridByCont
 			containerBinMap[row.ContainerID] = make(map[int64]*components.DashboardBin)
 		}
 
-		// Get or create bin within container
 		cBins := containerBinMap[row.ContainerID]
 		if _, exists := cBins[row.BinID]; !exists {
 			cBins[row.BinID] = &components.DashboardBin{
@@ -460,48 +528,26 @@ func (s *service) newDashboardViewModelFromRows(rows []db.GetDashboardGridByCont
 				Statuses: []string{},
 			}
 		}
-		bin := cBins[row.BinID]
 
-		// Calculate and append status (if part exists)
 		if row.PartID.Valid {
-			status := "ok"
-			qty := row.Quantity.Int64
-			min := row.MinStockThreshold.Int64
-			reorder := row.ReorderLevel.Int64
-
-			if qty <= min {
-				status = "critical"
-			} else if qty <= reorder {
-				status = "low"
-			}
-			bin.Statuses = append(bin.Statuses, status)
+			bin := cBins[row.BinID]
+			bin.Statuses = append(bin.Statuses, calcStockStatus(row.Quantity.Int64, row.MinStockThreshold.Int64, row.ReorderLevel.Int64))
 		}
 	}
 
-	// Flatten maps to slices and sort
-	var controllers = []components.DashboardController{}
+	controllers := make([]components.DashboardController, 0, len(ctrlMap))
 	for cID, ctrl := range ctrlMap {
-		var containers []components.DashboardContainer
+		containers := make([]components.DashboardContainer, 0, len(ctrlContainerMap[cID]))
 		for contID, cont := range ctrlContainerMap[cID] {
-			// Flatten bins for this container
-			var bins []components.DashboardBin
+			bins := make([]components.DashboardBin, 0, len(containerBinMap[contID]))
 			for _, b := range containerBinMap[contID] {
 				bins = append(bins, *b)
 			}
-
-			// Sort bins (Grid Order: Y then X)
-			sort.Slice(bins, func(i, j int) bool {
-				if bins[i].GridY == bins[j].GridY {
-					return bins[i].GridX < bins[j].GridX
-				}
-				return bins[i].GridY < bins[j].GridY
-			})
-
+			sortDashboardBins(bins)
 			cont.Bins = bins
 			containers = append(containers, *cont)
 		}
 
-		// Sort containers by SegmentID (primary) then Name (secondary)
 		sort.Slice(containers, func(i, j int) bool {
 			if containers[i].SegmentID == containers[j].SegmentID {
 				return containers[i].Name < containers[j].Name
@@ -513,7 +559,6 @@ func (s *service) newDashboardViewModelFromRows(rows []db.GetDashboardGridByCont
 		controllers = append(controllers, *ctrl)
 	}
 
-	// Sort controllers by Name
 	sort.Slice(controllers, func(i, j int) bool {
 		return controllers[i].Name < controllers[j].Name
 	})

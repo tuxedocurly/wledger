@@ -7,25 +7,45 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
-// Open() opens a database connection and configures it for use
-func Open(dsn string) (*sql.DB, error) {
-	// Ensure Foreign Keys are enabled for all connections in the pool via DSN
-	if !strings.Contains(dsn, "?") {
-		dsn += "?_foreign_keys=on"
-	} else {
-		dsn += "&_foreign_keys=on"
+func isInMemoryDSN(dsn string) bool {
+	return strings.Contains(dsn, ":memory:") || strings.Contains(dsn, "mode=memory")
+}
+
+func appendQueryParam(dsn, kv, matchPrefix string) string {
+	if strings.Contains(dsn, matchPrefix) {
+		return dsn
 	}
+	if !strings.Contains(dsn, "?") {
+		return dsn + "?" + kv
+	}
+	return dsn + "&" + kv
+}
 
-	// Add WAL mode to DSN for better concurrency
-	dsn += "&_journal_mode=WAL"
-	dsn += "&_busy_timeout=5000"
+// Open opens a pure-Go SQLite database connection configured for WAL, foreign keys,
+// busy timeout, synchronous=NORMAL, and immediate write transactions.
+func Open(dsn string) (*sql.DB, error) {
+	inMemory := isInMemoryDSN(dsn)
 
-	db, err := sql.Open("sqlite3", dsn)
+	dsn = appendQueryParam(dsn, "_pragma=foreign_keys(1)", "_pragma=foreign_keys")
+	dsn = appendQueryParam(dsn, "_pragma=busy_timeout(5000)", "_pragma=busy_timeout")
+	if !inMemory {
+		dsn = appendQueryParam(dsn, "_pragma=journal_mode(WAL)", "_pragma=journal_mode")
+	}
+	dsn = appendQueryParam(dsn, "_pragma=synchronous(NORMAL)", "_pragma=synchronous")
+	dsn = appendQueryParam(dsn, "_txlock=immediate", "_txlock=")
+
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
+	}
+
+	if inMemory {
+		// Keep :memory: databases on a single connection so tables and locks
+		// stay consistent without SQLite shared-cache table lock contention.
+		db.SetMaxOpenConns(1)
 	}
 
 	// Verify connection
@@ -33,6 +53,7 @@ func Open(dsn string) (*sql.DB, error) {
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 

@@ -38,7 +38,7 @@ func TestMigrateLegacyLedIndices(t *testing.T) {
 	// Container 1 (Segment 0, Linear, Total 10)
 	cont1, err := store.CreateContainer(ctx, db.CreateContainerParams{
 		Name:         "Cont 1",
-		ControllerID: ctrl.ID,
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
 		SegmentID:    0,
 		ConfigJson:   sql.NullString{String: `{"type":"linear","total":10}`, Valid: true},
 	})
@@ -49,7 +49,7 @@ func TestMigrateLegacyLedIndices(t *testing.T) {
 	// Container 2 (Segment 0, Linear, Total 10)
 	cont2, err := store.CreateContainer(ctx, db.CreateContainerParams{
 		Name:         "Cont 2",
-		ControllerID: ctrl.ID,
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
 		SegmentID:    0,
 		ConfigJson:   sql.NullString{String: `{"type":"linear","total":10}`, Valid: true},
 	})

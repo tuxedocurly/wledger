@@ -5,55 +5,57 @@ sidebar_position: 2
 
 # Developer Guide
 
-Welcome to the WLEDger Developer Guide. This document details the architecture, project structure, and development workflow.
-
-:::warning Under Construction
-This doc is a work in progress. While the development workflow is quite simple, some things may be out of date.
-:::
+Welcome to the WLEDger Developer Guide. This document details the Pure-Go architecture, project structure, and development workflow.
 
 ## Tech Stack
 
-* **Backend:** [Go 1.25+](https://go.dev/)
-* **Web Framework:** [Chi v5](https://github.com/go-chi/chi) (Router)
-* **Database:** [SQLite](https://www.sqlite.org/) with [FTS5](https://www.sqlite.org/fts5.html) (Full-Text Search).
-* **Data Access:** [SQLC](https://sqlc.dev/) (Type-safe SQL code generation).
-* **Templating:** [Templ](https://templ.guide/) (Type-safe HTML templating for Go).
-* **Frontend Interactivity:** [HTMX](https://htmx.org/) (Server-driven UI updates) + [Alpine.js](https://alpinejs.dev/) (Client-side state for complex UI).
-* **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/).
+* **Backend:** [Go 1.25+](https://go.dev/) — Static Pure-Go builds (`CGO_ENABLED=0`) with embedded assets (`embed.FS`), locales, and SQL migrations.
+* **Web Framework:** [Chi v5](https://github.com/go-chi/chi) (Router) + Go 1.25 `http.NewCrossOriginProtection` CSRF middleware.
+* **Database:** Pure-Go [SQLite](https://www.sqlite.org/) via [`modernc.org/sqlite`](https://pkg.go.dev/modernc.org/sqlite) with **FTS5** (Full-Text Search), WAL mode, and serialized write transactions.
+* **Data Access:** [SQLC](https://sqlc.dev/) (Type-safe SQL code generation) + [Goose](https://github.com/pressly/goose) (embedded migrations).
+* **Templating:** [Templ](https://templ.guide/) (`v0.3.977`).
+* **Frontend Interactivity:** [HTMX 2.0](https://htmx.org/) + [Alpine.js 3](https://alpinejs.dev/) + [SortableJS](https://sortablejs.github.io/Sortable/) + [html5-qrcode](https://github.com/mebjas/html5-qrcode) (all vendored locally under `web/static/vendor/`).
+* **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) + [DaisyUI v5](https://daisyui.com/).
 
 ## Project Structure
 
-The project follows the following layout convention:
-
-``` BASH
+```text
 wledger/
 ├── cmd/
-│   └── server/         # Main entry point (main.go).
-├── internal/           # Private application code.
-│   ├── audit/          # Record actions into the audit_logs table.
-│   ├── auth/           # RBAC and Session logic.
-│   ├── backup/         # Backup & restore logic.
-│   ├── config/         # Contains constants used throughout the app.
-│   ├── dashboard/      # Dashboard stats and wall organization service.
-│   ├── db/             # Generated SQLC database code and migration runner.
-│   ├── documents/      # Document and datasheet management.
-│   ├── handler/        # HTTP Handlers (decoupled from main).
-│   ├── hardware/       # WLED controller and bin mapping service.
-│   ├── images/         # Image handling and resizing logic.
-│   ├── importer/       # CSV Import logic.
-│   ├── inspiration/    # LLM Prompt storage logic.
-│   ├── logger/         # Global app logger with dynamic level switching.
-│   ├── middleware/     # Handles context passing, auth, and enforces checks.
-│   ├── parts/          # Parts service for part CRUD operations.
-│   ├── router/         # Chi router configuration and route registration.
-│   ├── stock/          # Stock management across multiple locations.
-│   ├── tags/           # Tags service for tag CRUD operations.
-│   ├── uierror/        # UI-specific error handling and feedback.
-│   ├── utils/          # Small utilities.
-│   └── wled/           # WLED API client and integration.
+│   └── server/         # Main entry point (main.go), TLS setup, graceful SIGTERM shutdown
+├── internal/           # Private application packages
+│   ├── api/            # Bearer-authenticated JSON REST API v1 (/api/v1/*)
+│   ├── apitoken/       # Scoped Personal Access Tokens (wlg_..., SHA-256 at rest)
+│   ├── audit/          # Structured audit log recording
+│   ├── auth/           # RBAC, bcrypt password policy, SCS session store
+│   ├── backup/         # ZIP backup export & atomic restore with ZipSlip/bomb guards
+│   ├── barcodes/       # 2D supplier barcode parser (TIA-1063 DigiKey/Mouser, LCSC, 1D)
+│   ├── config/         # WLEDGER_* environment-driven runtime config
+│   ├── dashboard/      # Dashboard stats, container grids, and walls
+│   ├── db/             # Pure-Go SQLite driver, concurrency lock, sqlc queries & goose runner
+│   ├── documents/      # Extension- and MIME-validated document uploads
+│   ├── handler/        # HTTP & HTMX request handlers
+│   ├── hardware/       # WLED controller & standalone container hierarchy + Grid Painter
+│   ├── i18n/           # Embedded localization bundle + parity test suite
+│   ├── images/         # Image resizing with DecodeConfig bomb protection
+│   ├── importer/       # CSV bulk importer (supports standalone containers)
+│   ├── inspiration/    # Offline LLM prompt templates
+│   ├── logger/         # Dynamic-level JSON slog logger
+│   ├── middleware/     # Single-lookup auth, setup cache, rate limiter, upload limits
+│   ├── parts/          # Parts CRUD & sanitized FTS5 search
+│   ├── projects/       # Projects, KiCad/CSV BOM import, Pick Mode & atomic builds
+│   ├── router/         # Chi router, CSRF, hardened /uploads/*, /api/v1/* mount
+│   ├── settings/       # System settings & user management
+│   ├── stock/          # Multi-location & orphaned stock adjustments
+│   ├── tags/           # Tag CRUD & search syncing
+│   ├── tlsutil/        # Explicit TLS & auto-generated ECDSA P-256 LAN certificates
+│   ├── uierror/        # HTMX 2.0 OOB error toast responder
+│   └── wled/           # Stateful WLED client, mDNS discovery & UDP Realtime DNRGB
+├── locales/            # Embedded active.*.json translation files (8 languages)
 ├── sql/
-│   ├── schema/         # Database schema migrations (managed by goose).
-│   └── queries/        # SQL queries used by SQLC.
+│   ├── schema/         # Embedded goose migrations
+│   └── queries/        # sqlc SQL definitions
+└── web/                # Embedded static assets, vendor JS, Templ layouts/pages/components
 ```
 
 ## Development Workflow
@@ -61,71 +63,52 @@ wledger/
 ### Prerequisites
 
 * Go 1.25+
-* Node.js 23+ (for Tailwind CSS generation)
+* Node.js 22+ (for Tailwind CSS CLI compilation)
 * Make
 
 ### Running Locally
 
-To start the development environment with hot-reloading (Air for Go, Templ watcher, Tailwind watcher):
-
-> See the Makefile for a list of all supported operations.
-
 ```bash
-make install_dependencies  # Run once
-make dev
+make install_dependencies  # Installs pinned templ, sqlc, and npm packages
+make generate              # Runs templ generate, sqlc generate, and Tailwind CSS build
+make dev                   # Starts Templ proxy + live Tailwind watcher
 ```
 
-The server will start at `http://localhost:8080`.
+The dev server starts at `http://localhost:8080` (Templ live-reload proxy at `http://localhost:7331`).
 
 ### Database Changes
 
-1.  **Schema Migrations:** WLEDger uses [goose](https://github.com/pressly/goose) for migrations. Add a new SQL file to `sql/schema/` using the naming convention `00X_description.sql`.
-2.  **SQL Queries:** Modify or add SQL files in `sql/queries/`.
-3.  **Generate Code:** Run the generator to update the Go code in `internal/db/`:
+1. **Schema Migrations:** Add a new SQL migration in `sql/schema/` (`00X_description.sql`). Note: SQLite ignores `PRAGMA foreign_keys = OFF` inside transactions — use `-- +goose NO TRANSACTION` if recreating foreign-key-referenced tables.
+2. **SQL Queries:** Add or update queries in `sql/queries/`.
+3. **Generate Code:** Run `make generate` (or `sqlc generate`).
 
-    ```bash
-    make generate
-    ```
+### Localization & Parity Tests
 
-## Architecture Highlights
+All 8 translation files (`locales/active.*.json`) are embedded via `locales/embed.go`. `internal/i18n/new_languages_test.go` automatically verifies:
 
-### Database & Search
+* All 8 locale JSON files parse cleanly and share the exact same key set with non-empty `other` strings and matching template placeholders.
+* Every literal `i18n.T(ctx, "...")` and `i18n.TD(ctx, "...")` call across `web/` and `internal/` exists in `locales/active.en.json`.
 
-WLEDger uses SQLite with the **FTS5** extension for lightning-fast search.
+### Verification & Tests
 
-*   **Migrations:** Managed by `goose`, migrations are embedded into the binary and run automatically on startup.
-*   **Triggers:** Database triggers (`sql/schema/002_fts_triggers.sql`) automatically sync changes in the `parts` table to the `parts_fts` virtual table.
-*   **Tags:** Tags are denormalized into a searchable string column for performance.
+```bash
+make vet     # Runs go vet ./...
+make test    # Runs go test -race -count=1 ./...
+```
 
-### Handlers & Routing
+### Building for Production
 
-HTTP logic is strictly separated from the application entry point.
-
-*   **Router:** Located in `internal/router`, it configures middleware and registers routes.
-*   **Handlers:** Located in `internal/handler`, these are organized by domain (auth, parts, settings, etc.) and receive dependencies via struct injection.
-
-### Logging
-
-WLEDger uses `slog` with a custom wrapper in `internal/logger`.
-
-*   **Dynamic Levels:** The log level can be switched between `INFO` and `DEBUG` at runtime without restarting the application.
-*   **Output:** Logs are written to both `stdout` and a rotating file in `app/logs/app.log`.
-
-## Building for Production
-
-To build a simplified, optimized binary:
+WLEDger uses `modernc.org/sqlite`, so production builds require **no CGO and no C compiler**:
 
 ```bash
 make build
 ```
 
-This produces a binary in `bin/wledger`.
-**Note:** The binary requires CGO enabled because of the SQLite driver.
+This runs `templ generate`, minifies Tailwind CSS, and compiles a static pure-Go binary at `bin/wledger` (`CGO_ENABLED=0`). You can also run `./scripts/verify_build.sh` to validate `go vet`, `CGO_ENABLED=0` static compilation, and pure-Go tests end-to-end.
 
 ## Contributing
 
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes.
-4. Push to the branch.
-5. Open a Pull Request.
+3. Run `make generate`, `make vet`, and `make test`.
+4. Commit your changes and open a Pull Request.

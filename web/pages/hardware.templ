@@ -9,12 +9,69 @@ import (
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
-templ Hardware(user auth.User, controllers []db.Controller) {
+// DiscoveryResultItem represents a discovered WLED LAN node ready for rendering in DiscoverResults.
+type DiscoveryResultItem struct {
+	Name           string
+	IP             string
+	Port           int64
+	MAC            string
+	LedCount       int64
+	Status         string // "new", "online", "ip_updated"
+	ControllerName string
+	PreviousIP     string
+}
+
+func controllerPortOrDefault(c db.Controller) int64 {
+	if c.Port.Valid && c.Port.Int64 > 0 {
+		return c.Port.Int64
+	}
+	return 80
+}
+
+func controllerUDPPortOrDefault(c db.Controller) int64 {
+	if c.UdpPort.Valid && c.UdpPort.Int64 > 0 {
+		return c.UdpPort.Int64
+	}
+	return 21324
+}
+
+func controllerURL(c db.Controller) string {
+	port := controllerPortOrDefault(c)
+	if port != 80 {
+		return fmt.Sprintf("http://%s:%d", c.IpAddress, port)
+	}
+	return "http://" + c.IpAddress
+}
+
+func controllerDisplayHost(c db.Controller) string {
+	port := controllerPortOrDefault(c)
+	if port != 80 {
+		return fmt.Sprintf("%s:%d", c.IpAddress, port)
+	}
+	return c.IpAddress
+}
+
+templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetAllContainersWithControllerRow) {
 	@layouts.Base(i18n.T(ctx, "Hardware"), user) {
 		@components.PageHeader(i18n.T(ctx, "Hardware"), "", nil)
-		<div class="flex flex-col md:flex-row justify-end mb-6 gap-4">
-			if user.CanWrite() {
-				<button onclick="add_controller_modal.showModal()" class="btn btn-primary gap-2">
+		<div class="flex flex-wrap justify-end mb-6 gap-3">
+			if user.CanConfigure() {
+				<button
+					type="button"
+					hx-post="/hardware/discover"
+					hx-target="#discover_results"
+					hx-indicator="#discover_spinner"
+					onclick="discover_wled_modal.showModal()"
+					class="btn btn-outline btn-secondary gap-2"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+					Discover WLED
+				</button>
+				<button type="button" onclick="add_standalone_modal.showModal()" class="btn btn-outline gap-2">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+					Add Standalone Container
+				</button>
+				<button type="button" onclick="add_controller_modal.showModal()" class="btn btn-primary gap-2">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
 					{ i18n.T(ctx, "AddController") }
 				</button>
@@ -24,12 +81,12 @@ templ Hardware(user auth.User, controllers []db.Controller) {
 			for _, c := range controllers {
 				<div class="card bg-base-200 shadow-xl border border-base-300">
 					<div class="card-body p-6">
-						<div class="flex justify-between items-start mb-4">
+						<div class="flex justify-between items-start mb-3">
 							<div>
 								<h2 class="card-title text-lg">{ c.Name }</h2>
 								<div class="flex items-center gap-2 mt-1">
-									<a href={ templ.SafeURL("http://" + c.IpAddress) } target="_blank" class="link link-hover text-xs font-mono opacity-70 flex items-center gap-1">
-										{ c.IpAddress }
+									<a href={ templ.SafeURL(controllerURL(c)) } target="_blank" rel="noopener noreferrer" class="link link-hover text-xs font-mono opacity-70 flex items-center gap-1">
+										{ controllerDisplayHost(c) }
 										<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
 									</a>
 								</div>
@@ -37,19 +94,49 @@ templ Hardware(user auth.User, controllers []db.Controller) {
 							<div
 								hx-get={ fmt.Sprintf("/hardware/%d/status", c.ID) }
 								hx-trigger="load, every 10s"
+								hx-swap="outerHTML"
 								class="badge badge-ghost text-xs"
 							>
 								{ i18n.T(ctx, "Checking") }
 							</div>
 						</div>
+						<div class="flex flex-wrap gap-1.5 text-[11px] font-mono opacity-70 mb-2">
+							<span class="badge badge-sm badge-ghost">{ fmt.Sprintf("%d LEDs", c.LedCount) }</span>
+							if c.MacAddress.Valid && c.MacAddress.String != "" {
+								<span class="badge badge-sm badge-ghost">{ c.MacAddress.String }</span>
+							}
+							if c.UseUdp.Bool {
+								<span class="badge badge-sm badge-info badge-outline">{ fmt.Sprintf("UDP:%d", controllerUDPPortOrDefault(c)) }</span>
+							}
+							if c.RestoreState.Bool {
+								<span class="badge badge-sm badge-ghost">Restore</span>
+							}
+							if c.IdlePresetID.Valid && c.IdlePresetID.Int64 > 0 {
+								<span class="badge badge-sm badge-ghost">{ fmt.Sprintf("Preset %d", c.IdlePresetID.Int64) }</span>
+							}
+						</div>
 						<div class="card-actions justify-end mt-4 pt-4 border-t border-base-content/10">
 							if user.CanConfigure() {
+								<button
+									type="button"
+									data-modal-id={ fmt.Sprintf("edit_controller_modal_%d", c.ID) }
+									onclick="document.getElementById(this.dataset.modalId).showModal()"
+									class="btn btn-sm btn-ghost gap-1"
+									title="Edit Controller"
+								>
+									Edit
+								</button>
 								<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", c.ID)) } class="btn btn-sm btn-ghost gap-2">
 									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
 									{ i18n.T(ctx, "Configure") }
 								</a>
-								<form action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/delete", c.ID)) } method="POST" { templ.Attributes{"onsubmit": fmt.Sprintf("return confirm('%s');", i18n.T(ctx, "ConfirmDeleteController"))}... }>
-									<button class="btn btn-sm btn-ghost text-error">
+								<form
+									action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/delete", c.ID)) }
+									method="POST"
+									data-confirm={ i18n.T(ctx, "ConfirmDeleteController") }
+									onsubmit="return confirm(this.dataset.confirm);"
+								>
+									<button class="btn btn-sm btn-ghost text-error" title="Delete Controller">
 										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
 									</button>
 								</form>
@@ -61,33 +148,266 @@ templ Hardware(user auth.User, controllers []db.Controller) {
 						</div>
 					</div>
 				</div>
+				if user.CanConfigure() {
+					@components.Modal(components.ModalProps{
+						ID:    fmt.Sprintf("edit_controller_modal_%d", c.ID),
+						Title: fmt.Sprintf("Edit Controller: %s", c.Name),
+					}) {
+						<form action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/update", c.ID)) } method="POST" class="space-y-4">
+							<div class="form-control">
+								<label class="label"><span class="label-text">{ i18n.T(ctx, "Name") }</span></label>
+								<input type="text" name="name" value={ c.Name } class="input input-bordered w-full" required/>
+							</div>
+							<div class="grid grid-cols-3 gap-3">
+								<div class="form-control col-span-2">
+									<label class="label"><span class="label-text">{ i18n.T(ctx, "IPAddress") }</span></label>
+									<input type="text" name="ip_address" value={ c.IpAddress } class="input input-bordered w-full font-mono" required/>
+								</div>
+								<div class="form-control">
+									<label class="label"><span class="label-text">{ i18n.T(ctx, "Port") }</span></label>
+									<input type="number" name="port" value={ fmt.Sprintf("%d", controllerPortOrDefault(c)) } min="1" max="65535" class="input input-bordered w-full font-mono" required/>
+								</div>
+							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div class="form-control">
+									<label class="label cursor-pointer justify-start gap-3">
+										<input type="checkbox" name="use_udp" value="true" class="checkbox checkbox-sm" checked?={ c.UseUdp.Bool }/>
+										<span class="label-text">Use UDP Realtime (DNRGB)</span>
+									</label>
+								</div>
+								<div class="form-control">
+									<label class="label"><span class="label-text">UDP Port</span></label>
+									<input type="number" name="udp_port" value={ fmt.Sprintf("%d", controllerUDPPortOrDefault(c)) } min="1" max="65535" class="input input-bordered w-full font-mono"/>
+								</div>
+							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div class="form-control">
+									<label class="label cursor-pointer justify-start gap-3">
+										<input type="checkbox" name="restore_state" value="true" class="checkbox checkbox-sm" checked?={ c.RestoreState.Bool }/>
+										<span class="label-text">Restore Previous State</span>
+									</label>
+								</div>
+								<div class="form-control">
+									<label class="label"><span class="label-text">Idle Preset ID (0 = Off)</span></label>
+									<input type="number" name="idle_preset_id" value={ fmt.Sprintf("%d", c.IdlePresetID.Int64) } min="0" class="input input-bordered w-full font-mono"/>
+								</div>
+							</div>
+							<div class="modal-action">
+								<button
+									type="button"
+									class="btn"
+									data-modal-id={ fmt.Sprintf("edit_controller_modal_%d", c.ID) }
+									onclick="document.getElementById(this.dataset.modalId).close()"
+								>{ i18n.T(ctx, "Cancel") }</button>
+								<button class="btn btn-primary">{ i18n.T(ctx, "SaveChanges") }</button>
+							</div>
+						</form>
+					}
+				}
 			}
 			if len(controllers) == 0 {
 				@components.EmptyState(i18n.T(ctx, "NoControllersFound"), i18n.T(ctx, "AddFirstWLEDDevice"), "🔌")
 			}
 		</div>
-		@components.Modal(components.ModalProps{
-			ID:    "add_controller_modal",
-			Title: i18n.T(ctx, "AddNewController"),
-		}) {
-			<form action="/hardware" method="POST" class="space-y-4">
-				<div class="form-control">
-					<label class="label"><span class="label-text">{ i18n.T(ctx, "Name") }</span></label>
-					<input type="text" name="name" placeholder="e.g. Shelf LEDs" class="input input-bordered w-full" required/>
+		<!-- Storage Containers Section (Standalone & Attached Bindings) -->
+		<div class="mt-4 pt-8 border-t border-base-300">
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+				<div>
+					<h2 class="text-xl font-bold">Storage Containers</h2>
+					<p class="text-sm opacity-70">Configure controller-less standalone organizers or attach/detach containers across controllers.</p>
 				</div>
-				<div class="form-control">
-					<label class="label"><span class="label-text">{ i18n.T(ctx, "IPAddress") }</span></label>
-					<input type="text" name="ip_address" placeholder="192.168.1.x" class="input input-bordered w-full font-mono" required/>
+			</div>
+			if len(containers) == 0 {
+				@components.EmptyState("No Containers Yet", "Add a controller or create a standalone organizer container.", "📦")
+			} else {
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
+					for _, cont := range containers {
+						<div class="card bg-base-200 border border-base-300 shadow-md">
+							<div class="card-body p-5 gap-3">
+								<div class="flex items-start justify-between gap-2">
+									<div>
+										<h3 class="font-bold text-base">{ cont.Name }</h3>
+										if cont.ControllerID.Valid {
+											<span class="text-xs opacity-70 font-mono">
+												{ cont.ControllerName.String } • Seg { fmt.Sprintf("%d", cont.SegmentID) }
+											</span>
+										} else {
+											<span class="badge badge-xs badge-ghost uppercase mt-1">Standalone (No LED Controller)</span>
+										}
+									</div>
+									<span class="badge badge-ghost badge-xs font-mono">ID:{ fmt.Sprintf("%d", cont.ID) }</span>
+								</div>
+								<div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-base-content/10">
+									if !cont.ControllerID.Valid {
+										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/configure", cont.ID)) } class="btn btn-xs btn-ghost">
+											if user.CanConfigure() {
+												{ i18n.T(ctx, "Configure") }
+											} else {
+												{ i18n.T(ctx, "ViewGrid") }
+											}
+										</a>
+									} else {
+										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", cont.ControllerID.Int64)) } class="btn btn-xs btn-ghost">
+											if user.CanConfigure() {
+												{ i18n.T(ctx, "Configure") }
+											} else {
+												{ i18n.T(ctx, "ViewGrid") }
+											}
+										</a>
+									}
+									if user.CanConfigure() {
+										<form action={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/controller", cont.ID)) } method="POST" class="flex items-center gap-1.5">
+											<select name="controller_id" class="select select-bordered select-xs max-w-[10rem]">
+												<option value="" selected?={ !cont.ControllerID.Valid }>Standalone (Detach)</option>
+												for _, ctrl := range controllers {
+													<option value={ fmt.Sprintf("%d", ctrl.ID) } selected?={ cont.ControllerID.Valid && cont.ControllerID.Int64 == ctrl.ID }>{ ctrl.Name }</option>
+												}
+											</select>
+											<button type="submit" class="btn btn-xs btn-outline">Bind</button>
+										</form>
+										<form
+											action={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/delete", cont.ID)) }
+											method="POST"
+											data-confirm="Delete this container and all of its bins?"
+											onsubmit="return confirm(this.dataset.confirm);"
+										>
+											<button class="btn btn-xs btn-ghost text-error" title="Delete Container">✕</button>
+										</form>
+									}
+								</div>
+							</div>
+						</div>
+					}
 				</div>
-				<div class="form-control">
-					<label class="label"><span class="label-text">{ i18n.T(ctx, "Port") }</span></label>
-					<input type="number" name="port" value="80" class="input input-bordered w-full font-mono"/>
+			}
+		</div>
+		if user.CanConfigure() {
+			@components.Modal(components.ModalProps{
+				ID:    "add_controller_modal",
+				Title: i18n.T(ctx, "AddNewController"),
+			}) {
+				<form action="/hardware" method="POST" class="space-y-4">
+					<div class="form-control">
+						<label class="label"><span class="label-text">{ i18n.T(ctx, "Name") }</span></label>
+						<input type="text" name="name" placeholder="e.g. Shelf LEDs" class="input input-bordered w-full" required/>
+					</div>
+					<div class="form-control">
+						<label class="label"><span class="label-text">{ i18n.T(ctx, "IPAddress") }</span></label>
+						<input type="text" name="ip_address" placeholder="192.168.1.x" class="input input-bordered w-full font-mono" required/>
+					</div>
+					<div class="form-control">
+						<label class="label"><span class="label-text">{ i18n.T(ctx, "Port") }</span></label>
+						<input type="number" name="port" value="80" min="1" max="65535" class="input input-bordered w-full font-mono"/>
+					</div>
+					<div class="modal-action">
+						<button type="button" class="btn" onclick="add_controller_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
+						<button class="btn btn-primary">{ i18n.T(ctx, "AddController") }</button>
+					</div>
+				</form>
+			}
+			@components.Modal(components.ModalProps{
+				ID:    "add_standalone_modal",
+				Title: "Add Standalone Container",
+			}) {
+				<form action="/hardware/containers" method="POST" class="space-y-4">
+					<div class="form-control">
+						<label class="label"><span class="label-text">{ i18n.T(ctx, "Name") }</span></label>
+						<input type="text" name="name" placeholder="e.g. Travel Case #1" class="input input-bordered w-full" required/>
+					</div>
+					<div class="grid grid-cols-2 gap-4">
+						<div class="form-control">
+							<label class="label"><span class="label-text">{ i18n.T(ctx, "Rows") }</span></label>
+							<input type="number" name="rows" value="4" min="1" max="64" class="input input-bordered w-full"/>
+						</div>
+						<div class="form-control">
+							<label class="label"><span class="label-text">{ i18n.T(ctx, "Cols") }</span></label>
+							<input type="number" name="cols" value="4" min="1" max="64" class="input input-bordered w-full"/>
+						</div>
+					</div>
+					<div class="modal-action">
+						<button type="button" class="btn" onclick="add_standalone_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
+						<button class="btn btn-primary">Create Container</button>
+					</div>
+				</form>
+			}
+			@components.Modal(components.ModalProps{
+				ID:    "discover_wled_modal",
+				Title: "Discover WLED Controllers on LAN",
+			}) {
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<span class="text-xs opacity-70">Scanning _wled._tcp.local. via mDNS multicast (224.0.0.251:5353)...</span>
+						<button
+							type="button"
+							hx-post="/hardware/discover"
+							hx-target="#discover_results"
+							hx-indicator="#discover_spinner"
+							class="btn btn-xs btn-outline"
+						>
+							Rescan
+						</button>
+					</div>
+					<div id="discover_spinner" class="htmx-indicator flex items-center gap-2 text-sm opacity-70">
+						<span class="loading loading-spinner loading-sm"></span>
+						<span>Listening for WLED devices...</span>
+					</div>
+					<div id="discover_results" class="min-h-[4rem]">
+						<p class="text-sm opacity-60">Waiting for scan results...</p>
+					</div>
+					<div class="modal-action">
+						<button type="button" class="btn" onclick="discover_wled_modal.close()">Close</button>
+					</div>
 				</div>
-				<div class="modal-action">
-					<button type="button" class="btn" onclick="add_controller_modal.close()">{ i18n.T(ctx, "Cancel") }</button>
-					<button class="btn btn-primary">{ i18n.T(ctx, "AddController") }</button>
-				</div>
-			</form>
+			}
 		}
+	}
+}
+
+templ DiscoverResults(items []DiscoveryResultItem) {
+	if len(items) == 0 {
+		<div class="alert text-sm">
+			<span>No WLED devices responded on the local network. Check Wi-Fi/subnet mDNS connectivity or add manually.</span>
+		</div>
+	} else {
+		<div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+			for _, m := range items {
+				<div class="p-3 bg-base-200 rounded-lg border border-base-300 flex items-center justify-between gap-3">
+					<div class="flex flex-col">
+						<div class="flex items-center gap-2">
+							<span class="font-bold text-sm">{ m.Name }</span>
+							if m.Status == "ip_updated" {
+								<span class="badge badge-warning badge-xs">IP Auto-Healed</span>
+							} else if m.Status == "online" {
+								<span class="badge badge-success badge-xs">Configured</span>
+							} else {
+								<span class="badge badge-info badge-xs">New</span>
+							}
+						</div>
+						<div class="text-xs font-mono opacity-70 mt-0.5">
+							{ fmt.Sprintf("%s:%d", m.IP, m.Port) }
+							if m.MAC != "" {
+								<span> • { m.MAC }</span>
+							}
+							if m.LedCount > 0 {
+								<span> • { fmt.Sprintf("%d LEDs", m.LedCount) }</span>
+							}
+						</div>
+						if m.Status == "ip_updated" && m.PreviousIP != "" {
+							<span class="text-xs text-warning mt-0.5">{ fmt.Sprintf("Updated %s: %s -> %s", m.ControllerName, m.PreviousIP, m.IP) }</span>
+						}
+					</div>
+					if m.Status == "new" {
+						<form action="/hardware" method="POST">
+							<input type="hidden" name="name" value={ m.Name }/>
+							<input type="hidden" name="ip_address" value={ m.IP }/>
+							<input type="hidden" name="port" value={ fmt.Sprintf("%d", m.Port) }/>
+							<button type="submit" class="btn btn-xs btn-primary">Add Controller</button>
+						</form>
+					} else {
+						<a href="/hardware" class="btn btn-xs btn-ghost">Refresh</a>
+					}
+				</div>
+			}
+		</div>
 	}
 }

@@ -907,5 +907,128 @@
   },
   "Confirm": {
     "other": "Bestätigen"
+  },
+  "Action": {
+    "other": "Aktion"
+  },
+  "Data": {
+    "other": "Daten"
+  },
+  "Description": {
+    "other": "Beschreibung"
+  },
+  "Details": {
+    "other": "Details"
+  },
+  "Edit": {
+    "other": "Bearbeiten"
+  },
+  "End Date": {
+    "other": "Enddatum"
+  },
+  "Start Date": {
+    "other": "Startdatum"
+  },
+  "View": {
+    "other": "Ansehen"
+  },
+  "admin": {
+    "other": "Admin"
+  },
+  "editor": {
+    "other": "Editor"
+  },
+  "viewer": {
+    "other": "Betrachter"
+  },
+  "BULK_DELETE": {
+    "other": "MASSENLÖSCHUNG"
+  },
+  "IMPORT": {
+    "other": "IMPORT"
+  },
+  "BACKUP": {
+    "other": "BACKUP"
+  },
+  "RESTORE": {
+    "other": "WIEDERHERSTELLUNG"
+  },
+  "STOCK_ADD": {
+    "other": "BESTAND_HINZUFÜGEN"
+  },
+  "STOCK_INC": {
+    "other": "BESTAND_ERHÖHEN"
+  },
+  "STOCK_DEC": {
+    "other": "BESTAND_VERRINGERN"
+  },
+  "STOCK_MOVE": {
+    "other": "BESTAND_VERSCHIEBEN"
+  },
+  "STOCK_MERGE": {
+    "other": "BESTAND_ZUSAMMENFÜHREN"
+  },
+  "STOCK_REMOVE": {
+    "other": "BESTAND_ENTFERNEN"
+  },
+  "PARTS": {
+    "other": "TEILE"
+  },
+  "STOCK": {
+    "other": "BESTAND"
+  },
+  "HARDWARE": {
+    "other": "HARDWARE"
+  },
+  "WALL": {
+    "other": "WAND"
+  },
+  "SYSTEM": {
+    "other": "SYSTEM"
+  },
+  "PROJECT": {
+    "other": "PROJEKT"
+  },
+  "Projects": {
+    "other": "Projekte"
+  },
+  "NavProjects": {
+    "other": "Projekte"
+  },
+  "APITokens": {
+    "other": "API-Tokens"
+  },
+  "StandaloneContainers": {
+    "other": "Eigenständige Container"
+  },
+  "DiscoverWLED": {
+    "other": "WLED suchen"
+  },
+  "ParseBarcode": {
+    "other": "Barcode parsen"
+  },
+  "CreateToken": {
+    "other": "Token erstellen"
+  },
+  "RevokeToken": {
+    "other": "Token widerrufen"
+  },
+  "BuildProject": {
+    "other": "Projekt bauen"
+  },
+  "LocateAll": {
+    "other": "Alle finden"
+  },
+  "PickMode": {
+    "other": "Kommissioniermodus"
+  },
+  "ImportBOM": {
+    "other": "Stückliste importieren"
+  },
+  "Shortage": {
+    "other": "Fehlbestand"
+  },
+  "TokenCreatedWarning": {
+    "other": "Kopieren Sie Ihr API-Token jetzt. Sie können es später nicht mehr einsehen!"
   }
 }

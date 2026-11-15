@@ -4,11 +4,28 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/web/pages"
 )
+
+func parseDateFilter(raw string, endOfDay bool) sql.NullTime {
+	if raw == "" {
+		return sql.NullTime{}
+	}
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return sql.NullTime{}
+	}
+	if endOfDay {
+		parsed = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 23, 59, 59, 999999999, time.UTC)
+	} else {
+		parsed = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+	}
+	return sql.NullTime{Time: parsed, Valid: true}
+}
 
 func (h *Handler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	user := auth.GetUserFromRequest(r)
@@ -40,6 +57,8 @@ func (h *Handler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	actionType := q.Get("action_type")
 	entityType := q.Get("entity_type")
 	search := q.Get("search")
+	startDate := parseDateFilter(q.Get("start_date"), false)
+	endDate := parseDateFilter(q.Get("end_date"), true)
 
 	var userID sql.NullInt64
 	if uidStr := q.Get("user_id"); uidStr != "" {
@@ -56,6 +75,8 @@ func (h *Handler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 		EntityType: sql.NullString{String: entityType, Valid: entityType != ""},
 		Search:     sql.NullString{String: search, Valid: search != ""},
 		UserID:     userID,
+		StartDate:  startDate,
+		EndDate:    endDate,
 	}
 
 	logs, err := h.Audit.ListLogs(r.Context(), params)
@@ -70,6 +91,8 @@ func (h *Handler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 		EntityType: params.EntityType,
 		UserID:     params.UserID,
 		Search:     params.Search,
+		StartDate:  params.StartDate,
+		EndDate:    params.EndDate,
 	}
 	totalCount, err := h.Audit.CountLogs(r.Context(), countParams)
 	if err != nil {

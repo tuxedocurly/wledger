@@ -25,7 +25,7 @@ func TestListParts_WithBinID(t *testing.T) {
 
 	// Setup
 	ctrl, _ := s.CreateController(ctx, db.CreateControllerParams{Name: "C1", IpAddress: "1.2.3.4"})
-	cont, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: ctrl.ID})
+	cont, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "Cont1", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}})
 	binA, _ := s.CreateBin(ctx, db.CreateBinParams{Name: "Bin A", ContainerID: cont})
 	binB, _ := s.CreateBin(ctx, db.CreateBinParams{Name: "Bin B", ContainerID: cont})
 

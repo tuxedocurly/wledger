@@ -10,5 +10,5 @@ sql:
         package: "db"
         out: "internal/db"
         emit_json_tags: true
-        emit_prepared_queries: true
+        emit_prepared_queries: false
         emit_interface: true

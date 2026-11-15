@@ -72,3 +72,14 @@ func (s *SQLCStore) Delete(token string) error {
 
 	return s.store.DeleteSession(ctx, token)
 }
+
+// CleanupExpired deletes all expired sessions from the backing database.
+func (s *SQLCStore) CleanupExpired(ctx context.Context) error {
+	cctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	now := float64(time.Now().Unix())
+	return s.store.ExecTx(cctx, func(q db.Querier) error {
+		return q.CleanupSessions(cctx, now)
+	})
+}

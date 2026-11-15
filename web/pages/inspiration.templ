@@ -36,7 +36,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 							<template x-for="tag in selectedTags" :key="tag">
 								<span class="badge badge-primary badge-sm gap-1">
 									<span x-text="tag"></span>
-									<button @click="toggleTag(tag)" class="hover:text-white/80">
+									<button type="button" @click="toggleTag(tag)" class="hover:text-white/80">
 										@icons.X(templ.Attributes{"class": "w-4 h-4"})
 									</button>
 								</span>
@@ -47,6 +47,7 @@ templ Inspiration(templates []db.InspirationTemplate, allTags []string, user aut
 						<div class="flex gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar mask-linear-fade">
 							for _, tag := range allTags {
 								<button
+									type="button"
 									data-tag={ tag }
 									@click="toggleTag($el.dataset.tag)"
 									x-show="!selectedTags.includes($el.dataset.tag)"

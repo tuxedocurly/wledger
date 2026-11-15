@@ -1,21 +1,23 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('gridPainter', (ctrlId, binsDataId, containersDataId, canEdit) => ({
+    Alpine.data('gridPainter', (ctrlId, binsDataId, containersDataId, canEdit, isStandalone = false) => ({
         canEdit: canEdit,
+        isStandalone: isStandalone,
         containers: [],
         selectedContainerIndex: 0,
+        selectedCellKey: null,
+        editMode: 'paint', // 'paint' | 'erase'
+        defaultBinWidth: 1,
         cells: {},
         confirmMessage: '',
         pendingAction: null,
 
         init() {
-            // Helper to decode HTML entities if the proxy escapes JSON content
             const decodeHtml = (html) => {
-                const txt = document.createElement("textarea");
+                const txt = document.createElement('textarea');
                 txt.innerHTML = html;
                 return txt.value;
             };
 
-            // Retrieve and Parse Data safely
             const rawContainers = document.getElementById(containersDataId).textContent;
             const rawBins = document.getElementById(binsDataId).textContent;
 
@@ -26,30 +28,31 @@ document.addEventListener('alpine:init', () => {
                 this.containers = initialContainers.map(c => ({
                     id: c.id,
                     name: c.name,
-                    segment_id: c.segment_id,
-                    config: this.parseConfig(c.config_json?.String || "{}")
+                    segment_id: Number(c.segment_id) || 0,
+                    config: this.parseConfig(c.config_json?.String || '{}')
                 }));
             } else {
                 this.addContainer();
             }
 
-            // Load Existing Bins
             existingBins.forEach(b => {
-                const led = b.led_index?.Int64 || 0;
                 const cID = b.container_id;
-
-                // Find container index by ID
                 const cIdx = this.containers.findIndex(c => c.id === cID);
-                if (cIdx !== -1) {
-                    const localIdx = this.getLocalIndexFromGridPos(cIdx, b.grid_x?.Int64 || 0, b.grid_y?.Int64 || 0);
-                    if (localIdx !== -1) {
-                        const key = `${cIdx},${localIdx}`;
-                        this.cells[key] = {
-                            led_index: Number(led),
-                            name: b.name
-                        };
-                    }
-                }
+                if (cIdx === -1) return;
+
+                const gx = Number(b.grid_x?.Int64 || 0);
+                const gy = Number(b.grid_y?.Int64 || 0);
+                const pos = this.resolveSectionCoords(cIdx, gx, gy);
+                if (!pos) return;
+
+                const led = (b.led_index && b.led_index.Valid) ? Number(b.led_index.Int64) : null;
+                const width = Math.max(1, Number(b.width?.Int64 || 1));
+                const key = this.cellKey(cIdx, pos.secIdx, pos.x, pos.y);
+                this.cells[key] = {
+                    led_index: led,
+                    width: width,
+                    name: b.name || this.generateName(cIdx, pos.secIdx, pos.x, pos.y)
+                };
             });
         },
 
@@ -69,18 +72,18 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 const cfg = JSON.parse(jsonStr);
-
                 if (!cfg || typeof cfg !== 'object') {
                     return defaultConfig;
                 }
-
                 return {
                     type: cfg.type || 'grid',
-                    rows: Number(cfg.rows) || 8,
-                    cols: Number(cfg.cols) || 8,
-                    total: Number(cfg.total) || 64,
+                    rows: Math.max(1, Number(cfg.rows) || 8),
+                    cols: Math.max(1, Number(cfg.cols) || 8),
+                    total: Math.max(1, Number(cfg.total) || 64),
                     start_corner: cfg.start_corner || 'tl',
-                    sections: Array.isArray(cfg.sections) ? cfg.sections : [{ rows: 4, cols: 4 }]
+                    sections: Array.isArray(cfg.sections) && cfg.sections.length > 0
+                        ? cfg.sections.map(s => ({ rows: Math.max(1, Number(s.rows) || 4), cols: Math.max(1, Number(s.cols) || 4) }))
+                        : [{ rows: 4, cols: 4 }]
                 };
             } catch (e) {
                 console.warn('Error parsing container config:', e);
@@ -88,29 +91,59 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        cellKey(cIdx, secIdx, x, y) {
+            return `${cIdx},${secIdx},${x},${y}`;
+        },
+
+        parseCellKey(key) {
+            const parts = key.split(',').map(Number);
+            if (parts.length !== 4) return null;
+            return { cIdx: parts[0], secIdx: parts[1], x: parts[2], y: parts[3] };
+        },
+
+        resolveSectionCoords(cIdx, gx, gy) {
+            const cfg = this.containers[cIdx].config;
+            if (cfg.type !== 'compound') {
+                return { secIdx: 0, x: gx, y: gy };
+            }
+            let currentYBase = 0;
+            for (let sIdx = 0; sIdx < cfg.sections.length; sIdx++) {
+                const s = cfg.sections[sIdx];
+                if (gy >= currentYBase && gy < currentYBase + s.rows) {
+                    return { secIdx: sIdx, x: gx, y: gy - currentYBase };
+                }
+                currentYBase += (s.rows + 1);
+            }
+            return { secIdx: 0, x: gx, y: gy };
+        },
+
         addContainer() {
+            if (this.isStandalone && this.containers.length >= 1) return;
             this.containers.push({
                 id: null,
-                name: "New Container " + (this.containers.length + 1),
+                name: 'New Container ' + (this.containers.length + 1),
                 segment_id: 0,
-                config: { type: 'grid', rows: 8, cols: 8, start_corner: 'tl', sections: [{ rows: 4, cols: 4 }] }
+                config: { type: 'grid', rows: 8, cols: 8, total: 64, start_corner: 'tl', sections: [{ rows: 4, cols: 4 }] }
             });
             this.selectedContainerIndex = this.containers.length - 1;
+            this.selectedCellKey = null;
         },
 
         removeContainer(idx) {
+            if (this.isStandalone) return;
             this.containers.splice(idx, 1);
-            // Clear cells for this container and shift others
             const newCells = {};
             Object.keys(this.cells).forEach(key => {
-                const [cIdx, lIdx] = key.split(',').map(Number);
-                if (cIdx < idx) {
+                const parsed = this.parseCellKey(key);
+                if (!parsed) return;
+                if (parsed.cIdx < idx) {
                     newCells[key] = this.cells[key];
-                } else if (cIdx > idx) {
-                    newCells[`${cIdx - 1},${lIdx}`] = this.cells[key];
+                } else if (parsed.cIdx > idx) {
+                    newCells[this.cellKey(parsed.cIdx - 1, parsed.secIdx, parsed.x, parsed.y)] = this.cells[key];
                 }
             });
             this.cells = newCells;
+            this.selectedCellKey = null;
             if (this.selectedContainerIndex >= this.containers.length) {
                 this.selectedContainerIndex = Math.max(0, this.containers.length - 1);
             }
@@ -120,127 +153,175 @@ document.addEventListener('alpine:init', () => {
             return this.containers[this.selectedContainerIndex];
         },
 
+        get selectedCell() {
+            if (!this.selectedCellKey || !this.cells[this.selectedCellKey]) return null;
+            return this.cells[this.selectedCellKey];
+        },
+
         getRenderSections(cIdx) {
             const cfg = this.containers[cIdx].config;
-            if (cfg.type === 'linear') return [{ rows: 1, cols: cfg.total }];
-            if (cfg.type === 'grid') return [{ rows: cfg.rows, cols: cfg.cols }];
-            return cfg.sections;
+            if (cfg.type === 'linear') return [{ rows: 1, cols: Math.max(1, Number(cfg.total) || 1) }];
+            if (cfg.type === 'grid') return [{ rows: Math.max(1, Number(cfg.rows) || 1), cols: Math.max(1, Number(cfg.cols) || 1) }];
+            return (cfg.sections || []).map(s => ({
+                rows: Math.max(1, Number(s.rows) || 1),
+                cols: Math.max(1, Number(s.cols) || 1)
+            }));
         },
 
-        getSectionBaseIndex(cIdx, secIdx) {
-            const cfg = this.containers[cIdx].config;
-            if (cfg.type !== 'compound') return 0;
-            let count = 0;
-            for (let i = 0; i < secIdx; i++) {
-                const s = cfg.sections[i];
-                count += (s.rows * s.cols);
+        cellXY(secCols, oneBasedIdx) {
+            const zeroIdx = oneBasedIdx - 1;
+            return {
+                x: zeroIdx % secCols,
+                y: Math.floor(zeroIdx / secCols)
+            };
+        },
+
+        getCellClass(cIdx, secIdx, x, y) {
+            const key = this.cellKey(cIdx, secIdx, x, y);
+            if (!this.cells[key]) {
+                return 'bg-base-100 text-base-content/20';
             }
-            return count;
-        },
-
-        getXY(cIdx, cellIdx) {
-            const cfg = this.containers[cIdx].config;
-            if (cfg.type === 'linear') return { x: cellIdx, y: 0 };
-            if (cfg.type === 'grid') return { x: cellIdx % cfg.cols, y: Math.floor(cellIdx / cfg.cols) };
-
-            // Compound
-            let count = 0;
-            for (let sIdx = 0; sIdx < cfg.sections.length; sIdx++) {
-                const s = cfg.sections[sIdx];
-                const sSize = s.rows * s.cols;
-                if (cellIdx < count + sSize) {
-                    const localIdx = cellIdx - count;
-                    return { x: localIdx % s.cols, y: Math.floor(localIdx / s.cols), sectionIndex: sIdx };
-                }
-                count += sSize;
+            if (this.selectedCellKey === key) {
+                return 'bg-primary text-primary-content border-accent ring-2 ring-accent';
             }
-            return { x: 0, y: 0 };
+            return 'bg-primary text-primary-content border-primary';
         },
 
-        getLocalIndexFromGridPos(cIdx, gx, gy) {
-            const cfg = this.containers[cIdx].config;
-            if (cfg.type === 'linear') return gx;
-            if (cfg.type === 'grid') return (gy * cfg.cols) + gx;
-
-            // Compound
-            let currentYBase = 0;
-            let currentCountBase = 0;
-            for (let i = 0; i < cfg.sections.length; i++) {
-                const s = cfg.sections[i];
-                if (gy >= currentYBase && gy < currentYBase + s.rows) {
-                    const localY = gy - currentYBase;
-                    if (gx < s.cols) {
-                        return currentCountBase + (localY * s.cols) + gx;
-                    }
-                }
-                currentYBase += (s.rows + 1);
-                currentCountBase += (s.rows * s.cols);
-            }
-            return -1;
+        getGlobalLedIndex(cIdx, secIdx, x, y) {
+            const key = this.cellKey(cIdx, secIdx, x, y);
+            const cell = this.cells[key];
+            if (!cell) return '';
+            if (cell.led_index === null || cell.led_index === undefined) return 'BIN';
+            return cell.led_index;
         },
 
-        getCellClass(cIdx, cellIdx) {
-            const key = `${cIdx},${cellIdx}`;
-            return this.cells[key] ? 'bg-primary text-primary-content border-primary' : 'bg-base-100 text-base-content/20';
-        },
-
-        getGlobalLedIndex(cIdx, cellIdx) {
-            const key = `${cIdx},${cellIdx}`;
-            if (!this.cells[key]) return '';
-            return this.cells[key].led_index;
+        getCellWidth(cIdx, secIdx, x, y) {
+            const key = this.cellKey(cIdx, secIdx, x, y);
+            const cell = this.cells[key];
+            if (!cell) return 1;
+            return Math.max(1, Number(cell.width) || 1);
         },
 
         getContainerTotalLeds(cIdx) {
-            const cfg = this.containers[cIdx].config;
-            if (cfg.type === 'linear') return cfg.total;
-            if (cfg.type === 'grid') return cfg.rows * cfg.cols;
-            return cfg.sections.reduce((sum, s) => sum + (s.rows * s.cols), 0);
+            const sections = this.getRenderSections(cIdx);
+            let mappedMax = 0;
+            let totalWidth = 0;
+            sections.forEach((sec, secIdx) => {
+                for (let y = 0; y < sec.rows; y++) {
+                    for (let x = 0; x < sec.cols; x++) {
+                        const cell = this.cells[this.cellKey(cIdx, secIdx, x, y)];
+                        if (cell && cell.led_index !== null && cell.led_index !== undefined) {
+                            const w = Math.max(1, Number(cell.width) || 1);
+                            totalWidth += w;
+                            mappedMax = Math.max(mappedMax, Number(cell.led_index) + w);
+                        }
+                    }
+                }
+            });
+            if (mappedMax > 0) return Math.max(mappedMax, totalWidth);
+            return sections.reduce((sum, s) => sum + (s.rows * s.cols), 0);
         },
 
-        getBinName(cIdx, cellIdx) {
-            const key = `${cIdx},${cellIdx}`;
+        getBinName(cIdx, secIdx, x, y) {
+            const key = this.cellKey(cIdx, secIdx, x, y);
             return this.cells[key] ? this.cells[key].name : '';
         },
 
-        toggleCell(cIdx, cellIdx) {
+        clickCell(cIdx, secIdx, x, y) {
             if (!this.canEdit) return;
-            const key = `${cIdx},${cellIdx}`;
+            this.selectedContainerIndex = cIdx;
+            const key = this.cellKey(cIdx, secIdx, x, y);
+
+            if (this.editMode === 'erase') {
+                if (this.cells[key]) {
+                    delete this.cells[key];
+                    if (this.selectedCellKey === key) this.selectedCellKey = null;
+                }
+                return;
+            }
+
             if (this.cells[key]) {
-                delete this.cells[key];
+                this.selectedCellKey = key;
+                return;
+            }
+
+            const width = Math.max(1, Number(this.defaultBinWidth) || 1);
+            const nextIndex = this.isStandalone ? null : this.getNextAvailableLedIndex(cIdx, width);
+            const name = this.generateName(cIdx, secIdx, x, y);
+            this.cells[key] = {
+                led_index: nextIndex,
+                width: width,
+                name: name
+            };
+            this.selectedCellKey = key;
+        },
+
+        removeSelectedCell() {
+            if (!this.canEdit || !this.selectedCellKey) return;
+            delete this.cells[this.selectedCellKey];
+            this.selectedCellKey = null;
+        },
+
+        toggleSelectedLedMapping(enabled) {
+            if (!this.selectedCell) return;
+            if (enabled) {
+                const width = Math.max(1, Number(this.selectedCell.width) || 1);
+                this.selectedCell.led_index = this.getNextAvailableLedIndex(this.selectedContainerIndex, width);
             } else {
-                const nextIndex = this.getNextAvailableLedIndex(cIdx);
-                const name = this.generateName(cIdx, cellIdx);
-                this.cells[key] = { led_index: nextIndex, name: name };
+                this.selectedCell.led_index = null;
             }
         },
 
-        getNextAvailableLedIndex(cIdx) {
+        getNextAvailableLedIndex(cIdx, neededWidth = 1) {
             const targetSegment = this.containers[cIdx].segment_id;
             const used = new Set();
 
             Object.keys(this.cells).forEach(key => {
-                const [ci, _] = key.split(',').map(Number);
-                if (this.containers[ci].segment_id === targetSegment) {
-                    used.add(this.cells[key].led_index);
+                const parsed = this.parseCellKey(key);
+                if (!parsed) return;
+                const container = this.containers[parsed.cIdx];
+                if (!container || container.segment_id !== targetSegment) return;
+                const cell = this.cells[key];
+                if (cell.led_index === null || cell.led_index === undefined) return;
+                const start = Number(cell.led_index);
+                const w = Math.max(1, Number(cell.width) || 1);
+                for (let offset = 0; offset < w; offset++) {
+                    used.add(start + offset);
                 }
             });
 
-            let i = 0;
-            while (used.has(i)) i++;
-            return i;
+            const span = Math.max(1, Number(neededWidth) || 1);
+            let candidate = 0;
+            while (true) {
+                let fits = true;
+                for (let offset = 0; offset < span; offset++) {
+                    if (used.has(candidate + offset)) {
+                        fits = false;
+                        break;
+                    }
+                }
+                if (fits) return candidate;
+                candidate++;
+            }
         },
 
-        generateName(cIdx, cellIdx) {
-            const { x, y, sectionIndex } = this.getXY(cIdx, cellIdx);
-            const charCode = 65 + (x % 26);
-            const char = String.fromCharCode(charCode);
-            const colLetter = char.repeat(Math.floor(x / 26) + 1);
+        columnName(x) {
+            let n = x;
+            let res = '';
+            while (n >= 0) {
+                res = String.fromCharCode(65 + (n % 26)) + res;
+                n = Math.floor(n / 26) - 1;
+            }
+            return res || 'A';
+        },
+
+        generateName(cIdx, secIdx, x, y) {
+            const colLetter = this.columnName(x);
             const baseName = `${colLetter}${y + 1}`;
 
-            if (this.containers[cIdx].config.type === 'compound' && sectionIndex !== undefined) {
-                return `S${sectionIndex + 1}-${baseName}`;
+            if (this.containers[cIdx].config.type === 'compound') {
+                return `S${secIdx + 1}-${baseName}`;
             }
-
             if (this.containers.length > 1) {
                 return `C${cIdx + 1}-${baseName}`;
             }
@@ -263,66 +344,66 @@ document.addEventListener('alpine:init', () => {
             const cIdx = this.selectedContainerIndex;
             const cfg = this.containers[cIdx].config;
 
-            // Clear cells for current container
-            Object.keys(this.cells).forEach(key => {
-                if (key.startsWith(cIdx + ",")) delete this.cells[key];
-            });
+            this.clearContainerCells(cIdx);
 
+            const binWidth = Math.max(1, Number(this.defaultBinWidth) || 1);
             let ledCounter = this.getSegmentStartOffset(cIdx);
             const startPos = cfg.start_corner || 'tl';
             const sections = this.getRenderSections(cIdx);
-            let currentYOffset = 0;
 
             sections.forEach((sec, secIdx) => {
                 for (let r = 0; r < sec.rows; r++) {
                     for (let c = 0; c < sec.cols; c++) {
-                        let visualY = (startPos.includes('b')) ? (sec.rows - 1 - r) : r;
-                        let visualX = (startPos.includes('r')) ? (sec.cols - 1 - c) : c;
+                        const visualY = startPos.includes('b') ? (sec.rows - 1 - r) : r;
+                        let visualX = startPos.includes('r') ? (sec.cols - 1 - c) : c;
 
                         if (mode === 'serpentine' && r % 2 !== 0) {
                             visualX = startPos.includes('r') ? c : (sec.cols - 1 - c);
                         }
 
-                        const globalY = currentYOffset + visualY;
-                        const localIdx = this.getLocalIndexFromGridPos(cIdx, visualX, globalY);
-                        if (localIdx !== -1) {
-                            this.cells[`${cIdx},${localIdx}`] = {
-                                led_index: ledCounter,
-                                name: this.generateName(cIdx, localIdx)
-                            };
-                        }
-                        ledCounter++;
+                        const key = this.cellKey(cIdx, secIdx, visualX, visualY);
+                        this.cells[key] = {
+                            led_index: mode === 'standalone' ? null : ledCounter,
+                            width: binWidth,
+                            name: this.generateName(cIdx, secIdx, visualX, visualY)
+                        };
+                        ledCounter += binWidth;
                     }
                 }
-                currentYOffset += (sec.rows + 1);
             });
+            this.selectedCellKey = null;
+        },
+
+        clearContainerCells(cIdx) {
+            Object.keys(this.cells).forEach(key => {
+                const parsed = this.parseCellKey(key);
+                if (parsed && parsed.cIdx === cIdx) {
+                    delete this.cells[key];
+                }
+            });
+            if (this.selectedCellKey && this.selectedCellKey.startsWith(cIdx + ',')) {
+                this.selectedCellKey = null;
+            }
         },
 
         askConfirm(action) {
             this.pendingAction = action;
             if (action === 'clear') {
-                this.confirmMessage = "Are you sure you want to clear all mappings for this container? This cannot be undone.";
+                this.confirmMessage = 'Are you sure you want to clear all mappings for this container? This cannot be undone.';
             } else if (action === 'save') {
-                this.confirmMessage = "Are you sure you want to save these changes? This will overwrite the existing configuration.";
+                this.confirmMessage = 'Are you sure you want to save these changes? This will overwrite the existing configuration.';
             }
             document.getElementById('grid_painter_confirm_modal').showModal();
         },
 
         confirmAction() {
             if (this.pendingAction === 'clear') {
-                this.clearGrid();
+                this.clearContainerCells(this.selectedContainerIndex);
             } else if (this.pendingAction === 'save') {
                 this.submitGrid();
             }
             document.getElementById('grid_painter_confirm_modal').close();
             this.pendingAction = null;
-        },
-
-        clearGrid() {
-            const cIdx = this.selectedContainerIndex;
-            Object.keys(this.cells).forEach(key => {
-                if (key.startsWith(cIdx + ",")) delete this.cells[key];
-            });
         },
 
         submitGrid() {
@@ -334,25 +415,30 @@ document.addEventListener('alpine:init', () => {
             this.containers.forEach((c, cIdx) => {
                 const sections = this.getRenderSections(cIdx);
                 let globalYOffset = 0;
-                let countBase = 0;
+
                 sections.forEach((sec, secIdx) => {
-                    for (let i = 0; i < (sec.rows * sec.cols); i++) {
-                        const localIdx = countBase + i;
-                        const key = `${cIdx},${localIdx}`;
-                        const cell = this.cells[key];
-                        if (cell) {
-                            const { x, y } = this.getXY(cIdx, localIdx);
+                    for (let y = 0; y < sec.rows; y++) {
+                        for (let x = 0; x < sec.cols; x++) {
+                            const key = this.cellKey(cIdx, secIdx, x, y);
+                            const cell = this.cells[key];
+                            if (!cell) continue;
+
+                            const rawLed = cell.led_index;
+                            const ledIndex = (rawLed === null || rawLed === undefined || rawLed === '')
+                                ? null
+                                : Math.max(0, Number(rawLed));
+
                             result.push({
                                 container_index: cIdx,
                                 x: x,
                                 y: y + globalYOffset,
-                                led_index: cell.led_index,
+                                led_index: ledIndex,
+                                width: Math.max(1, Number(cell.width) || 1),
                                 name: cell.name
                             });
                         }
                     }
                     globalYOffset += (sec.rows + 1);
-                    countBase += (sec.rows * sec.cols);
                 });
             });
             return result;
@@ -362,8 +448,18 @@ document.addEventListener('alpine:init', () => {
             return this.containers.map(c => ({
                 id: c.id,
                 name: c.name,
-                segment_id: c.segment_id,
-                config: c.config
+                segment_id: Number(c.segment_id) || 0,
+                config: {
+                    type: c.config.type || 'grid',
+                    rows: Math.max(1, Number(c.config.rows) || 1),
+                    cols: Math.max(1, Number(c.config.cols) || 1),
+                    total: Math.max(1, Number(c.config.total) || 1),
+                    start_corner: c.config.start_corner || 'tl',
+                    sections: (c.config.sections || []).map(s => ({
+                        rows: Math.max(1, Number(s.rows) || 1),
+                        cols: Math.max(1, Number(s.cols) || 1)
+                    }))
+                }
             }));
         }
     }));

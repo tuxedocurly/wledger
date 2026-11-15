@@ -53,6 +53,10 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        removeFromWall(containerId) {
+            this.wallContainers = this.wallContainers.filter(c => c.id != containerId);
+        },
+
         deleteWall() {
             if (confirm('Delete this wall?')) {
                 const f = document.createElement('form');

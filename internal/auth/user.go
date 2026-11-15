@@ -4,10 +4,11 @@ import "github.com/tuxedocurly/wledger/internal/db"
 
 // User represents the context of the current requester.
 type User struct {
-	ID      int64
-	Email   string
-	Role    string // "admin", "editor", "viewer", "guest"
-	IsGuest bool   // true if not logged in
+	ID                     int64
+	Email                  string
+	Role                   string // "admin", "editor", "viewer", "guest"
+	IsGuest                bool   // true if not logged in
+	ChangePasswordRequired bool
 }
 
 // Guest returns a default anonymous user
