@@ -854,6 +854,9 @@
   "Compound": {
     "other": "Composto"
   },
+  "XYCrosshair": {
+    "other": "Mira X/Y (2 Fitas)"
+  },
   "DataStartPosition": {
     "other": "Posição de Início de Dados"
   },

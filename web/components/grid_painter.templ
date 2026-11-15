@@ -110,13 +110,14 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 									<div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
 										<div class="form-control w-full">
 											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "LayoutType") }</span></label>
-											<select x-model="currentContainer.config.type" class="select select-bordered w-full select-md">
+											<select x-model="currentContainer.config.type" @change="onLayoutTypeChange()" class="select select-bordered w-full select-md">
 												<option value="linear">{ i18n.T(ctx, "LinearStrip") }</option>
 												<option value="grid">{ i18n.T(ctx, "Matrix") }</option>
 												<option value="compound">{ i18n.T(ctx, "Compound") }</option>
+												<option value="xy">{ i18n.T(ctx, "XYCrosshair") }</option>
 											</select>
 										</div>
-										<div class="form-control w-full">
+										<div x-show="currentContainer.config.type !== 'xy'" class="form-control w-full">
 											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "DataStartPosition") }</span></label>
 											<select x-model="currentContainer.config.start_corner" class="select select-bordered w-full select-md">
 												<option value="tl">{ i18n.T(ctx, "TopLeft") }</option>
@@ -125,7 +126,7 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 												<option value="br">{ i18n.T(ctx, "BottomRight") }</option>
 											</select>
 										</div>
-										<div class="form-control w-full">
+										<div x-show="currentContainer.config.type !== 'xy'" class="form-control w-full">
 											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">Default Bin Width (LEDs)</span></label>
 											<input type="number" x-model.number="defaultBinWidth" class="input input-bordered w-full input-md" min="1" max="100"/>
 										</div>
@@ -147,6 +148,49 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 												<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "Cols") }</span></label>
 												<input type="number" x-model.number="currentContainer.config.cols" class="input input-bordered w-full input-md" min="1"/>
 											</div>
+										</div>
+										<div x-show="currentContainer.config.type === 'xy'" class="space-y-4">
+											<div class="grid grid-cols-2 gap-6">
+												<div class="form-control w-full">
+													<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "Rows") }</span></label>
+													<input type="number" x-model.number="currentContainer.config.rows" @input="onXYDimensionsChange()" class="input input-bordered w-full input-md" min="1"/>
+												</div>
+												<div class="form-control w-full">
+													<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "Cols") }</span></label>
+													<input type="number" x-model.number="currentContainer.config.cols" @input="onXYDimensionsChange()" class="input input-bordered w-full input-md" min="1"/>
+												</div>
+											</div>
+											<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+												<div class="p-4 rounded-lg bg-base-200/70 border border-base-300 space-y-3">
+													<div class="text-xs font-bold uppercase tracking-wider opacity-60">X Strip (Columns)</div>
+													<div class="form-control w-full">
+														<label class="label pt-0"><span class="label-text font-semibold text-xs mb-1">X Start LED</span></label>
+														<input type="number" x-model.number="currentContainer.config.x_start_led" @input="onXYDimensionsChange()" class="input input-bordered input-sm w-full" min="0"/>
+													</div>
+													<div class="form-control w-full">
+														<label class="label pt-0"><span class="label-text font-semibold text-xs mb-1">X Wiring Direction</span></label>
+														<select :value="currentContainer.config.x_reverse ? 'true' : 'false'" @change="currentContainer.config.x_reverse = ($event.target.value === 'true')" class="select select-bordered select-sm w-full">
+															<option value="false">Left → Right</option>
+															<option value="true">Right → Left (Reversed)</option>
+														</select>
+													</div>
+												</div>
+												<div class="p-4 rounded-lg bg-base-200/70 border border-base-300 space-y-3">
+													<div class="text-xs font-bold uppercase tracking-wider opacity-60">Y Strip (Rows)</div>
+													<div class="form-control w-full">
+														<label class="label pt-0"><span class="label-text font-semibold text-xs mb-1">Y Start LED</span></label>
+														<input type="number" x-model.number="currentContainer.config.y_start_led" @input="currentContainer.config.y_auto = false" class="input input-bordered input-sm w-full" min="0"/>
+													</div>
+													<div class="form-control w-full">
+														<label class="label pt-0"><span class="label-text font-semibold text-xs mb-1">Y Wiring Direction</span></label>
+														<select :value="currentContainer.config.y_reverse ? 'true' : 'false'" @change="currentContainer.config.y_reverse = ($event.target.value === 'true')" class="select select-bordered select-sm w-full">
+															<option value="false">Top → Bottom</option>
+															<option value="true">Bottom → Top (Reversed)</option>
+														</select>
+													</div>
+												</div>
+											</div>
+											<p class="text-xs font-mono opacity-60" x-text="`LED mapping preview: X ${Math.max(0, Number(currentContainer.config.x_start_led) || 0)}..${Math.max(0, Number(currentContainer.config.x_start_led) || 0) + Math.max(1, Number(currentContainer.config.cols) || 1) - 1} · Y ${Math.max(0, Number(currentContainer.config.y_start_led) || 0)}..${Math.max(0, Number(currentContainer.config.y_start_led) || 0) + Math.max(1, Number(currentContainer.config.rows) || 1) - 1}`"></p>
 										</div>
 										<div x-show="currentContainer.config.type === 'compound'" class="space-y-6">
 											<div class="flex items-center justify-between">
@@ -209,16 +253,19 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 												Populate Bins (No LEDs)
 											</button>
 										} else {
-											<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapLinear") }>
+											<div x-show="currentContainer.config.type !== 'xy'" class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapLinear") }>
 												<button type="button" @click="autoFill('linear')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
 													{ i18n.T(ctx, "AutoMapLinear") }
 												</button>
 											</div>
-											<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapSnake") }>
+											<div x-show="currentContainer.config.type !== 'xy'" class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapSnake") }>
 												<button type="button" @click="autoFill('serpentine')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
 													{ i18n.T(ctx, "AutoMapSnake") }
 												</button>
 											</div>
+											<button type="button" x-show="currentContainer.config.type === 'xy'" @click="autoFill('xy')" class="btn btn-md btn-success text-white gap-2 w-full sm:w-auto whitespace-nowrap">
+												Populate X/Y Bins
+											</button>
 										}
 										<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "ClearMapping") }>
 											<button type="button" @click="askConfirm('clear')" class="btn btn-md btn-outline btn-error gap-2 w-full whitespace-nowrap">
@@ -239,11 +286,11 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">Selected Bin Name</span></label>
 						<input type="text" x-model="selectedCell.name" class="input input-bordered input-sm w-full"/>
 					</div>
-					<div class="form-control w-full md:w-36">
+					<div class="form-control w-full md:w-36" x-show="!currentContainer || currentContainer.config.type !== 'xy'">
 						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">Width (LEDs)</span></label>
 						<input type="number" x-model.number="selectedCell.width" min="1" max="100" class="input input-bordered input-sm w-full"/>
 					</div>
-					<div class="form-control w-full md:w-44" x-show="selectedCell && selectedCell.led_index !== null">
+					<div class="form-control w-full md:w-44" x-show="selectedCell && selectedCell.led_index !== null && (!currentContainer || currentContainer.config.type !== 'xy')">
 						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">LED Start Index</span></label>
 						<input type="number" x-model.number="selectedCell.led_index" min="0" class="input input-bordered input-sm w-full"/>
 					</div>
@@ -251,6 +298,7 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 						<button
 							type="button"
 							class="btn btn-sm btn-outline"
+							x-show="!currentContainer || currentContainer.config.type !== 'xy'"
 							@click="toggleSelectedLedMapping(selectedCell.led_index === null)"
 							x-text="selectedCell && selectedCell.led_index === null ? 'Assign LED' : 'Unset LED'"
 						></button>
@@ -305,7 +353,7 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 													x-text="getCellWidth(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols)) + 'L'"
 													class="absolute top-0 right-0.5 text-[7px] font-mono font-bold opacity-80"
 												></span>
-												<span x-text="getGlobalLedIndex(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" class="font-black text-[9px] leading-tight"></span>
+												<span x-text="getGlobalLedIndex(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" :class="container.config.type === 'xy' ? 'font-black text-[7px] leading-tight tracking-tighter' : 'font-black text-[9px] leading-tight'"></span>
 												<span x-show="getBinName(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" x-text="getBinName(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" class="text-[7px] font-bold opacity-70 truncate w-full text-center px-0.5 leading-tight"></span>
 											</div>
 										</template>

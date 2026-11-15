@@ -3,6 +3,7 @@ package wled
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -119,6 +120,7 @@ func (s *service) turnOffController(ctx context.Context, ctrl db.Controller) err
 	containers, err := s.store.GetContainersByController(ctx, sql.NullInt64{Int64: ctrl.ID, Valid: true})
 	if err == nil {
 		knownSegs = mergeKnownSegments(knownSegs, containers, snap)
+		ledCount = maxInt(ledCount, maxXYContainerExtent(containers))
 	} else {
 		knownSegs = mergeKnownSegments(knownSegs, nil, snap)
 	}
@@ -154,7 +156,7 @@ func (s *service) LocatePart(ctx context.Context, partID int64) error {
 		if a.Quantity <= 0 {
 			continue
 		}
-		if !a.BinID.Valid || !a.LedIndex.Valid || !a.ControllerID.Valid || !a.ControllerIp.Valid || a.ControllerIp.String == "" {
+		if !mapper.IsAssignmentLocatable(a.BinID.Valid, a.LedIndex.Valid, a.GridX.Valid, a.GridY.Valid, a.ControllerID.Valid, a.ControllerIp, a.ContainerConfig) {
 			continue
 		}
 		b, ok := batches[a.ControllerID.Int64]
@@ -196,17 +198,14 @@ func (s *service) LocatePart(ctx context.Context, partID int64) error {
 				ContainerID: a.ContainerID.Int64,
 				LedIndex:    a.LedIndex,
 				Width:       a.Width,
+				GridX:       a.GridX,
+				GridY:       a.GridY,
 			}
 
-			segID, globalIdx, mapErr := mapper.CalculateGlobalIndex(containers, bin)
+			ranges, mapErr := mapper.ResolveBinRanges(containers, bin)
 			if mapErr != nil {
 				s.logger.Error("mapping failed for part locate", "bin_id", bin.ID, "err", mapErr)
 				continue
-			}
-
-			width := int(a.Width.Int64)
-			if width < 1 {
-				width = 1
 			}
 
 			hexColor := resolveLocateHexColor(settings)
@@ -218,11 +217,13 @@ func (s *service) LocatePart(ctx context.Context, partID int64) error {
 				rgb = [3]byte{0, 0, 255}
 			}
 
-			bySeg[int(segID)] = append(bySeg[int(segID)], LEDRange{
-				Start: int(globalIdx),
-				Count: width,
-				RGB:   rgb,
-			})
+			for _, r := range ranges {
+				bySeg[int(r.SegmentID)] = append(bySeg[int(r.SegmentID)], LEDRange{
+					Start: int(r.StartIndex),
+					Count: int(r.Width),
+					RGB:   rgb,
+				})
+			}
 			foundAny = true
 		}
 
@@ -258,7 +259,7 @@ func (s *service) LocateBin(ctx context.Context, controllerID, binID int64) erro
 		return fmt.Errorf("failed to fetch containers for controller: %w", err)
 	}
 
-	segID, globalIdx, err := mapper.CalculateGlobalIndex(containers, bin)
+	ranges, err := mapper.ResolveBinRanges(containers, bin)
 	if err != nil {
 		return fmt.Errorf("mapping failed: %w", err)
 	}
@@ -276,15 +277,13 @@ func (s *service) LocateBin(ctx context.Context, controllerID, binID int64) erro
 		rgb = [3]byte{0, 0, 255}
 	}
 
-	width := int(bin.Width.Int64)
-	if width < 1 {
-		width = 1
-	}
-
-	bySeg := map[int][]LEDRange{
-		int(segID): {
-			{Start: int(globalIdx), Count: width, RGB: rgb},
-		},
+	bySeg := make(map[int][]LEDRange)
+	for _, r := range ranges {
+		bySeg[int(r.SegmentID)] = append(bySeg[int(r.SegmentID)], LEDRange{
+			Start: int(r.StartIndex),
+			Count: int(r.Width),
+			RGB:   rgb,
+		})
 	}
 
 	return s.executeLocate(ctx, controller, containers, bySeg, settings)
@@ -375,6 +374,7 @@ func (s *service) executeLocate(ctx context.Context, ctrl db.Controller, contain
 	sort.Ints(knownSegs)
 
 	ledCount := maxInt(prevLedCount, int(ctrl.LedCount))
+	ledCount = maxInt(ledCount, maxXYContainerExtent(containers))
 	if snap != nil {
 		ledCount = maxInt(ledCount, snap.LedCount)
 	}
@@ -575,6 +575,23 @@ func appendUniqueInt(slice []int, val int) []int {
 		}
 	}
 	return append(slice, val)
+}
+
+func maxXYContainerExtent(containers []db.Container) int {
+	maxExtent := 0
+	for _, c := range containers {
+		if !c.ConfigJson.Valid || c.ConfigJson.String == "" {
+			continue
+		}
+		var cfg mapper.ContainerConfig
+		if err := json.Unmarshal([]byte(c.ConfigJson.String), &cfg); err != nil {
+			continue
+		}
+		if ext := int(mapper.ContainerMaxLEDExtent(cfg)); ext > maxExtent {
+			maxExtent = ext
+		}
+	}
+	return maxExtent
 }
 
 func maxInt(a, b int) int {

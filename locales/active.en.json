@@ -872,6 +872,9 @@
   "Compound": {
     "other": "Compound"
   },
+  "XYCrosshair": {
+    "other": "X/Y Crosshair (2 Strips)"
+  },
   "DataStartPosition": {
     "other": "Data Start Position"
   },

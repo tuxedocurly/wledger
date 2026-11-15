@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -618,7 +619,7 @@ func (s *service) GetProjectDetail(ctx context.Context, projectID int64, boardCo
 					Quantity:       a.Quantity,
 					IsOrphaned:     !a.BinID.Valid || !a.BinName.Valid,
 					IsStandalone:   a.BinID.Valid && !a.ControllerID.Valid,
-					HasLED:         a.BinID.Valid && a.LedIndex.Valid && a.ControllerID.Valid && a.ControllerIp.Valid && a.ControllerIp.String != "",
+					HasLED:         mapper.IsAssignmentLocatable(a.BinID.Valid, a.LedIndex.Valid, a.GridX.Valid, a.GridY.Valid, a.ControllerID.Valid, a.ControllerIp, a.ContainerConfig),
 				}
 				if loc.HasLED && loc.Quantity > 0 {
 					locatableBins[loc.BinID] = true
@@ -889,7 +890,7 @@ func (s *service) LocateBOM(ctx context.Context, projectID int64) error {
 			if a.Quantity <= 0 {
 				continue
 			}
-			if !a.BinID.Valid || !a.LedIndex.Valid || !a.ControllerID.Valid || !a.ControllerIp.Valid || a.ControllerIp.String == "" {
+			if !mapper.IsAssignmentLocatable(a.BinID.Valid, a.LedIndex.Valid, a.GridX.Valid, a.GridY.Valid, a.ControllerID.Valid, a.ControllerIp, a.ContainerConfig) {
 				continue
 			}
 			partHasLocatable = true
@@ -979,7 +980,7 @@ func (s *service) LocateBOMItemForProject(ctx context.Context, projectID, bomIte
 		}
 		byCtrl := make(map[int64][]ctrlLocateItem)
 		for _, a := range assignments {
-			if a.Quantity <= 0 || !a.BinID.Valid || !a.LedIndex.Valid || !a.ControllerID.Valid || !a.ControllerIp.Valid || a.ControllerIp.String == "" {
+			if a.Quantity <= 0 || !mapper.IsAssignmentLocatable(a.BinID.Valid, a.LedIndex.Valid, a.GridX.Valid, a.GridY.Valid, a.ControllerID.Valid, a.ControllerIp, a.ContainerConfig) {
 				continue
 			}
 			byCtrl[a.ControllerID.Int64] = append(byCtrl[a.ControllerID.Int64], ctrlLocateItem{
@@ -1022,11 +1023,9 @@ func (s *service) locateBatchedItems(ctx context.Context, byCtrl map[int64][]ctr
 		}
 
 		type binColor struct {
-			segID     int
-			globalIdx int
-			width     int
-			rank      int
-			hex       string
+			ranges []mapper.MappedRange
+			rank   int
+			hex    string
 		}
 		binEntries := make(map[int64]binColor)
 		var binOrder []int64
@@ -1038,16 +1037,13 @@ func (s *service) locateBatchedItems(ctx context.Context, byCtrl map[int64][]ctr
 				ContainerID: a.ContainerID.Int64,
 				LedIndex:    a.LedIndex,
 				Width:       a.Width,
+				GridX:       a.GridX,
+				GridY:       a.GridY,
 			}
-			segID, globalIdx, mapErr := mapper.CalculateGlobalIndex(containers, bin)
+			ranges, mapErr := mapper.ResolveBinRanges(containers, bin)
 			if mapErr != nil {
 				s.logger.Error("mapping failed for BOM locate", "bin_id", bin.ID, "err", mapErr)
 				continue
-			}
-
-			width := int(a.Width.Int64)
-			if width < 1 {
-				width = 1
 			}
 
 			hexColor := fallbackHex(settings.ColorLocate, "#0000FF")
@@ -1067,11 +1063,9 @@ func (s *service) locateBatchedItems(ctx context.Context, byCtrl map[int64][]ctr
 
 			binOrder = append(binOrder, bin.ID)
 			binEntries[bin.ID] = binColor{
-				segID:     int(segID),
-				globalIdx: int(globalIdx),
-				width:     width,
-				rank:      rank,
-				hex:       hexColor,
+				ranges: ranges,
+				rank:   rank,
+				hex:    hexColor,
 			}
 		}
 
@@ -1082,10 +1076,18 @@ func (s *service) locateBatchedItems(ctx context.Context, byCtrl map[int64][]ctr
 
 		bySeg := make(map[int][]wled.LEDRange)
 		segSet := map[int]bool{0: true}
+		ledCount := int(ctrl.LedCount)
 		for _, c := range containers {
 			segSet[int(c.SegmentID)] = true
+			if c.ConfigJson.Valid && c.ConfigJson.String != "" {
+				var cfg mapper.ContainerConfig
+				if jsonErr := json.Unmarshal([]byte(c.ConfigJson.String), &cfg); jsonErr == nil {
+					if ext := int(mapper.ContainerMaxLEDExtent(cfg)); ext > ledCount {
+						ledCount = ext
+					}
+				}
+			}
 		}
-		ledCount := int(ctrl.LedCount)
 
 		for _, bid := range binOrder {
 			bc := binEntries[bid]
@@ -1093,14 +1095,19 @@ func (s *service) locateBatchedItems(ctx context.Context, byCtrl map[int64][]ctr
 			if rgbErr != nil {
 				rgb = [3]byte{0, 0, 255}
 			}
-			bySeg[bc.segID] = append(bySeg[bc.segID], wled.LEDRange{
-				Start: bc.globalIdx,
-				Count: bc.width,
-				RGB:   rgb,
-			})
-			segSet[bc.segID] = true
-			if end := bc.globalIdx + bc.width; end > ledCount {
-				ledCount = end
+			for _, r := range bc.ranges {
+				segID := int(r.SegmentID)
+				start := int(r.StartIndex)
+				width := int(r.Width)
+				bySeg[segID] = append(bySeg[segID], wled.LEDRange{
+					Start: start,
+					Count: width,
+					RGB:   rgb,
+				})
+				segSet[segID] = true
+				if end := start + width; end > ledCount {
+					ledCount = end
+				}
 			}
 		}
 

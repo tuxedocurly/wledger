@@ -175,11 +175,14 @@ SELECT
     b.name as bin_name,
     b.led_index,
     b.width,
+    b.grid_x,
+    b.grid_y,
     c.name as controller_name,
     c.id as controller_id,
     c.ip_address as controller_ip,
     cont.name as container_name,
-    cont.id as container_id
+    cont.id as container_id,
+    cont.config_json as container_config
 FROM part_assignments pa
 LEFT JOIN bins b ON pa.bin_id = b.id
 LEFT JOIN containers cont ON b.container_id = cont.id

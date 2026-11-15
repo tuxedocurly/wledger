@@ -854,6 +854,9 @@
   "Compound": {
     "other": "Composé"
   },
+  "XYCrosshair": {
+    "other": "Réticule X/Y (2 Rubans)"
+  },
   "DataStartPosition": {
     "other": "Position de début des données"
   },
