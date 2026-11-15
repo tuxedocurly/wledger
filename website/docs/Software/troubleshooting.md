@@ -27,7 +27,7 @@ Modern mobile browsers (iOS Safari, Android Chrome) require a secure HTTPS conte
 
 ### WLED Controller Shows Offline After Router Reboot (DHCP IP Change)
 
-* **Fix:** Open **Hardware** and click **Discover WLED**. WLEDger matches discovered `_wled._tcp.local.` devices by MAC address and automatically updates the stored IP address for existing controllers.
+* **Fix:** If the controller's DHCP IP changed, open **Hardware** and click **Discover WLED** — WLEDger matches discovered `_wled._tcp.local.` devices by MAC address and automatically updates the stored IP address. If the controller kept the same IP and simply rebooted, click the **Refresh Status** icon next to its **Offline** badge on **Hardware** (or trigger an HTTP **Locate** / wait for **Periodic Controller Status Ping**) to mark it **Online** immediately.
 
 ### Rate-Limited (`429 Too Many Requests`) Behind a Reverse Proxy
 

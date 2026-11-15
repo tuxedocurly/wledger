@@ -114,9 +114,9 @@ You do not need a WLED controller or a dummy IP to organize parts in WLEDger:
 1. In WLEDger, go to **Hardware**.
 2. Click **Discover WLED** to scan your LAN automatically via mDNS (`_wled._tcp.local.`), **or** click **Add Controller** and enter the name, IP address, and port (default `80`).
 3. Click **Configure** on the controller to open the **Grid Painter**:
-    * Choose **Linear Strip**, **Matrix**, or **Compound** layout.
-    * Configure multi-LED wide bins (`Width >= 1`) if a physical bin spans multiple LEDs.
-    * Use **Auto Map (Linear)** / **Auto Map (Snake)** or click bins manually, then click **Save Configuration**.
+    * Choose **Linear Strip**, **Matrix**, **Compound**, or **X/Y Crosshair (2 Strips)** layout.
+    * Configure multi-LED wide bins (`Width >= 1`) if a physical bin spans multiple LEDs, or X/Y strip start indices and wiring directions for 2-strip crosshair setups.
+    * Use **Auto Map (Linear)**, **Auto Map (Snake)**, or **Populate X/Y Bins** (or click bins manually), then click **Save Changes**.
 
 ### Organize with Walls (Optional)
 
