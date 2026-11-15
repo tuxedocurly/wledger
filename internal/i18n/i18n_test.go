@@ -71,3 +71,43 @@ func TestI18n(t *testing.T) {
 		}
 	})
 }
+
+func TestInitEmbedded_AfterChdirToTempDir(t *testing.T) {
+	t.Cleanup(func() {
+		_ = Init()
+	})
+
+	t.Chdir(t.TempDir())
+
+	if err := Init(); err != nil {
+		t.Fatalf("Init() after Chdir to empty temp dir failed: %v", err)
+	}
+
+	cases := []struct {
+		lang string
+		key  string
+		want string
+	}{
+		{lang: "en", key: "Dashboard", want: "Dashboard"},
+		{lang: "en", key: "DashboardStatus", want: "Visual inventory status."},
+		{lang: "zh", key: "Dashboard", want: "仪表板"},
+		{lang: "pt-BR", key: "Dashboard", want: "Painel"},
+		{lang: "de", key: "Dashboard", want: "Dashboard"},
+		{lang: "fr", key: "Dashboard", want: "Tableau de bord"},
+		{lang: "ru", key: "Dashboard", want: "Панель управления"},
+		{lang: "it", key: "Dashboard", want: "Dashboard"},
+	}
+
+	for _, tc := range cases {
+		ctx := WithLocalizer(context.Background(), tc.lang)
+		if got := T(ctx, tc.key); got != tc.want {
+			t.Errorf("T(%q, %q) = %q, want %q", tc.lang, tc.key, got, tc.want)
+		}
+	}
+}
+
+func TestInitWithFS_Nil(t *testing.T) {
+	if err := InitWithFS(nil); err == nil {
+		t.Fatal("expected InitWithFS(nil) to return an error, got nil")
+	}
+}
