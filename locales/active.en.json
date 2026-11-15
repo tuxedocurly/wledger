@@ -925,5 +925,128 @@
   },
   "Confirm": {
     "other": "Confirm"
+  },
+  "Action": {
+    "other": "Action"
+  },
+  "Data": {
+    "other": "Data"
+  },
+  "Description": {
+    "other": "Description"
+  },
+  "Details": {
+    "other": "Details"
+  },
+  "Edit": {
+    "other": "Edit"
+  },
+  "End Date": {
+    "other": "End Date"
+  },
+  "Start Date": {
+    "other": "Start Date"
+  },
+  "View": {
+    "other": "View"
+  },
+  "admin": {
+    "other": "Admin"
+  },
+  "editor": {
+    "other": "Editor"
+  },
+  "viewer": {
+    "other": "Viewer"
+  },
+  "BULK_DELETE": {
+    "other": "BULK_DELETE"
+  },
+  "IMPORT": {
+    "other": "IMPORT"
+  },
+  "BACKUP": {
+    "other": "BACKUP"
+  },
+  "RESTORE": {
+    "other": "RESTORE"
+  },
+  "STOCK_ADD": {
+    "other": "STOCK_ADD"
+  },
+  "STOCK_INC": {
+    "other": "STOCK_INC"
+  },
+  "STOCK_DEC": {
+    "other": "STOCK_DEC"
+  },
+  "STOCK_MOVE": {
+    "other": "STOCK_MOVE"
+  },
+  "STOCK_MERGE": {
+    "other": "STOCK_MERGE"
+  },
+  "STOCK_REMOVE": {
+    "other": "STOCK_REMOVE"
+  },
+  "PARTS": {
+    "other": "PARTS"
+  },
+  "STOCK": {
+    "other": "STOCK"
+  },
+  "HARDWARE": {
+    "other": "HARDWARE"
+  },
+  "WALL": {
+    "other": "WALL"
+  },
+  "SYSTEM": {
+    "other": "SYSTEM"
+  },
+  "PROJECT": {
+    "other": "PROJECT"
+  },
+  "Projects": {
+    "other": "Projects"
+  },
+  "NavProjects": {
+    "other": "Projects"
+  },
+  "APITokens": {
+    "other": "API Tokens"
+  },
+  "StandaloneContainers": {
+    "other": "Standalone Containers"
+  },
+  "DiscoverWLED": {
+    "other": "Discover WLED"
+  },
+  "ParseBarcode": {
+    "other": "Parse Barcode"
+  },
+  "CreateToken": {
+    "other": "Create Token"
+  },
+  "RevokeToken": {
+    "other": "Revoke Token"
+  },
+  "BuildProject": {
+    "other": "Build Project"
+  },
+  "LocateAll": {
+    "other": "Locate All"
+  },
+  "PickMode": {
+    "other": "Pick Mode"
+  },
+  "ImportBOM": {
+    "other": "Import BOM"
+  },
+  "Shortage": {
+    "other": "Shortage"
+  },
+  "TokenCreatedWarning": {
+    "other": "Make sure to copy your API token now. You won't be able to see it again!"
   }
 }

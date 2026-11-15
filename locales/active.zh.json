@@ -907,5 +907,128 @@
   },
   "Confirm": {
     "other": "确认"
+  },
+  "Action": {
+    "other": "操作"
+  },
+  "Data": {
+    "other": "数据"
+  },
+  "Description": {
+    "other": "描述"
+  },
+  "Details": {
+    "other": "详情"
+  },
+  "Edit": {
+    "other": "编辑"
+  },
+  "End Date": {
+    "other": "结束日期"
+  },
+  "Start Date": {
+    "other": "开始日期"
+  },
+  "View": {
+    "other": "查看"
+  },
+  "admin": {
+    "other": "管理员"
+  },
+  "editor": {
+    "other": "编辑者"
+  },
+  "viewer": {
+    "other": "查看者"
+  },
+  "BULK_DELETE": {
+    "other": "批量删除"
+  },
+  "IMPORT": {
+    "other": "导入"
+  },
+  "BACKUP": {
+    "other": "备份"
+  },
+  "RESTORE": {
+    "other": "恢复"
+  },
+  "STOCK_ADD": {
+    "other": "增加库存"
+  },
+  "STOCK_INC": {
+    "other": "库存增加"
+  },
+  "STOCK_DEC": {
+    "other": "库存减少"
+  },
+  "STOCK_MOVE": {
+    "other": "移动库存"
+  },
+  "STOCK_MERGE": {
+    "other": "合并库存"
+  },
+  "STOCK_REMOVE": {
+    "other": "移除库存"
+  },
+  "PARTS": {
+    "other": "零件"
+  },
+  "STOCK": {
+    "other": "库存"
+  },
+  "HARDWARE": {
+    "other": "硬件"
+  },
+  "WALL": {
+    "other": "墙面"
+  },
+  "SYSTEM": {
+    "other": "系统"
+  },
+  "PROJECT": {
+    "other": "项目"
+  },
+  "Projects": {
+    "other": "项目"
+  },
+  "NavProjects": {
+    "other": "项目"
+  },
+  "APITokens": {
+    "other": "API 令牌"
+  },
+  "StandaloneContainers": {
+    "other": "独立容器"
+  },
+  "DiscoverWLED": {
+    "other": "发现 WLED"
+  },
+  "ParseBarcode": {
+    "other": "解析条码"
+  },
+  "CreateToken": {
+    "other": "创建令牌"
+  },
+  "RevokeToken": {
+    "other": "撤销令牌"
+  },
+  "BuildProject": {
+    "other": "构建项目"
+  },
+  "LocateAll": {
+    "other": "全部定位"
+  },
+  "PickMode": {
+    "other": "拣货模式"
+  },
+  "ImportBOM": {
+    "other": "导入 BOM"
+  },
+  "Shortage": {
+    "other": "缺料"
+  },
+  "TokenCreatedWarning": {
+    "other": "请务必立即复制您的 API 令牌。关闭后您将无法再次查看！"
   }
 }
