@@ -107,7 +107,7 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span><template x-for=\"tag in selectedTags\" :key=\"tag\"><span class=\"badge badge-primary badge-sm gap-1\"><span x-text=\"tag\"></span> <button @click=\"toggleTag(tag)\" class=\"hover:text-white/80\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span><template x-for=\"tag in selectedTags\" :key=\"tag\"><span class=\"badge badge-primary badge-sm gap-1\"><span x-text=\"tag\"></span> <button type=\"button\" @click=\"toggleTag(tag)\" class=\"hover:text-white/80\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -133,14 +133,14 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 				return templ_7745c5c3_Err
 			}
 			for _, tag := range allTags {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<button data-tag=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<button type=\"button\" data-tag=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 50, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 51, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -153,7 +153,7 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(tag)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 54, Col: 14}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 55, Col: 14}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -172,7 +172,7 @@ func Inspiration(templates []db.InspirationTemplate, allTags []string, user auth
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "NoTagsFoundInInventory"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 57, Col: 90}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/inspiration.templ`, Line: 58, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
