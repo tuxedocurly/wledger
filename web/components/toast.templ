@@ -22,6 +22,7 @@ templ Toast(props ToastProps) {
 		hx-swap-oob="beforeend"
 	>
 		<div
+			role="alert"
 			x-data="{ show: true }"
 			x-init="setTimeout(() => $el.remove(), 5000)"
 			x-show="show"
@@ -31,7 +32,7 @@ templ Toast(props ToastProps) {
 			class={ "alert shadow-lg mb-2", string(props.Type) }
 		>
 			<span>{ props.Message }</span>
-			<button class="btn btn-ghost btn-xs btn-circle" @click="$el.parentElement.remove()">✕</button>
+			<button type="button" class="btn btn-ghost btn-xs btn-circle" @click="$el.parentElement.remove()">✕</button>
 		</div>
 	</div>
 }
