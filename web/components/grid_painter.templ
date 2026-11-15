@@ -367,13 +367,13 @@ templ gridPainterView(controllerID int64, formAction string, isStandalone bool, 
 		</div>
 		if canEdit {
 			<form x-ref="gridForm" method="POST" action={ templ.SafeURL(formAction) } class="mt-16 bg-base-200 p-8 rounded-2xl border border-base-300 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
-				<div>
+				<div class="min-w-0">
 					<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">{ i18n.T(ctx, "SaveConfiguration") }</h3>
 					<p class="text-xs opacity-40 mt-1">{ i18n.T(ctx, "SaveConfigurationDesc") }</p>
 				</div>
-				<div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto md:justify-end">
-					<a href="/hardware" class="btn btn-ghost w-full sm:w-32 whitespace-nowrap">{ i18n.T(ctx, "Cancel") }</a>
-					<button type="button" @click="askConfirm('save')" class="btn btn-primary px-8 sm:px-12 w-full sm:w-auto md:w-48 whitespace-nowrap">{ i18n.T(ctx, "SaveChanges") }</button>
+				<div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto md:justify-end shrink-0">
+					<a href="/hardware" class="btn btn-ghost w-full sm:w-auto sm:min-w-32 whitespace-nowrap">{ i18n.T(ctx, "Cancel") }</a>
+					<button type="button" @click="askConfirm('save')" class="btn btn-primary px-6 sm:px-8 w-full sm:w-auto md:min-w-48 whitespace-nowrap">{ i18n.T(ctx, "SaveChanges") }</button>
 				</div>
 				<input type="hidden" name="grid_data" :value="JSON.stringify(exportBinData())"/>
 				<input type="hidden" name="config_data" :value="JSON.stringify(exportContainerData())"/>

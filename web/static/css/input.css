@@ -12,3 +12,18 @@
       var(--color-base-content) 10%,
       var(--color-base-200));
 }
+
+@layer utilities {
+  @layer daisyui-fixes {
+    /* Allow non-square buttons and non-empty badges to grow vertically if text wraps instead of overflowing fixed --size height. */
+    .btn:not(.btn-circle):not(.btn-square) {
+      height: auto;
+      min-height: var(--size);
+    }
+
+    .badge:not(:empty) {
+      height: auto;
+      min-height: var(--size);
+    }
+  }
+}

@@ -219,21 +219,21 @@ templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetA
 						<div class="card bg-base-200 border border-base-300 shadow-md">
 							<div class="card-body p-5 gap-3">
 								<div class="flex items-start justify-between gap-2">
-									<div>
-										<h3 class="font-bold text-base">{ cont.Name }</h3>
+									<div class="min-w-0 flex-1">
+										<h3 class="font-bold text-base break-words">{ cont.Name }</h3>
 										if cont.ControllerID.Valid {
-											<span class="text-xs opacity-70 font-mono">
+											<span class="text-xs opacity-70 font-mono break-words">
 												{ cont.ControllerName.String } • Seg { fmt.Sprintf("%d", cont.SegmentID) }
 											</span>
 										} else {
 											<span class="badge badge-xs badge-ghost uppercase mt-1">Standalone (No LED Controller)</span>
 										}
 									</div>
-									<span class="badge badge-ghost badge-xs font-mono">ID:{ fmt.Sprintf("%d", cont.ID) }</span>
+									<span class="badge badge-ghost badge-xs font-mono shrink-0 whitespace-nowrap">ID:{ fmt.Sprintf("%d", cont.ID) }</span>
 								</div>
 								<div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-base-content/10">
 									if !cont.ControllerID.Valid {
-										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/configure", cont.ID)) } class="btn btn-xs btn-ghost">
+										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/configure", cont.ID)) } class="btn btn-xs btn-ghost whitespace-nowrap">
 											if user.CanConfigure() {
 												{ i18n.T(ctx, "Configure") }
 											} else {
@@ -241,7 +241,7 @@ templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetA
 											}
 										</a>
 									} else {
-										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", cont.ControllerID.Int64)) } class="btn btn-xs btn-ghost">
+										<a href={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", cont.ControllerID.Int64)) } class="btn btn-xs btn-ghost whitespace-nowrap">
 											if user.CanConfigure() {
 												{ i18n.T(ctx, "Configure") }
 											} else {
@@ -257,13 +257,14 @@ templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetA
 													<option value={ fmt.Sprintf("%d", ctrl.ID) } selected?={ cont.ControllerID.Valid && cont.ControllerID.Int64 == ctrl.ID }>{ ctrl.Name }</option>
 												}
 											</select>
-											<button type="submit" class="btn btn-xs btn-outline">Bind</button>
+											<button type="submit" class="btn btn-xs btn-outline shrink-0 whitespace-nowrap">Bind</button>
 										</form>
 										<form
 											action={ templ.SafeURL(fmt.Sprintf("/hardware/containers/%d/delete", cont.ID)) }
 											method="POST"
 											data-confirm="Delete this container and all of its bins?"
 											onsubmit="return confirm(this.dataset.confirm);"
+											class="shrink-0"
 										>
 											<button class="btn btn-xs btn-ghost text-error" title="Delete Container">✕</button>
 										</form>
@@ -329,14 +330,14 @@ templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetA
 				Title: "Discover WLED Controllers on LAN",
 			}) {
 				<div class="space-y-4">
-					<div class="flex items-center justify-between">
+					<div class="flex items-center justify-between gap-3">
 						<span class="text-xs opacity-70">Scanning _wled._tcp.local. via mDNS multicast (224.0.0.251:5353)...</span>
 						<button
 							type="button"
 							hx-post="/hardware/discover"
 							hx-target="#discover_results"
 							hx-indicator="#discover_spinner"
-							class="btn btn-xs btn-outline"
+							class="btn btn-xs btn-outline shrink-0 whitespace-nowrap"
 						>
 							Rescan
 						</button>
@@ -366,18 +367,18 @@ templ DiscoverResults(items []DiscoveryResultItem) {
 		<div class="space-y-2 max-h-80 overflow-y-auto pr-1">
 			for _, m := range items {
 				<div class="p-3 bg-base-200 rounded-lg border border-base-300 flex items-center justify-between gap-3">
-					<div class="flex flex-col">
-						<div class="flex items-center gap-2">
-							<span class="font-bold text-sm">{ m.Name }</span>
+					<div class="flex flex-col min-w-0 flex-1">
+						<div class="flex flex-wrap items-center gap-2">
+							<span class="font-bold text-sm truncate">{ m.Name }</span>
 							if m.Status == "ip_updated" {
-								<span class="badge badge-warning badge-xs">IP Auto-Healed</span>
+								<span class="badge badge-warning badge-xs shrink-0 whitespace-nowrap">IP Auto-Healed</span>
 							} else if m.Status == "online" {
-								<span class="badge badge-success badge-xs">Configured</span>
+								<span class="badge badge-success badge-xs shrink-0 whitespace-nowrap">Configured</span>
 							} else {
-								<span class="badge badge-info badge-xs">New</span>
+								<span class="badge badge-info badge-xs shrink-0 whitespace-nowrap">New</span>
 							}
 						</div>
-						<div class="text-xs font-mono opacity-70 mt-0.5">
+						<div class="text-xs font-mono opacity-70 mt-0.5 break-words">
 							{ fmt.Sprintf("%s:%d", m.IP, m.Port) }
 							if m.MAC != "" {
 								<span> • { m.MAC }</span>
@@ -387,18 +388,18 @@ templ DiscoverResults(items []DiscoveryResultItem) {
 							}
 						</div>
 						if m.Status == "ip_updated" && m.PreviousIP != "" {
-							<span class="text-xs text-warning mt-0.5">{ fmt.Sprintf("Updated %s: %s -> %s", m.ControllerName, m.PreviousIP, m.IP) }</span>
+							<span class="text-xs text-warning mt-0.5 break-words">{ fmt.Sprintf("Updated %s: %s -> %s", m.ControllerName, m.PreviousIP, m.IP) }</span>
 						}
 					</div>
 					if m.Status == "new" {
-						<form action="/hardware" method="POST">
+						<form action="/hardware" method="POST" class="shrink-0">
 							<input type="hidden" name="name" value={ m.Name }/>
 							<input type="hidden" name="ip_address" value={ m.IP }/>
 							<input type="hidden" name="port" value={ fmt.Sprintf("%d", m.Port) }/>
-							<button type="submit" class="btn btn-xs btn-primary">Add Controller</button>
+							<button type="submit" class="btn btn-sm btn-primary whitespace-nowrap">{ i18n.T(ctx, "AddController") }</button>
 						</form>
 					} else {
-						<a href="/hardware" class="btn btn-xs btn-ghost">Refresh</a>
+						<a href="/hardware" class="btn btn-sm btn-ghost shrink-0 whitespace-nowrap">Refresh</a>
 					}
 				</div>
 			}

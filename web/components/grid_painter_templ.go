@@ -803,7 +803,7 @@ func gridPainterView(controllerID int64, formAction string, isStandalone bool, c
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" class=\"mt-16 bg-base-200 p-8 rounded-2xl border border-base-300 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6\"><div><h3 class=\"font-bold text-sm uppercase tracking-wider opacity-50\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "\" class=\"mt-16 bg-base-200 p-8 rounded-2xl border border-base-300 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6\"><div class=\"min-w-0\"><h3 class=\"font-bold text-sm uppercase tracking-wider opacity-50\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -829,27 +829,27 @@ func gridPainterView(controllerID int64, formAction string, isStandalone bool, c
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</p></div><div class=\"flex flex-col sm:flex-row gap-3 w-full md:w-auto md:justify-end\"><a href=\"/hardware\" class=\"btn btn-ghost w-full sm:w-32 whitespace-nowrap\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "</p></div><div class=\"flex flex-col sm:flex-row gap-3 w-full md:w-auto md:justify-end shrink-0\"><a href=\"/hardware\" class=\"btn btn-ghost w-full sm:w-auto sm:min-w-32 whitespace-nowrap\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Cancel"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/grid_painter.templ`, Line: 375, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/grid_painter.templ`, Line: 375, Col: 117}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</a> <button type=\"button\" @click=\"askConfirm('save')\" class=\"btn btn-primary px-8 sm:px-12 w-full sm:w-auto md:w-48 whitespace-nowrap\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 68, "</a> <button type=\"button\" @click=\"askConfirm('save')\" class=\"btn btn-primary px-6 sm:px-8 w-full sm:w-auto md:min-w-48 whitespace-nowrap\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "SaveChanges"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/grid_painter.templ`, Line: 376, Col: 164}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/grid_painter.templ`, Line: 376, Col: 167}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
