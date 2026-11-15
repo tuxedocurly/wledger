@@ -31,6 +31,12 @@ WLEDger communicates with ESP32/ESP8266 controllers running [WLED](https://kno.w
 2. Click **Add** on any newly discovered node.
 3. If an existing controller's IP changed after a router reboot, mDNS discovery matches its **MAC address** and automatically updates the stored IP address.
 
+### Controller Health & Status Polling
+
+* **Periodic Status Ping:** WLEDger automatically checks all configured WLED controllers in the background (every `600` seconds by default; configurable under **Periodic Controller Status Ping** in [Settings](./settings.md#hardware-automation--colors)) so **Online** / **Offline** badges and LED counts stay accurate across the Dashboard and Hardware pages.
+* **Manual Refresh:** Click the **Refresh Status** icon next to any controller's **Online** / **Offline** badge on **Hardware** to re-check reachability on demand.
+* **Auto-Online on Locate:** If a controller is marked **Offline** after a temporary reboot, any successful HTTP **Locate** automatically flips its status back to **Online** immediately.
+
 ### Controller Options (Add & Edit)
 
 Click **Edit** on any controller card to configure WLED v2 options:
@@ -56,6 +62,7 @@ Click **Edit** on any controller card to configure WLED v2 options:
 | **Linear Strip** | Shelf edges, single-row drawers. | A sequential run of LEDs. Indices increment by 1. |
 | **Matrix** | 2D panels or drawer grids. | Defines a 2D grid (e.g., 8×8). |
 | **Compound** | Irregular storage racks. | Groups multiple linear or matrix sections into one logical container. |
+| **X/Y Crosshair (2 Strips)** | Front-mounted perimeter strips, large drawer walls. | Maps 1 LED per column (X) and 1 LED per row (Y), lighting both to pinpoint a bin using `Cols + Rows` LEDs. |
 
 ### Mapping Bins & Multi-LED Width
 
@@ -64,6 +71,20 @@ Click **Edit** on any controller card to configure WLED v2 options:
 3. Use **Auto Map (Linear)** or **Auto Map (Snake)**, or select **Paint** / **Erase** in the visual grid to map individual LED indices.
 4. Use the **Bin Inspector** to set **LED Width** (`Width >= 1`) when a physical drawer spans multiple adjacent LEDs — locating a part illuminates `[led_index, led_index + width - 1]` simultaneously.
 5. Click **Save Configuration**.
+
+### X/Y Crosshair Mapping (Front-Mounted 2-Strip Grids)
+
+Instead of placing an LED behind every individual bin (`Cols × Rows` LEDs), you can mount one horizontal strip along the columns (`1` LED aligned per column) and one vertical strip along the rows (`1` LED aligned per row). Locating a bin illuminates both its **X** (column) LED and **Y** (row) LED simultaneously so their intersection pinpoints the exact drawer using only `Cols + Rows` LEDs (for example, `16` LEDs for an `8×8` cabinet instead of `64`).
+
+1. Click **Configure** on a controller and set **Layout Type** to **X/Y Crosshair (2 Strips)**.
+2. Enter your cabinet's **Rows** and **Cols**.
+3. Under **X Strip (Columns)**, set **X Start LED** (default `0`) and **X Wiring Direction** (`Left → Right` or `Right → Left (Reversed)`).
+4. Under **Y Strip (Rows)**, set **Y Start LED** (auto-defaults to `X Start LED + Cols`, or customize it if the Y strip is wired first or separated by unmapped spacer LEDs) and **Y Wiring Direction** (`Top → Bottom` or `Bottom → Top (Reversed)`).
+5. Click **Populate X/Y Bins** to generate the grid with live `X#·Y#` coordinate badges (or refine individual slots with **Paint / Edit** and **Erase**), then click **Save Changes**.
+
+:::tip Single-GPIO vs. Dual-GPIO Wiring in WLED
+**X/Y Crosshair** works whether your X and Y strips are daisy-chained on a **single GPIO pin** or wired to **two separate GPIO pins** on your WLED controller. In WLED's **LED Preferences**, multi-pin outputs are combined into one contiguous LED index range (`0` through `Cols + Rows - 1`) on Segment `0` by default — so both HTTP JSON and **UDP Realtime (`DNRGB`)** address both strips seamlessly without splitting segments.
+:::
 
 ---
 

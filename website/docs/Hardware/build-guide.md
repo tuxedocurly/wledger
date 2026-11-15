@@ -125,6 +125,10 @@ This is the classic DIY method. It's *very* cheap to build, but requires the mos
 3. Arrange and glue the 64 pixels onto the backer board.
 4. Solder 3 wires (WS2812B) (`+5V`, `GND`, `Data`) from one pixel to the next, following the `D_OUT` to `D_IN` flow. If you have a different number of pins for your LEDs, look up the WLED wiring instructions for your particular LEDs instead.
 
+:::tip Low-Solder Alternative: Front-Mounted X/Y Crosshair (2 Strips)
+Don't want to cut and solder 64 individual pixels? If your LED strip or pixel string spacing lines up with your bin columns and rows, you can mount **one horizontal strip** across the columns and **one vertical strip** down the rows (`16` LEDs total for an `8×8` cabinet instead of `64`, wired to 1 daisy-chained GPIO or 2 separate GPIOs in WLED). Select **X/Y Crosshair (2 Strips)** in the [Hardware Grid Painter](../Software/feature-guide/hardware.md#xy-crosshair-mapping-front-mounted-2-strip-grids) to light the intersecting row and column LEDs for any bin.
+:::
+
 ---
 
 ## Path 3: The Choose Your Own Adventure Build (Workshop, Ikea Shelves, etc)

@@ -35,9 +35,9 @@ Existing tools were expensive, closed source, or lacking in features and WLED in
 
 Connect your WLED-powered LED strips or matrices to your storage — or manage controller-less storage racks natively.
 
-- **Visual Locate & Multi-LED Bins:** Click "Locate" on a part and its bin glows instantly, supporting multi-LED wide bins (`Width >= 1`).
+- **Visual Locate, Multi-LED & X/Y Crosshair Bins:** Click "Locate" on a part and its bin glows instantly — supporting 1-LED-per-bin grids, multi-LED wide bins (`Width >= 1`), and front-mounted **X/Y Crosshair (2-Strip)** perimeter layouts (`Cols + Rows` LEDs across 1 or 2 GPIOs).
 - **Standalone Containers:** Create and organize controller-less containers without any fake controller IP workarounds, mount them on Dashboard Walls, and attach/detach them to WLED controllers anytime.
-- **mDNS Auto-Discovery:** Discover `_wled._tcp.local.` devices on your LAN automatically, add them in one click, and self-heal DHCP IP changes matched by MAC address.
+- **mDNS Auto-Discovery & Health Polling:** Discover `_wled._tcp.local.` devices on your LAN automatically, self-heal DHCP IP changes matched by MAC address, and keep Online/Offline controller status fresh via configurable background polling and one-click refresh.
 - **Controller Editing & State Restoration:** Configure HTTP ports, per-controller **UDP Realtime (DNRGB)** streaming, pre-locate WLED state snapshots with automatic restoration, or fall back to an **Idle Preset ID** when locating finishes.
 - **Stock-Health Locate Colors:** Optionally illuminate located bins using stock status colors (`OK`, `Low`, `Critical`) alongside custom Walls / Dashboards.
 

@@ -12,7 +12,7 @@ Built as a single static **Pure-Go** binary (`CGO_ENABLED=0`) powered by **Templ
 
 ## Key Features
 
-* **Visual WLED Location Tracking:** Light up individual bins or multi-LED wide bins via HTTP JSON API or high-speed **UDP Realtime (DNRGB)**, with **mDNS auto-discovery**, **pre-locate state restoration**, and optional stock-health locate colors.
+* **Visual WLED Location Tracking:** Light up individual bins, multi-LED wide bins, or front-mounted **X/Y Crosshair** 2-strip grids via HTTP JSON API or high-speed **UDP Realtime (DNRGB)**, with **mDNS auto-discovery**, **periodic health polling**, **pre-locate state restoration**, and optional stock-health locate colors.
 * **Standalone Containers:** Organize drawers, travel cases, and shelves without needing a WLED controller, and bind or detach controllers at any time.
 * **2D Supplier Barcode Scanning:** Scan or paste **DigiKey**, **Mouser** (TIA-1063 DataMatrix/PDF417), **LCSC** (QR/DataMatrix), and 1D barcodes to auto-fill part specs and match existing inventory.
 * **Projects & BOM Pick Mode:** Import KiCad/CSV BOMs, track multi-board shortages, illuminate every required bin simultaneously in **Pick Mode**, and execute atomic project builds.

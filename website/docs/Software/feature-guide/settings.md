@@ -58,6 +58,7 @@ Generate scoped **Personal Access Tokens** (`wlg_...`) in Settings to authentica
 ## Hardware Automation & Colors
 
 * **Auto-Turn Off "Locate" LED:** Sets how many seconds locate LEDs stay illuminated before restoring the controller's prior WLED state, activating its Idle Preset, or turning LEDs off.
+* **Periodic Controller Status Ping:** Pings all configured WLED controllers in the background (`Ping every:` default `600` seconds, valid range `10`–`86400` seconds) to keep **Online** / **Offline** badges and LED counts fresh across the Dashboard and Hardware pages. Saving updates the background schedule immediately without restarting WLEDger.
 * **Interface Colors:** Customize hex colors for **Locate Action**, **Stock Level: OK**, **Stock Level: Low**, and **Stock Level: Critical**. Changes dynamically update both the Dashboard UI CSS variables and WLED bin colors (when stock-health locate coloring is enabled).
 
 ---
