@@ -150,7 +150,7 @@ func APITokens(tokens []db.ListAPITokensByUserRow, newToken string) templ.Compon
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<form action=\"/settings/tokens\" method=\"POST\" hx-post=\"/settings/tokens\" hx-target=\"#api-tokens-card\" hx-swap=\"outerHTML\" class=\"grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-6 bg-base-100 p-4 rounded-lg border border-base-300\"><div class=\"form-control w-full\"><label class=\"label py-1\"><span class=\"label-text text-xs font-medium\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<form action=\"/settings/tokens\" method=\"POST\" hx-post=\"/settings/tokens\" hx-target=\"#api-tokens-card\" hx-swap=\"outerHTML\" class=\"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end mb-6 bg-base-100 p-4 rounded-lg border border-base-300\"><div class=\"form-control w-full\"><label class=\"label py-1\"><span class=\"label-text text-xs font-medium\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -179,7 +179,7 @@ func APITokens(tokens []db.ListAPITokensByUserRow, newToken string) templ.Compon
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</select></div><div class=\"form-control w-full\"><label class=\"label py-1\"><span class=\"label-text text-xs font-medium\">Expires (days, optional)</span></label> <input type=\"number\" name=\"expires_days\" min=\"1\" max=\"3650\" placeholder=\"Never\" class=\"input input-bordered input-sm w-full\"></div><div><button type=\"submit\" class=\"btn btn-primary btn-sm w-full gap-1.5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</select></div><div class=\"form-control w-full\"><label class=\"label py-1\"><span class=\"label-text text-xs font-medium\">Expires (days, optional)</span></label> <input type=\"number\" name=\"expires_days\" min=\"1\" max=\"3650\" placeholder=\"Never\" class=\"input input-bordered input-sm w-full\"></div><div><button type=\"submit\" class=\"btn btn-primary btn-sm w-full gap-1.5 whitespace-nowrap\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -307,12 +307,12 @@ func APITokens(tokens []db.ListAPITokensByUserRow, newToken string) templ.Compon
 					return templ_7745c5c3_Err
 				}
 				if isTokenExpired(tok.ExpiresAt) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span class=\"badge badge-xs badge-error ml-1\">Expired</span>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<span class=\"badge badge-xs badge-error ml-1 whitespace-nowrap\">Expired</span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</td><td class=\"text-right\"><form action=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</td><td class=\"text-right whitespace-nowrap\"><form action=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -338,7 +338,7 @@ func APITokens(tokens []db.ListAPITokensByUserRow, newToken string) templ.Compon
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#api-tokens-card\" hx-swap=\"outerHTML\" hx-confirm=\"Revoke this API token? Existing clients using it will immediately lose access.\" data-confirm=\"Revoke this API token? Existing clients using it will immediately lose access.\" onsubmit=\"if (!window.htmx) return confirm(this.dataset.confirm);\" class=\"inline-block\"><button type=\"submit\" class=\"btn btn-xs btn-outline btn-error gap-1\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-target=\"#api-tokens-card\" hx-swap=\"outerHTML\" hx-confirm=\"Revoke this API token? Existing clients using it will immediately lose access.\" data-confirm=\"Revoke this API token? Existing clients using it will immediately lose access.\" onsubmit=\"if (!window.htmx) return confirm(this.dataset.confirm);\" class=\"inline-block shrink-0\"><button type=\"submit\" class=\"btn btn-xs btn-outline btn-error gap-1 whitespace-nowrap\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

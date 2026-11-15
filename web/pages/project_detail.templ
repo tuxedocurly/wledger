@@ -97,6 +97,7 @@ templ ProjectDetailContent(user auth.User, detail ProjectDetailView, allParts []
 					hx-swap="none"
 					action={ templ.SafeURL(fmt.Sprintf("/projects/%d/locate", detail.Project.ID)) }
 					method="POST"
+					class="max-w-full"
 				>
 					<button
 						type="submit"
@@ -165,7 +166,7 @@ templ ProjectDetailContent(user auth.User, detail ProjectDetailView, allParts []
 							value={ fmt.Sprintf("%d", detail.BoardCount) }
 							class="input input-bordered input-sm w-24 font-mono"
 						/>
-						<button type="submit" class="btn btn-sm btn-outline">Calculate</button>
+						<button type="submit" class="btn btn-sm btn-outline shrink-0 whitespace-nowrap">Calculate</button>
 					</form>
 				</div>
 			</div>
