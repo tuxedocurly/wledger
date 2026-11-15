@@ -3,11 +3,10 @@ package settings
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/tuxedocurly/wledger/internal/audit"
+	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
@@ -22,13 +21,13 @@ type Service interface {
 }
 
 func (s *service) UpdateUserPassword(ctx context.Context, id int64, password string) error {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := auth.HashPassword(password)
 	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
+		return err
 	}
 
 	return s.store.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{
-		PasswordHash: string(hashedBytes),
+		PasswordHash: hashedPassword,
 		ID:           id,
 	})
 }
@@ -144,14 +143,14 @@ func (s *service) GetUser(ctx context.Context, id int64) (db.User, error) {
 }
 
 func (s *service) CreateUser(ctx context.Context, params CreateUserParams) (db.CreateUserRow, error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
+	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
-		return db.CreateUserRow{}, fmt.Errorf("failed to hash password: %w", err)
+		return db.CreateUserRow{}, err
 	}
 
 	user, err := s.store.CreateUser(ctx, db.CreateUserParams{
 		Email:                  params.Email,
-		PasswordHash:           string(hashedBytes),
+		PasswordHash:           hashedPassword,
 		Role:                   params.Role,
 		ChangePasswordRequired: sql.NullBool{Bool: true, Valid: true},
 	})

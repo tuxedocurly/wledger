@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
@@ -27,14 +30,19 @@ import (
 	settingsServicePkg "github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/internal/stock"
 	"github.com/tuxedocurly/wledger/internal/tags"
+	"github.com/tuxedocurly/wledger/internal/tlsutil"
 	"github.com/tuxedocurly/wledger/internal/uierror"
 	"github.com/tuxedocurly/wledger/internal/wled"
 )
+
+const sessionCleanupInterval = 15 * time.Minute
 
 func main() {
 	// Logger init
 	log := logger.New(true)
 	log.Info("Starting WLEDger V2...")
+
+	cfg := config.Load()
 
 	// i18n init
 	if err := i18n.Init(); err != nil {
@@ -43,8 +51,11 @@ func main() {
 	}
 
 	// Database
-	os.MkdirAll(config.DirData, 0755)
-	database, err := db.Open(config.DirDatabase)
+	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
+		log.Error("Failed to create data directory", "error", err)
+		os.Exit(1)
+	}
+	database, err := db.Open(cfg.DBPath)
 	if err != nil {
 		log.Error("Failed to open database", "error", err)
 		os.Exit(1)
@@ -79,13 +90,27 @@ func main() {
 		log.Error("Failed to fetch settings for log level", "error", err)
 	}
 
+	// TLS setup (explicit cert/key or persisted ECDSA self-signed certificate)
+	tlsCfg, tlsEnabled, err := tlsutil.ConfigureTLS(cfg)
+	if err != nil {
+		log.Error("Failed to configure TLS", "error", err)
+		os.Exit(1)
+	}
+
+	// Shutdown context for signals and background workers
+	appCtx, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
+
 	// Session Manager
+	sessionStore := auth.NewStore(store)
 	sessionManager := scs.New()
-	sessionManager.Store = auth.NewStore(store)
+	sessionManager.Store = sessionStore
 	sessionManager.Lifetime = 24 * time.Hour
 	sessionManager.Cookie.Persist = true
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
-	sessionManager.Cookie.Secure = false // TODO: Set to true in prod
+	sessionManager.Cookie.Secure = cfg.CookieSecure || tlsEnabled
+
+	go runSessionCleanup(appCtx, sessionStore, log)
 
 	// WLED client & service
 	wledClient := wled.NewClient()
@@ -95,7 +120,7 @@ func main() {
 	uiErrorResponder := uierror.New(log)
 
 	// Backup Service
-	backupService := backup.NewService(database, store, config.DirUploads, log)
+	backupService := backup.NewService(database, store, cfg.UploadsDir, log)
 
 	// Tags Service
 	tagsService := tags.NewService(database, store)
@@ -123,7 +148,6 @@ func main() {
 
 	// Inspiration Service
 	inspirationService := inspiration.NewService(store)
-	// Seed the initial inspiration templates
 	if err := inspirationService.SeedTemplates(context.Background()); err != nil {
 		log.Error("Failed to seed inspiration templates", "error", err)
 	}
@@ -154,35 +178,83 @@ func main() {
 		docsService,
 	)
 
-	// Middleware Manager
+	// Middleware Manager & Router Setup
 	mw := middleware.New(store, sessionManager, log, uiErrorResponder)
+	r := router.NewWithOptions(appCtx, mw, sessionManager, h, router.Options{
+		TrustProxy: cfg.TrustProxy,
+		UploadsDir: cfg.UploadsDir,
+	})
 
-	// Router Setup
-	r := router.New(mw, sessionManager, h)
-
-	// Start Server
-	port := "8080"
-	log.Info("Server listening", "url", "http://localhost:"+port)
+	listenAddr := normalizeListenAddr(cfg.Port)
+	scheme := "http"
+	if tlsEnabled {
+		scheme = "https"
+	}
+	log.Info("Server listening", "url", scheme+"://localhost"+listenAddr, "tls", tlsEnabled)
 
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+		Addr:              listenAddr,
+		Handler:           r,
+		TLSConfig:         tlsCfg,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
+	serverErrCh := make(chan error, 1)
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error("Server failed", "error", err)
-			os.Exit(1)
+		var serveErr error
+		if tlsEnabled {
+			serveErr = srv.ListenAndServeTLS("", "")
+		} else {
+			serveErr = srv.ListenAndServe()
+		}
+		if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			serverErrCh <- serveErr
 		}
 	}()
 
-	// Graceful Shutdown
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
+	select {
+	case serveErr := <-serverErrCh:
+		log.Error("Server failed", "error", serveErr)
+		stopSignals()
+		_ = database.Close()
+		os.Exit(1)
+	case <-appCtx.Done():
+	}
 
 	log.Info("Shutting down...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	srv.Shutdown(ctx)
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("Server shutdown error", "error", err)
+	}
+}
+
+func runSessionCleanup(ctx context.Context, store *auth.SQLCStore, log interface{ Warn(string, ...any) }) {
+	ticker := time.NewTicker(sessionCleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := store.CleanupExpired(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				log.Warn("failed to clean up expired sessions", "error", err)
+			}
+		}
+	}
+}
+
+func normalizeListenAddr(port string) string {
+	p := strings.TrimSpace(port)
+	if p == "" {
+		return ":8080"
+	}
+	if strings.Contains(p, ":") {
+		return p
+	}
+	return ":" + p
 }

@@ -47,7 +47,8 @@ templ Setup() {
 								class="input input-bordered w-full validator text-base h-12"
 								required
 								minlength="8"
-								pattern=".{8,}"
+								maxlength="72"
+								pattern=".{8,72}"
 								title={ i18n.T(ctx, "PasswordMinLength") }
 							/>
 							<p class="validator-hint text-sm text-error mt-2 font-medium">{ i18n.T(ctx, "PasswordLengthWarning") }</p>

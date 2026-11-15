@@ -3,7 +3,10 @@ package images
 import (
 	"fmt"
 	"image"
+	_ "image/gif"
 	"image/jpeg"
+	_ "image/png"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -12,6 +15,12 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/tuxedocurly/wledger/internal/config"
+	_ "golang.org/x/image/webp"
+)
+
+const (
+	maxImageDimension = 8192
+	maxImagePixels    = 36_000_000
 )
 
 func Init() error {
@@ -23,16 +32,39 @@ func Init() error {
 // Returns the filename (e.g. "part_12345.jpg").
 // The handler is responsible for prepending the web path.
 func ProcessUpload(file multipart.File, header *multipart.FileHeader) (string, error) {
+	if header == nil {
+		return "", fmt.Errorf("missing upload header")
+	}
+
+	// Validate extension before reading/decoding image data
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
+		return "", fmt.Errorf("unsupported file type: %s", ext)
+	}
+
+	// Inspect header dimensions first to reject decompression bombs before full decode
+	cfg, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect image dimensions: %w", err)
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 {
+		return "", fmt.Errorf("invalid image dimensions: %dx%d", cfg.Width, cfg.Height)
+	}
+	if cfg.Width > maxImageDimension || cfg.Height > maxImageDimension {
+		return "", fmt.Errorf("image dimensions %dx%d exceed maximum %d", cfg.Width, cfg.Height, maxImageDimension)
+	}
+	if int64(cfg.Width)*int64(cfg.Height) > maxImagePixels {
+		return "", fmt.Errorf("image pixel count %d exceeds maximum %d", int64(cfg.Width)*int64(cfg.Height), maxImagePixels)
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("failed to rewind image stream: %w", err)
+	}
+
 	// Decode image
 	img, err := imaging.Decode(file)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode image: %w", err)
-	}
-
-	// Validate extension
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
-		return "", fmt.Errorf("unsupported file type: %s", ext)
 	}
 
 	timestamp := time.Now().UnixNano()
