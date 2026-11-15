@@ -82,6 +82,36 @@ Led,192.168.1.100,2,5`,
 				return len(rows) == 1 && rows[0].ControllerIP == "192.168.1.100" && *rows[0].SegmentID == 2 && *rows[0].LEDIndex == 5
 			},
 		},
+		{
+			name: "With Standalone Container and Bin Name",
+			csvContent: `Name,Container,Bin Name,Quantity
+Capacitor,Drawer A,A1,25`,
+			expectError: false,
+			check: func(rows []PartImportRow) bool {
+				return len(rows) == 1 && rows[0].ControllerIP == "" && rows[0].ContainerName == "Drawer A" && rows[0].BinName == "A1" && rows[0].InitialQuantity == 25
+			},
+		},
+		{
+			name: "With Standalone Container and Bin Alias",
+			csvContent: `Name,Container Name,Bin,Quantity
+Resistor,Shelf B,B2,15`,
+			expectError: false,
+			check: func(rows []PartImportRow) bool {
+				return len(rows) == 1 && rows[0].ControllerIP == "" && rows[0].ContainerName == "Shelf B" && rows[0].BinName == "B2" && rows[0].InitialQuantity == 15
+			},
+		},
+		{
+			name:        "Standalone Container Missing Bin",
+			csvContent:  "Name,Container,Quantity\nLoose Part,Drawer A,5",
+			expectError: true,
+			check:       nil,
+		},
+		{
+			name:        "Location Without Controller IP",
+			csvContent:  "Name,Segment ID,LED Index\nBad Part,0,5",
+			expectError: true,
+			check:       nil,
+		},
 	}
 
 	for _, tc := range tests {

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,6 +22,8 @@ import (
 	_ "image/png"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/config"
 	"github.com/tuxedocurly/wledger/internal/dashboard"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/documents"
@@ -29,6 +32,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/stock"
 	"github.com/tuxedocurly/wledger/internal/tags"
 	"github.com/tuxedocurly/wledger/internal/uierror"
+	"github.com/tuxedocurly/wledger/web/pages"
 )
 
 // Reusing setup logic from Handler_hardware_test.go
@@ -558,5 +562,238 @@ func TestPartStockMove_Merge_Rollback(t *testing.T) {
 	}
 	if row.Quantity != 10 {
 		t.Error("Source quantity changed!")
+	}
+}
+
+func TestHandlePartStockAdjust_OOBTotalStock(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	partID, err := h.Queries.CreatePart(ctx, db.CreatePartParams{
+		Name:              "OOB Part",
+		MinStockThreshold: sql.NullInt64{Int64: 5, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreatePart failed: %v", err)
+	}
+	contID, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{Name: "Box"})
+	binID, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "A1", ContainerID: contID})
+
+	// Seed binned stock (qty 4) + orphaned stock (qty 3) -> total 7
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID: partID, BinID: sql.NullInt64{Int64: binID, Valid: true}, Quantity: 4,
+	})
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID: partID, BinID: sql.NullInt64{Valid: false}, Quantity: 3,
+	})
+	assignBinID, _ := h.Queries.GetAssignmentID(ctx, db.GetAssignmentIDParams{
+		PartID: partID, BinID: sql.NullInt64{Int64: binID, Valid: true},
+	})
+	assignments, _ := h.Queries.GetPartAssignments(ctx, partID)
+	var orphanAssignID int64
+	for _, a := range assignments {
+		if !a.BinID.Valid {
+			orphanAssignID = a.ID
+		}
+	}
+
+	r := chi.NewRouter()
+	r.Post("/parts/{id}/stock/{assignment_id}/adjust", h.HandlePartStockAdjust)
+
+	// 1. Increment binned assignment by +1 -> bin qty 5, global total 8 (5 + 3)
+	req := httptest.NewRequest("POST", fmt.Sprintf("/parts/%d/stock/%d/adjust?delta=1", partID, assignBinID), nil)
+	req.Header.Set("HX-Request", "true")
+	req = req.WithContext(auth.WithUser(req.Context(), auth.User{ID: 1, Role: "admin"}))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d: %s", rr.Code, rr.Body.String())
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, `id="part-total-stock"`) || !strings.Contains(body, `hx-swap-oob="true"`) {
+		t.Fatalf("expected OOB #part-total-stock swap in response, got: %s", body)
+	}
+	if !strings.Contains(body, ">8<") && !strings.Contains(body, "8\n") && !strings.Contains(strings.TrimSpace(body), "8") {
+		t.Errorf("expected updated total 8 in OOB swap, got: %s", body)
+	}
+	// Extract OOB segment specifically to verify total 8 inside #part-total-stock
+	oobIdx := strings.Index(body, `id="part-total-stock"`)
+	if oobIdx < 0 || !strings.Contains(body[oobIdx:], "8") {
+		t.Errorf("expected total 8 inside #part-total-stock, got: %s", body)
+	}
+
+	// 2. Decrement orphaned assignment by -3 -> orphan qty 0, global total drops to 5 (triggers low-stock desc)
+	req2 := httptest.NewRequest("POST", fmt.Sprintf("/parts/%d/stock/%d/adjust?delta=-3", partID, orphanAssignID), nil)
+	req2.Header.Set("HX-Request", "true")
+	req2 = req2.WithContext(auth.WithUser(req2.Context(), auth.User{ID: 1, Role: "admin"}))
+	rr2 := httptest.NewRecorder()
+	r.ServeHTTP(rr2, req2)
+
+	if rr2.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on orphan adjust, got %d: %s", rr2.Code, rr2.Body.String())
+	}
+	body2 := rr2.Body.String()
+	oobIdx2 := strings.Index(body2, `id="part-total-stock"`)
+	if oobIdx2 < 0 || !strings.Contains(body2[oobIdx2:], `hx-swap-oob="true"`) || !strings.Contains(body2[oobIdx2:], "5") {
+		t.Errorf("expected OOB #part-total-stock with total 5 after orphan adjust, got: %s", body2)
+	}
+}
+
+func TestImageThumbURL_AndCardVsDetailRendering(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	_ = os.MkdirAll(config.DirUploadsImages, 0755)
+	withThumb := "/uploads/images/part_hasthumb.jpg"
+	withoutThumb := "/uploads/images/part_nothumb.jpg"
+
+	if err := os.WriteFile(filepath.Join(config.DirUploadsImages, "part_hasthumb.jpg"), []byte("full"), 0644); err != nil {
+		t.Fatalf("write main image failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(config.DirUploadsImages, "part_hasthumb_thumb.jpg"), []byte("thumb"), 0644); err != nil {
+		t.Fatalf("write thumb image failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(config.DirUploadsImages, "part_nothumb.jpg"), []byte("full"), 0644); err != nil {
+		t.Fatalf("write nothumb image failed: %v", err)
+	}
+
+	if got := pages.ImageThumbURL(""); got != "" {
+		t.Errorf("ImageThumbURL(\"\") = %q, want \"\"", got)
+	}
+	if got := pages.ImageThumbURL("https://example.com/a.jpg"); got != "https://example.com/a.jpg" {
+		t.Errorf("ImageThumbURL(external) = %q, want unchanged", got)
+	}
+	if got := pages.ImageThumbURL(withThumb); got != "/uploads/images/part_hasthumb_thumb.jpg" {
+		t.Errorf("ImageThumbURL(withThumb) = %q, want _thumb.jpg path", got)
+	}
+	if got := pages.ImageThumbURL(withoutThumb); got != withoutThumb {
+		t.Errorf("ImageThumbURL(withoutThumb) = %q, want fallback %q", got, withoutThumb)
+	}
+	if got := pages.ImageThumbURL("/uploads/images/part_hasthumb_thumb.jpg"); got != "/uploads/images/part_hasthumb_thumb.jpg" {
+		t.Errorf("ImageThumbURL(alreadyThumb) = %q, want unchanged", got)
+	}
+
+	partID, err := h.Queries.CreatePart(ctx, db.CreatePartParams{
+		Name:      "Thumb Card Part",
+		ImagePath: sql.NullString{String: withThumb, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreatePart failed: %v", err)
+	}
+
+	// List cards should use thumbnail URL
+	listReq := httptest.NewRequest("GET", "/parts", nil).WithContext(auth.WithUser(ctx, auth.User{Role: "admin"}))
+	listRR := httptest.NewRecorder()
+	h.HandlePartsList(listRR, listReq)
+	if !strings.Contains(listRR.Body.String(), "/uploads/images/part_hasthumb_thumb.jpg") {
+		t.Errorf("expected parts list card to render thumbnail path")
+	}
+
+	// Detail page should keep full image path
+	r := chi.NewRouter()
+	r.Get("/parts/{id}", h.HandlePartDetail)
+	detReq := httptest.NewRequest("GET", fmt.Sprintf("/parts/%d", partID), nil).WithContext(auth.WithUser(ctx, auth.User{Role: "admin"}))
+	detRR := httptest.NewRecorder()
+	r.ServeHTTP(detRR, detReq)
+	if !strings.Contains(detRR.Body.String(), `src="/uploads/images/part_hasthumb.jpg"`) {
+		t.Errorf("expected part detail page to keep full image URL %q", withThumb)
+	}
+}
+
+func TestHandlePartsList_BinFilterTrueTotalStockAndPreservedFilters(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	partID, _ := h.Queries.CreatePart(ctx, db.CreatePartParams{Name: "MultiBin Resistor"})
+	ctrl, _ := h.Queries.CreateController(ctx, db.CreateControllerParams{Name: "MainCtrl", IpAddress: "10.0.0.9"})
+	contID, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "MainBox",
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
+	})
+	binA, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "BinA", ContainerID: contID})
+	binB, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "BinB", ContainerID: contID})
+
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Int64: binA, Valid: true}, Quantity: 4})
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Int64: binB, Valid: true}, Quantity: 6})
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Valid: false}, Quantity: 5})
+
+	// Bin-filtered query via bin_id + active search bar filter parameters
+	urlStr := fmt.Sprintf("/parts?bin_id=%d&tag=smd&controller_id=%d&stock=low&sort=name&q=MultiBin", binA, ctrl.ID)
+	req := httptest.NewRequest("GET", urlStr, nil).WithContext(auth.WithUser(ctx, auth.User{Role: "admin"}))
+	rr := httptest.NewRecorder()
+	h.HandlePartsList(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "MultiBin Resistor") {
+		t.Fatalf("expected filtered part in response")
+	}
+	if !strings.Contains(body, ": 15<") {
+		t.Errorf("expected true global total stock 15 (4+6+5) on bin-filtered part card, body=%s", body)
+	}
+	for _, hidden := range []string{
+		fmt.Sprintf(`name="bin_id" value="%d"`, binA),
+		`name="tag" value="smd"`,
+		fmt.Sprintf(`name="controller_id" value="%d"`, ctrl.ID),
+		`name="stock" value="low"`,
+		`name="sort" value="name"`,
+		`hx-include="closest form"`,
+	} {
+		if !strings.Contains(body, hidden) {
+			t.Errorf("expected search bar HTML to preserve %s", hidden)
+		}
+	}
+}
+
+func TestHandlePartDetail_StandaloneAndSafeConfirm(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	partID, _ := h.Queries.CreatePart(ctx, db.CreatePartParams{Name: "Standalone Stored Part"})
+	standaloneCont, _ := h.Queries.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "Shelf Drawer",
+		ControllerID: sql.NullInt64{Valid: false},
+	})
+	standaloneBin, _ := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "D1", ContainerID: standaloneCont})
+
+	_ = h.Queries.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID: partID, BinID: sql.NullInt64{Int64: standaloneBin, Valid: true}, Quantity: 12,
+	})
+
+	r := chi.NewRouter()
+	r.Get("/parts/{id}", h.HandlePartDetail)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/parts/%d", partID), nil).WithContext(auth.WithUser(ctx, auth.User{Role: "admin"}))
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Shelf Drawer") || !strings.Contains(body, "Standalone") {
+		t.Errorf("expected standalone container hardware label in stock table")
+	}
+	if !strings.Contains(body, `<option value="standalone">`) {
+		t.Errorf("expected standalone option in stock assignment/move modals")
+	}
+	if strings.Contains(body, "Reassign orphaned stock") || strings.Contains(body, ">Fix<") {
+		t.Errorf("standalone container binned stock must show Move instead of Fix Orphaned")
+	}
+	if strings.Contains(body, "return confirm('") {
+		t.Errorf("found unsafe single-quote confirm handler in HTML")
+	}
+	if !strings.Contains(body, `data-confirm="`) || !strings.Contains(body, `onsubmit="return confirm(this.dataset.confirm)"`) {
+		t.Errorf("expected safe data-confirm + dataset.confirm onsubmit handler")
 	}
 }

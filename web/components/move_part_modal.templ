@@ -5,9 +5,21 @@ import (
 	"github.com/tuxedocurly/wledger/internal/db"
 )
 
+// ControllerSelectOptions renders controller dropdown options, including a
+// standalone container group option when standalone containers exist.
+templ ControllerSelectOptions(controllers []db.Controller, hasStandalone bool, placeholder string) {
+	<option value="" disabled selected>{ placeholder }</option>
+	for _, c := range controllers {
+		<option value={ fmt.Sprintf("%d", c.ID) }>{ c.Name }</option>
+	}
+	if hasStandalone {
+		<option value="standalone">Standalone Containers</option>
+	}
+}
+
 // MoveStockModal renders a reusable modal for moving or fixing stock assignments.
-// It handles the Controller + Bin selection logic for "move" and "fix" part buttons on part_detail.templ.
-templ MoveStockModal(modalID string, title string, message string, actionURL string, quantity int64, controllers []db.Controller) {
+// It handles the Controller (or Standalone) + Bin selection logic for "move" and "fix" part buttons on part_detail.templ.
+templ MoveStockModal(modalID string, title string, message string, actionURL string, quantity int64, controllers []db.Controller, hasStandalone ...bool) {
 	@Modal(ModalProps{
 		ID:         modalID,
 		Title:      title,
@@ -26,7 +38,7 @@ templ MoveStockModal(modalID string, title string, message string, actionURL str
 			>
 				<div class="form-control w-full">
 					<label class="label pt-0 pb-2 justify-start gap-2">
-						<span class="label-text font-bold text-xs uppercase tracking-widest">1. Select Target Controller</span>
+						<span class="label-text font-bold text-xs uppercase tracking-widest">1. Select Target Controller or Standalone</span>
 					</label>
 					<select
 						name="controller_id"
@@ -37,10 +49,7 @@ templ MoveStockModal(modalID string, title string, message string, actionURL str
 						required
 						@change="hasSelection = false"
 					>
-						<option value="" disabled selected>Select...</option>
-						for _, c := range controllers {
-							<option value={ fmt.Sprintf("%d", c.ID) }>{ c.Name }</option>
-						}
+						@ControllerSelectOptions(controllers, len(hasStandalone) > 0 && hasStandalone[0], "Select...")
 					</select>
 				</div>
 
