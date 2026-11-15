@@ -133,6 +133,8 @@ docker compose up -d
 
 Visit `http://localhost:8080` (or `https://<host-ip>:8080` if `WLEDGER_TLS_SELF_SIGNED=true` is enabled) to complete the Setup Wizard.
 
+> **mDNS Discovery in Docker:** On Linux hosts, set `network_mode: host` (and remove `ports:`) in [docker-compose.yaml](docker-compose.yaml) so WLEDger can send/receive LAN mDNS (`_wled._tcp.local.`) and resolve `.local` hostnames. On macOS/Windows, Docker containers run inside a Linux VM whose NAT bridge does not forward multicast, so add controllers by LAN IP address (or run the native binary for mDNS auto-discovery).
+
 ### Option 2: Pre-Built Pure-Go Single Binary
 
 Download the static archive for your platform (`linux/amd64`, `linux/arm64`, `darwin/arm64`, `darwin/amd64`, or `windows/amd64`) from [GitHub Releases](https://github.com/tuxedocurly/wledger/releases):

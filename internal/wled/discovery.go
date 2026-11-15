@@ -25,7 +25,21 @@ const (
 	dnsTypeAAAA uint16 = 28
 	dnsTypeSRV  uint16 = 33
 
+	dnsClassIN        uint16 = 0x0001 // IN class (standard multicast-response query)
 	dnsClassINUnicast uint16 = 0x8001 // IN class with QU (unicast-response) bit set
+
+	defaultMDNSHostResolveTimeout = 1200 * time.Millisecond
+	mdnsHostCacheTTL              = 60 * time.Second
+)
+
+type mdnsCacheEntry struct {
+	ip        string
+	expiresAt time.Time
+}
+
+var (
+	mdnsHostCacheMu sync.RWMutex
+	mdnsHostCache   = make(map[string]mdnsCacheEntry)
 )
 
 // SRVRecord represents an mDNS SRV answer.
@@ -77,11 +91,12 @@ func normalizeDNSName(name string) string {
 	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(name)), ".")
 }
 
-// BuildMDNSQuery constructs a DNS-SD PTR query packet for the given service (e.g. "_wled._tcp.local.").
-func BuildMDNSQuery(service string) ([]byte, error) {
-	clean := normalizeDNSName(service)
+// BuildMDNSQuestion constructs a single-question (QDCOUNT=1) mDNS query packet
+// for compatibility with ESP8266/ESP32 responders.
+func BuildMDNSQuestion(name string, qtype uint16, qclass uint16) ([]byte, error) {
+	clean := normalizeDNSName(name)
 	if clean == "" {
-		return nil, errors.New("service name cannot be empty")
+		return nil, errors.New("DNS name cannot be empty")
 	}
 
 	var buf []byte
@@ -99,11 +114,16 @@ func BuildMDNSQuery(service string) ([]byte, error) {
 	buf = append(buf, 0) // Root terminator
 
 	tail := make([]byte, 4)
-	binary.BigEndian.PutUint16(tail[0:2], dnsTypePTR)
-	binary.BigEndian.PutUint16(tail[2:4], dnsClassINUnicast)
+	binary.BigEndian.PutUint16(tail[0:2], qtype)
+	binary.BigEndian.PutUint16(tail[2:4], qclass)
 	buf = append(buf, tail...)
 
 	return buf, nil
+}
+
+// BuildMDNSQuery constructs a DNS-SD PTR query packet for the given service (e.g. "_wled._tcp.local.").
+func BuildMDNSQuery(service string) ([]byte, error) {
+	return BuildMDNSQuestion(service, dnsTypePTR, dnsClassINUnicast)
 }
 
 // ParseMDNSResponse decodes a raw mDNS UDP packet into PTR, SRV, A, AAAA, and TXT records.
@@ -354,56 +374,363 @@ func VerifyCandidates(ctx context.Context, client *Client, candidates []MDNSCand
 	return out
 }
 
-// Discover broadcasts an mDNS PTR query for _wled._tcp.local. and verifies responding hosts via /json/info.
-func Discover(ctx context.Context, client *Client, timeout time.Duration) ([]DiscoveredDevice, error) {
+// IsMDNSHost reports whether host is a .local mDNS hostname (and not a literal IP address).
+func IsMDNSHost(host string) bool {
+	clean := normalizeDNSName(host)
+	if clean == "" || net.ParseIP(clean) != nil {
+		return false
+	}
+	return strings.HasSuffix(clean, ".local") && len(clean) > len(".local")
+}
+
+// InvalidateMDNSHost evicts cached mDNS address entries for the given .local hostname.
+func InvalidateMDNSHost(host string) {
+	prefix := normalizeDNSName(host) + "|"
+	mdnsHostCacheMu.Lock()
+	for k := range mdnsHostCache {
+		if strings.HasPrefix(k, prefix) {
+			delete(mdnsHostCache, k)
+		}
+	}
+	mdnsHostCacheMu.Unlock()
+}
+
+// ResolveMDNSHost resolves a .local hostname via multicast mDNS into an IP address.
+func ResolveMDNSHost(ctx context.Context, host string, timeout time.Duration) (string, error) {
+	ip, _, err := resolveMDNSHostAtAddr(ctx, host, MDNSMulticastAddr, timeout)
+	return ip, err
+}
+
+func resolveMDNSHostAtAddr(ctx context.Context, host string, targetAddrStr string, timeout time.Duration) (string, bool, error) {
+	if !IsMDNSHost(host) {
+		return "", false, fmt.Errorf("%q is not a valid .local mDNS hostname", host)
+	}
+	if ctx.Err() != nil {
+		return "", false, ctx.Err()
+	}
+	if timeout <= 0 {
+		timeout = defaultMDNSHostResolveTimeout
+	}
+
+	key := normalizeDNSName(host)
+	cacheKey := key + "|" + targetAddrStr
+	now := time.Now()
+
+	mdnsHostCacheMu.RLock()
+	cached, ok := mdnsHostCache[cacheKey]
+	mdnsHostCacheMu.RUnlock()
+	if ok && now.Before(cached.expiresAt) {
+		return cached.ip, true, nil
+	}
+
+	quPacket, err := BuildMDNSQuestion(key, dnsTypeA, dnsClassINUnicast)
+	if err != nil {
+		return "", false, err
+	}
+	qmPacket, err := BuildMDNSQuestion(key, dnsTypeA, dnsClassIN)
+	if err != nil {
+		return "", false, err
+	}
+
+	combined, err := queryMDNS(ctx, targetAddrStr, quPacket, qmPacket, timeout, func(data *MDNSResponseData) bool {
+		return extractValidHostIP(data, key) != ""
+	})
+	if err != nil {
+		return "", false, err
+	}
+
+	ip := extractValidHostIP(combined, key)
+	if ip == "" {
+		return "", false, fmt.Errorf("mDNS lookup for %q returned no address record", host)
+	}
+
+	mdnsHostCacheMu.Lock()
+	if len(mdnsHostCache) > 256 {
+		cutoff := time.Now()
+		for k, v := range mdnsHostCache {
+			if !cutoff.Before(v.expiresAt) {
+				delete(mdnsHostCache, k)
+			}
+		}
+	}
+	mdnsHostCache[cacheKey] = mdnsCacheEntry{
+		ip:        ip,
+		expiresAt: time.Now().Add(mdnsHostCacheTTL),
+	}
+	mdnsHostCacheMu.Unlock()
+
+	return ip, false, nil
+}
+
+func extractValidHostIP(data *MDNSResponseData, hostKey string) string {
+	if data == nil {
+		return ""
+	}
+	for _, ip := range data.A[hostKey] {
+		if _, _, err := ValidateEndpoint(ip, sql.NullInt64{}); err == nil {
+			return ip
+		}
+	}
+	for _, ip := range data.AAAA[hostKey] {
+		if _, _, err := ValidateEndpoint(ip, sql.NullInt64{}); err == nil {
+			return ip
+		}
+	}
+	return ""
+}
+
+func activeMulticastInterfaces() ([]net.Interface, []net.IP) {
+	rawIfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, nil
+	}
+
+	var (
+		ifaces []net.Interface
+		ipv4s  []net.IP
+		seenIP = make(map[string]bool)
+	)
+	for _, iface := range rawIfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+		addrs, addrErr := iface.Addrs()
+		if addrErr != nil {
+			continue
+		}
+		hasIPv4 := false
+		for _, a := range addrs {
+			ipNet, ok := a.(*net.IPNet)
+			if !ok || ipNet.IP == nil {
+				continue
+			}
+			ip4 := ipNet.IP.To4()
+			if ip4 == nil || ip4.IsLoopback() || ip4.IsUnspecified() {
+				continue
+			}
+			hasIPv4 = true
+			if s := ip4.String(); !seenIP[s] {
+				seenIP[s] = true
+				ipv4s = append(ipv4s, ip4)
+			}
+		}
+		if hasIPv4 {
+			ifaces = append(ifaces, iface)
+		}
+	}
+	return ifaces, ipv4s
+}
+
+func queryMDNS(
+	ctx context.Context,
+	targetAddrStr string,
+	quPacket []byte,
+	qmPacket []byte,
+	timeout time.Duration,
+	stopEarly func(*MDNSResponseData) bool,
+) (*MDNSResponseData, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	if timeout <= 0 {
 		timeout = 2 * time.Second
 	}
 
-	query, err := BuildMDNSQuery(WLEDServiceName)
+	targetAddr, err := net.ResolveUDPAddr("udp4", targetAddrStr)
 	if err != nil {
-		return nil, err
-	}
-
-	mcastAddr, err := net.ResolveUDPAddr("udp4", MDNSMulticastAddr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve mDNS multicast address: %w", err)
-	}
-
-	conn, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
-	if err != nil {
-		return nil, fmt.Errorf("failed to open UDP socket for mDNS discovery: %w", err)
-	}
-	defer conn.Close()
-
-	if _, err := conn.WriteToUDP(query, mcastAddr); err != nil {
-		return nil, fmt.Errorf("failed to send mDNS discovery query: %w", err)
+		return nil, fmt.Errorf("failed to resolve mDNS address %q: %w", targetAddrStr, err)
 	}
 
 	deadline := time.Now().Add(timeout)
 	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
-	_ = conn.SetReadDeadline(deadline)
+
+	var (
+		txConns       []*net.UDPConn
+		allConns      []*net.UDPConn
+		lastSocketErr error
+	)
+
+	closeAll := func() {
+		for _, c := range allConns {
+			_ = c.Close()
+		}
+	}
+
+	if targetAddr.IP.IsMulticast() {
+		ifaces, ipv4s := activeMulticastInterfaces()
+		for _, ip4 := range ipv4s {
+			conn, listenErr := net.ListenUDP("udp4", &net.UDPAddr{IP: ip4, Port: 0})
+			if listenErr != nil {
+				lastSocketErr = listenErr
+				continue
+			}
+			txConns = append(txConns, conn)
+			allConns = append(allConns, conn)
+		}
+
+		if len(txConns) == 0 {
+			conn, listenErr := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+			if listenErr != nil {
+				return nil, fmt.Errorf("failed to open UDP socket for mDNS query: %w", listenErr)
+			}
+			txConns = append(txConns, conn)
+			allConns = append(allConns, conn)
+		}
+
+		for _, iface := range ifaces {
+			ifaceCopy := iface
+			mcConn, mcErr := net.ListenMulticastUDP("udp4", &ifaceCopy, targetAddr)
+			if mcErr == nil {
+				allConns = append(allConns, mcConn)
+			}
+		}
+	} else {
+		conn, listenErr := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+		if listenErr != nil {
+			return nil, fmt.Errorf("failed to open UDP socket for mDNS query: %w", listenErr)
+		}
+		txConns = append(txConns, conn)
+		allConns = append(allConns, conn)
+	}
+
+	if len(txConns) == 0 {
+		if lastSocketErr != nil {
+			return nil, fmt.Errorf("failed to open UDP socket for mDNS query: %w", lastSocketErr)
+		}
+		return nil, errors.New("no UDP sockets available for mDNS query")
+	}
+
+	stopCh := make(chan struct{})
+	pktCh := make(chan *MDNSResponseData, 16)
+	var wg sync.WaitGroup
+
+	for _, c := range allConns {
+		_ = c.SetReadDeadline(deadline)
+		wg.Add(1)
+		go func(conn *net.UDPConn) {
+			defer wg.Done()
+			buf := make([]byte, 4096)
+			for {
+				n, _, readErr := conn.ReadFromUDP(buf)
+				if readErr != nil {
+					return
+				}
+				parsed, parseErr := ParseMDNSResponse(buf[:n])
+				if parseErr != nil {
+					continue
+				}
+				select {
+				case pktCh <- parsed:
+				case <-stopCh:
+					return
+				}
+			}
+		}(c)
+	}
+
+	teardown := func() {
+		close(stopCh)
+		closeAll()
+		wg.Wait()
+	}
+
+	sendBurst := func() error {
+		sentAny := false
+		var firstWriteErr error
+		for _, c := range txConns {
+			if len(quPacket) > 0 {
+				if _, wErr := c.WriteToUDP(quPacket, targetAddr); wErr != nil {
+					if firstWriteErr == nil {
+						firstWriteErr = wErr
+					}
+				} else {
+					sentAny = true
+				}
+			}
+			// Send QM queries when operating on multicast so ESP8266/ESP32 responders
+			// that ignore the QU bit still deliver multicast replies captured by our listener.
+			if len(qmPacket) > 0 && targetAddr.IP.IsMulticast() {
+				if _, wErr := c.WriteToUDP(qmPacket, targetAddr); wErr != nil {
+					if firstWriteErr == nil {
+						firstWriteErr = wErr
+					}
+				} else {
+					sentAny = true
+				}
+			}
+		}
+		if !sentAny && firstWriteErr != nil {
+			return firstWriteErr
+		}
+		return nil
+	}
+
+	if writeErr := sendBurst(); writeErr != nil {
+		teardown()
+		return nil, fmt.Errorf("failed to send mDNS query: %w", writeErr)
+	}
+
+	waitDur := time.Until(deadline)
+	if waitDur <= 0 {
+		waitDur = time.Millisecond
+	}
+	timer := time.NewTimer(waitDur)
+	defer timer.Stop()
+
+	var retryC <-chan time.Time
+	if targetAddr.IP.IsMulticast() && waitDur > 200*time.Millisecond {
+		retryTimer := time.NewTimer(150 * time.Millisecond)
+		defer retryTimer.Stop()
+		retryC = retryTimer.C
+	}
 
 	combined := newMDNSResponseData()
-	buf := make([]byte, 4096)
+loop:
 	for {
-		if ctx.Err() != nil {
-			break
-		}
-		n, _, readErr := conn.ReadFromUDP(buf)
-		if readErr != nil {
-			if netErr, ok := readErr.(net.Error); ok && netErr.Timeout() {
-				break
+		select {
+		case <-ctx.Done():
+			break loop
+		case <-timer.C:
+			break loop
+		case <-retryC:
+			retryC = nil
+			_ = sendBurst()
+		case pktData := <-pktCh:
+			combined.merge(pktData)
+			if stopEarly != nil && stopEarly(combined) {
+				break loop
 			}
-			break
 		}
-		parsed, parseErr := ParseMDNSResponse(buf[:n])
-		if parseErr != nil {
-			continue
-		}
-		combined.merge(parsed)
+	}
+
+	teardown()
+	return combined, nil
+}
+
+// Discover broadcasts an mDNS PTR query for _wled._tcp.local. and verifies responding hosts via /json/info.
+func Discover(ctx context.Context, client *Client, timeout time.Duration) ([]DiscoveredDevice, error) {
+	return discoverAtAddr(ctx, client, MDNSMulticastAddr, timeout)
+}
+
+func discoverAtAddr(ctx context.Context, client *Client, targetAddr string, timeout time.Duration) ([]DiscoveredDevice, error) {
+	if timeout <= 0 {
+		timeout = 2 * time.Second
+	}
+
+	quQuery, err := BuildMDNSQuestion(WLEDServiceName, dnsTypePTR, dnsClassINUnicast)
+	if err != nil {
+		return nil, err
+	}
+	qmQuery, err := BuildMDNSQuestion(WLEDServiceName, dnsTypePTR, dnsClassIN)
+	if err != nil {
+		return nil, err
+	}
+
+	combined, err := queryMDNS(ctx, targetAddr, quQuery, qmQuery, timeout, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	candidates := combined.ExtractCandidates()

@@ -3,6 +3,11 @@ services:
     image: tuxedomakes/wledger:latest
     container_name: wledger
 
+    # Linux LAN mDNS discovery (_wled._tcp.local. and .local hostnames):
+    # On Linux hosts, uncomment network_mode: host and comment out ports: below.
+    # (On macOS/Windows Docker runs in a VM, so add controllers by LAN IP or run the native binary for mDNS.)
+    # network_mode: host
+
     ports:
       # Maps HOST:CONTAINER (adjust if overriding WLEDGER_PORT)
       - "8080:8080"

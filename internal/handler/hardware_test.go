@@ -467,3 +467,103 @@ func TestHandler_LocateNetworkErrorPropagatesHTMXToast(t *testing.T) {
 		t.Errorf("expected HX-Reswap=none HTMX error toast header, got %q", rr.Header().Get("HX-Reswap"))
 	}
 }
+
+func TestHandler_ControllerAddressNormalization(t *testing.T) {
+	h, s, ctx := setupHardwareHandlerTest(t, "handler_addr_norm", nil)
+
+	r := chi.NewRouter()
+	r.Post("/hardware", h.HandleHardwareCreate)
+	r.Post("/hardware/{id}/update", h.HandleControllerUpdate)
+
+	validCases := []struct {
+		name     string
+		rawIP    string
+		wantHost string
+	}{
+		{"plain http scheme", "http://wled-da8eec.local", "wled-da8eec.local"},
+		{"wled ui copy paste whitespace", "http:// \nwled-da8eec\n .local", "wled-da8eec.local"},
+		{"uppercase scheme trailing slash", "  HTTP://wled-da8eec.local/  ", "wled-da8eec.local"},
+		{"ipv4 http with trailing slash", "  http://192.168.1.55/  ", "192.168.1.55"},
+	}
+
+	for idx, tc := range validCases {
+		t.Run("create_"+tc.name, func(t *testing.T) {
+			form := url.Values{}
+			form.Add("name", fmt.Sprintf("Ctrl-%d", idx))
+			form.Add("ip_address", tc.rawIP)
+			form.Add("port", "80")
+
+			req := httptest.NewRequest(http.MethodPost, "/hardware", strings.NewReader(form.Encode())).WithContext(ctx)
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusSeeOther {
+				t.Fatalf("expected 303 redirect for %q, got %d (%s)", tc.rawIP, rr.Code, rr.Body.String())
+			}
+
+			ctrls, _ := s.GetControllers(ctx)
+			if ctrls[len(ctrls)-1].IpAddress != tc.wantHost {
+				t.Errorf("saved IP = %q, want %q", ctrls[len(ctrls)-1].IpAddress, tc.wantHost)
+			}
+		})
+	}
+
+	// Verify HandleControllerUpdate also normalizes inputs cleanly.
+	baseCtrl, err := h.Hardware.CreateController(ctx, db.CreateControllerParams{
+		Name:      "UpdTarget",
+		IpAddress: "10.0.0.88",
+		Port:      sql.NullInt64{Int64: 80, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateController setup failed: %v", err)
+	}
+
+	updForm := url.Values{}
+	updForm.Add("name", "UpdTarget")
+	updForm.Add("ip_address", "http:// \nwled-da8eec\n .local/")
+	updForm.Add("port", "80")
+	reqUpd := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/%d/update", baseCtrl.ID), strings.NewReader(updForm.Encode())).WithContext(ctx)
+	reqUpd.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrUpd := httptest.NewRecorder()
+	r.ServeHTTP(rrUpd, reqUpd)
+	if rrUpd.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect on update, got %d (%s)", rrUpd.Code, rrUpd.Body.String())
+	}
+	gotCtrl, _ := s.GetController(ctx, baseCtrl.ID)
+	if gotCtrl.IpAddress != "wled-da8eec.local" {
+		t.Errorf("updated controller IP = %q, want wled-da8eec.local", gotCtrl.IpAddress)
+	}
+
+	invalidCases := []string{
+		"https://192.168.1.55",
+		"http://192.168.1.55/evil",
+		"192.168.1.55 bad",
+		"bad host.local",
+	}
+
+	for _, badIP := range invalidCases {
+		t.Run("reject_"+badIP, func(t *testing.T) {
+			form := url.Values{}
+			form.Add("name", "Invalid")
+			form.Add("ip_address", badIP)
+			form.Add("port", "80")
+
+			reqCreate := httptest.NewRequest(http.MethodPost, "/hardware", strings.NewReader(form.Encode())).WithContext(ctx)
+			reqCreate.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			rrCreate := httptest.NewRecorder()
+			r.ServeHTTP(rrCreate, reqCreate)
+			if rrCreate.Code != http.StatusBadRequest {
+				t.Errorf("create: expected 400 BadRequest for %q, got %d", badIP, rrCreate.Code)
+			}
+
+			reqBadUpd := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/%d/update", baseCtrl.ID), strings.NewReader(form.Encode())).WithContext(ctx)
+			reqBadUpd.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			rrBadUpd := httptest.NewRecorder()
+			r.ServeHTTP(rrBadUpd, reqBadUpd)
+			if rrBadUpd.Code != http.StatusBadRequest {
+				t.Errorf("update: expected 400 BadRequest for %q, got %d", badIP, rrBadUpd.Code)
+			}
+		})
+	}
+}

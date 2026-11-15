@@ -108,9 +108,30 @@ func resolveUDPEndpoint(host string, udpPort int64) (string, int64, error) {
 	return cleanHost, targetPort, nil
 }
 
+func resolveUDPDialAddr(ctx context.Context, host string, udpPort int64) (string, error) {
+	return resolveUDPDialAddrAt(ctx, host, udpPort, MDNSMulticastAddr)
+}
+
+func resolveUDPDialAddrAt(ctx context.Context, host string, udpPort int64, mdnsAddr string) (string, error) {
+	cleanHost, targetPort, err := resolveUDPEndpoint(host, udpPort)
+	if err != nil {
+		return "", err
+	}
+	if IsMDNSHost(cleanHost) {
+		if ip, _, mErr := resolveMDNSHostAtAddr(ctx, cleanHost, mdnsAddr, defaultMDNSHostResolveTimeout); mErr == nil {
+			cleanHost = ip
+		}
+	}
+	return net.JoinHostPort(cleanHost, strconv.FormatInt(targetPort, 10)), nil
+}
+
 // SendDNRGB dials the controller UDP endpoint and transmits DNRGB packet(s), chunking >489 LEDs cleanly.
 func SendDNRGB(ctx context.Context, host string, udpPort int64, timeoutSec byte, startIndex uint16, rgbData []byte) error {
-	cleanHost, targetPort, err := resolveUDPEndpoint(host, udpPort)
+	return sendDNRGBAtMDNS(ctx, host, udpPort, timeoutSec, startIndex, rgbData, MDNSMulticastAddr)
+}
+
+func sendDNRGBAtMDNS(ctx context.Context, host string, udpPort int64, timeoutSec byte, startIndex uint16, rgbData []byte, mdnsAddr string) error {
+	addr, err := resolveUDPDialAddrAt(ctx, host, udpPort, mdnsAddr)
 	if err != nil {
 		return err
 	}
@@ -118,7 +139,6 @@ func SendDNRGB(ctx context.Context, host string, udpPort int64, timeoutSec byte,
 		return fmt.Errorf("invalid DNRGB payload length %d: must be a positive multiple of 3", len(rgbData))
 	}
 
-	addr := net.JoinHostPort(cleanHost, strconv.FormatInt(targetPort, 10))
 	dialer := &net.Dialer{Timeout: 2 * time.Second}
 	conn, err := dialer.DialContext(ctx, "udp", addr)
 	if err != nil {
@@ -155,7 +175,11 @@ func SendDNRGB(ctx context.Context, host string, udpPort int64, timeoutSec byte,
 
 // SendDNRGBRanges renders ranges against a black frame and transmits all DNRGB packets over UDP.
 func SendDNRGBRanges(ctx context.Context, host string, udpPort int64, timeoutSec byte, totalLEDs int, ranges []LEDRange) error {
-	cleanHost, targetPort, err := resolveUDPEndpoint(host, udpPort)
+	return sendDNRGBRangesAtMDNS(ctx, host, udpPort, timeoutSec, totalLEDs, ranges, MDNSMulticastAddr)
+}
+
+func sendDNRGBRangesAtMDNS(ctx context.Context, host string, udpPort int64, timeoutSec byte, totalLEDs int, ranges []LEDRange, mdnsAddr string) error {
+	addr, err := resolveUDPDialAddrAt(ctx, host, udpPort, mdnsAddr)
 	if err != nil {
 		return err
 	}
@@ -164,7 +188,6 @@ func SendDNRGBRanges(ctx context.Context, host string, udpPort int64, timeoutSec
 		return err
 	}
 
-	addr := net.JoinHostPort(cleanHost, strconv.FormatInt(targetPort, 10))
 	dialer := &net.Dialer{Timeout: 2 * time.Second}
 	conn, err := dialer.DialContext(ctx, "udp", addr)
 	if err != nil {

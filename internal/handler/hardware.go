@@ -37,7 +37,7 @@ func (h *Handler) HandleHardwareList(w http.ResponseWriter, r *http.Request) {
 // POST /hardware
 func (h *Handler) HandleHardwareCreate(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))
-	ip := r.FormValue("ip_address")
+	ip := normalizeControllerAddressInput(r.FormValue("ip_address"))
 
 	if name == "" || ip == "" {
 		h.UIError.Respond(w, r, nil, "Controller name and IP address are required", http.StatusBadRequest)
@@ -76,7 +76,7 @@ func (h *Handler) HandleControllerUpdate(w http.ResponseWriter, r *http.Request)
 	}
 
 	name := strings.TrimSpace(r.FormValue("name"))
-	ip := r.FormValue("ip_address")
+	ip := normalizeControllerAddressInput(r.FormValue("ip_address"))
 	if name == "" || ip == "" {
 		h.UIError.Respond(w, r, nil, "Controller name and IP address are required", http.StatusBadRequest)
 		return
@@ -413,4 +413,25 @@ func parseBoolFormValue(raw string) bool {
 	default:
 		return false
 	}
+}
+
+// normalizeControllerAddressInput strips an accidental http:// scheme, root trailing slash,
+// and surrounding whitespace (including WLED's Web UI layout "http:// \nwled-xxxxxx\n .local")
+// while leaving non-HTTP schemes, paths, or arbitrary interior whitespace untouched for strict validation.
+func normalizeControllerAddressInput(raw string) string {
+	s := strings.TrimSpace(raw)
+	if len(s) >= len("http://") && strings.EqualFold(s[:len("http://")], "http://") {
+		s = strings.TrimSpace(s[len("http://"):])
+	}
+	if strings.HasSuffix(s, "/") && strings.Count(s, "/") == 1 {
+		s = strings.TrimSpace(s[:len(s)-1])
+	}
+	if len(s) > len(".local") && strings.EqualFold(s[len(s)-len(".local"):], ".local") {
+		suffix := s[len(s)-len(".local"):]
+		prefix := strings.TrimSpace(s[:len(s)-len(".local")])
+		if prefix != "" && !strings.ContainsAny(prefix, " \t\r\n\v\f") {
+			s = prefix + suffix
+		}
+	}
+	return s
 }

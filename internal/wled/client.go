@@ -58,10 +58,50 @@ type cachedResult struct {
 }
 
 func NewClient() *Client {
+	return newClientWithMDNSAddr(MDNSMulticastAddr)
+}
+
+func newClientWithMDNSAddr(mdnsAddr string) *Client {
+	var transport *http.Transport
+	if base, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = base.Clone()
+	} else {
+		transport = &http.Transport{}
+	}
+	transport.DialContext = newMDNSDialContext(mdnsAddr)
+
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: 2 * time.Second,
+			Timeout:   2500 * time.Millisecond,
+			Transport: transport,
 		},
+	}
+}
+
+func newMDNSDialContext(mdnsAddr string) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	baseDialer := &net.Dialer{
+		Timeout:   2 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(addr)
+		if err == nil && IsMDNSHost(host) {
+			ip, fromCache, mErr := resolveMDNSHostAtAddr(ctx, host, mdnsAddr, defaultMDNSHostResolveTimeout)
+			if mErr == nil {
+				conn, dialErr := baseDialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+				if dialErr == nil {
+					return conn, nil
+				}
+				if fromCache && ctx.Err() == nil {
+					InvalidateMDNSHost(host)
+					if freshIP, _, freshErr := resolveMDNSHostAtAddr(ctx, host, mdnsAddr, defaultMDNSHostResolveTimeout); freshErr == nil && freshIP != ip {
+						return baseDialer.DialContext(ctx, network, net.JoinHostPort(freshIP, port))
+					}
+				}
+				return nil, dialErr
+			}
+		}
+		return baseDialer.DialContext(ctx, network, addr)
 	}
 }
 
