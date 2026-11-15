@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/tuxedocurly/wledger/internal/audit"
@@ -181,4 +182,97 @@ func TestHandleAuditLogs(t *testing.T) {
 	if count > 20 {
 		t.Errorf("expected default limit of 20, but found %d items", count)
 	}
+}
+
+func TestHandleAuditLogs_FiltersAndDateRange(t *testing.T) {
+	dbConn := openTestDB(t)
+	defer dbConn.Close()
+	setupTestSchema(t, dbConn)
+
+	s := db.NewStore(dbConn)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	h := &Handler{
+		Logger:   logger,
+		Queries:  s,
+		Database: dbConn,
+		UIError:  uierror.New(logger),
+		Audit:    audit.NewService(s),
+		Settings: settings.NewService(s),
+	}
+
+	ctx := context.Background()
+	admin, err := s.CreateUser(ctx, db.CreateUserParams{
+		Email:        "admin@filter.test",
+		Role:         "admin",
+		PasswordHash: "hash",
+	})
+	if err != nil {
+		t.Fatalf("failed to create admin: %v", err)
+	}
+
+	insertDatedLog := func(id int64, action, entity, details, ts string) {
+		t.Helper()
+		_, err := dbConn.ExecContext(ctx,
+			`INSERT INTO audit_logs (id, user_id, action_type, entity_type, entity_id, details, old_value, new_value, created_at)
+			 VALUES (?, ?, ?, ?, 1, ?, '{}', '{}', ?)`,
+			id, admin.ID, action, entity, details, ts,
+		)
+		if err != nil {
+			t.Fatalf("failed inserting dated log %d: %v", id, err)
+		}
+	}
+
+	insertDatedLog(1, "STOCK_INC", "PART", "Incremented stock on Nov 10", "2026-11-10 12:00:00")
+	insertDatedLog(2, "UPDATE", "HARDWARE", "Late Nov 15 WLED change", "2026-11-15 23:30:00")
+	insertDatedLog(3, "STOCK_DEC", "HARDWARE", "Early Nov 16 decrement", "2026-11-16 00:00:01")
+
+	makeReq := func(target string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		req = req.WithContext(auth.WithUser(req.Context(), auth.User{ID: admin.ID, Role: "admin"}))
+		rr := httptest.NewRecorder()
+		h.HandleAuditLogs(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("GET %s returned %d", target, rr.Code)
+		}
+		return rr
+	}
+
+	// 1. Filter by action_type=STOCK_INC and inspect updated filter options
+	body := makeReq("/audit-logs?action_type=STOCK_INC").Body.String()
+	if !strings.Contains(body, "Incremented stock on Nov 10") {
+		t.Error("expected STOCK_INC log in filtered output")
+	}
+	if strings.Contains(body, "Late Nov 15 WLED change") || strings.Contains(body, "Early Nov 16 decrement") {
+		t.Error("unexpected non-STOCK_INC log in filtered output")
+	}
+	if strings.Contains(body, `value="ADJUST_STOCK"`) {
+		t.Error("stale ADJUST_STOCK option should not be in dropdown")
+	}
+	for _, opt := range []string{`value="STOCK_INC"`, `value="BULK_DELETE"`, `value="RESTORE"`, `value="HARDWARE"`, `value="PROJECT"`} {
+		if !strings.Contains(body, opt) {
+			t.Errorf("expected dropdown option %s in audit logs page", opt)
+		}
+	}
+
+	// 2. Filter by entity_type=HARDWARE
+	body = makeReq("/audit-logs?entity_type=HARDWARE").Body.String()
+	if !strings.Contains(body, "Late Nov 15 WLED change") || !strings.Contains(body, "Early Nov 16 decrement") {
+		t.Error("expected both HARDWARE logs in entity filtered output")
+	}
+	if strings.Contains(body, "Incremented stock on Nov 10") {
+		t.Error("unexpected PART log in HARDWARE filtered output")
+	}
+
+	// 3. Filter by inclusive start_date & end_date (2026-11-15 captures 23:30:00, excludes Nov 10 and Nov 16)
+	body = makeReq("/audit-logs?start_date=2026-11-15&end_date=2026-11-15").Body.String()
+	if !strings.Contains(body, "Late Nov 15 WLED change") {
+		t.Error("expected end-of-day log on 2026-11-15 23:30:00 to be included for end_date=2026-11-15")
+	}
+	if strings.Contains(body, "Incremented stock on Nov 10") || strings.Contains(body, "Early Nov 16 decrement") {
+		t.Error("expected out-of-range logs to be excluded by date range filter")
+	}
+	if !strings.Contains(body, `value="2026-11-15"`) {
+		t.Error("expected date input values to remain populated in rendered form")
+	}
+	_ = time.UTC
 }

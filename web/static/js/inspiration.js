@@ -9,25 +9,30 @@ document.addEventListener('alpine:init', () => {
             }
         },
         copyPrompt(id) {
-            const tagsQuery = this.selectedTags.length > 0 ? '?tags=' + this.selectedTags.join(',') : '';
-            return fetch('/inspiration/' + id + '/generate' + tagsQuery)
+            const params = new URLSearchParams();
+            if (this.selectedTags.length > 0) {
+                params.set('tags', this.selectedTags.join(','));
+            }
+            const queryString = params.toString();
+            const url = '/inspiration/' + encodeURIComponent(id) + '/generate' + (queryString ? '?' + queryString : '');
+
+            return fetch(url)
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok');
                     return response.text();
                 })
                 .then(text => {
-                    return navigator.clipboard.writeText(text);
+                    return window.copyTextSafe(text);
                 })
                 .catch(err => {
                     console.error('Failed to copy: ', err);
                     if (window.showToast) {
-                        window.showToast('Failed to generate prompt. See console.', 'alert-error');
+                        window.showToast('Failed to generate or copy prompt. See console.', 'alert-error');
                     } else {
                         alert('Failed to generate prompt. See console.');
                     }
                     throw err;
                 });
         }
-    }))
-})
-
+    }));
+});

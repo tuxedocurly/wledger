@@ -16,6 +16,7 @@ templ AuditDetailModal() {
 					<div class="relative group">
 						<pre id="audit-detail-old" class="bg-base-200 p-4 rounded-lg overflow-x-auto text-[10px] font-mono min-h-[200px] border border-base-300"></pre>
 						<button
+							type="button"
 							class="btn btn-xs btn-ghost absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
 							onclick="copyToClipboard('audit-detail-old')"
 						>
@@ -31,6 +32,7 @@ templ AuditDetailModal() {
 					<div class="relative group">
 						<pre id="audit-detail-new" class="bg-base-200 p-4 rounded-lg overflow-x-auto text-[10px] font-mono min-h-[200px] border border-base-300"></pre>
 						<button
+							type="button"
 							class="btn btn-xs btn-ghost absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
 							onclick="copyToClipboard('audit-detail-new')"
 						>

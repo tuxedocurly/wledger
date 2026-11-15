@@ -52,11 +52,15 @@ func (h *Handler) HandleInspirationGenerate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get tags from query param e.g. ?tags=arduino,sensor
-	tagsParam := r.URL.Query().Get("tags")
+	// Get tags from query params (supports both ?tags=a,b and repeated ?tags=a&tags=b)
 	var tagFilters []string
-	if tagsParam != "" {
-		tagFilters = strings.Split(tagsParam, ",")
+	for _, raw := range r.URL.Query()["tags"] {
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				tagFilters = append(tagFilters, part)
+			}
+		}
 	}
 
 	prompt, err := h.Inspiration.ConstructPrompt(ctx, id, tagFilters)

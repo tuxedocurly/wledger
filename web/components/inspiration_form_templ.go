@@ -252,14 +252,14 @@ func InspirationCard(t db.InspirationTemplate, canWrite bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</p><div class=\"card-actions justify-end mt-auto\"><button @click=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</p><div class=\"card-actions justify-end mt-auto\"><button type=\"button\" @click=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("copyPrompt(%d).then(() => { copied = true; setTimeout(() => copied = false, 2000) })", t.ID))
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("copyPrompt(%d).then(() => { copied = true; setTimeout(() => copied = false, 2000) }).catch(() => {})", t.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/inspiration_form.templ`, Line: 122, Col: 119}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/inspiration_form.templ`, Line: 123, Col: 135}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
