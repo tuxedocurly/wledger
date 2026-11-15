@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,14 +37,37 @@ func NewService(store db.Store, logger *slog.Logger) Service {
 	}
 }
 
-func (s *service) AddLink(ctx context.Context, q db.Querier, partID int64, url, label string) error {
-	if url == "" {
+// ValidateLinkURL verifies that a part link uses http/https with a non-empty host
+// and returns the trimmed URL string.
+func ValidateLinkURL(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", fmt.Errorf("invalid link URL: empty URL")
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("invalid link URL: %w", err)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if (scheme != "http" && scheme != "https") || u.Host == "" {
+		return "", fmt.Errorf("invalid link URL: must use http or https with a valid host")
+	}
+	return trimmed, nil
+}
+
+func (s *service) AddLink(ctx context.Context, q db.Querier, partID int64, rawURL, label string) error {
+	trimmed := strings.TrimSpace(rawURL)
+	if trimmed == "" {
 		return nil
 	}
-	s.logger.Debug("adding part link", "part_id", partID, "url", url)
+	validURL, err := ValidateLinkURL(trimmed)
+	if err != nil {
+		return err
+	}
+	s.logger.Debug("adding part link", "part_id", partID, "url", validURL)
 	return q.CreatePartLink(ctx, db.CreatePartLinkParams{
 		PartID: partID,
-		Url:    url,
+		Url:    validURL,
 		Label:  sql.NullString{String: label, Valid: label != ""},
 	})
 }

@@ -3,6 +3,9 @@ package router
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,8 +19,11 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/tuxedocurly/wledger/internal/api"
+	"github.com/tuxedocurly/wledger/internal/apitoken"
 	"github.com/tuxedocurly/wledger/internal/audit"
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/barcodes"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/documents"
 	"github.com/tuxedocurly/wledger/internal/handler"
@@ -25,7 +31,10 @@ import (
 	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/internal/middleware"
 	"github.com/tuxedocurly/wledger/internal/parts"
+	"github.com/tuxedocurly/wledger/internal/projects"
 	"github.com/tuxedocurly/wledger/internal/settings"
+	"github.com/tuxedocurly/wledger/internal/stock"
+	"github.com/tuxedocurly/wledger/internal/tags"
 	"github.com/tuxedocurly/wledger/internal/uierror"
 	"github.com/tuxedocurly/wledger/internal/wled"
 )
@@ -529,5 +538,504 @@ func TestRouter_Wave2CHardwareRoutes(t *testing.T) {
 	recUpdate := postAdmin("/hardware/1/update", "name=Missing")
 	if recUpdate.Code == http.StatusNotFound || recUpdate.Code == http.StatusMethodNotAllowed {
 		t.Fatalf("POST /hardware/1/update was not routed to HandleControllerUpdate (got %d)", recUpdate.Code)
+	}
+}
+
+type testBarcodeAdapter struct{}
+
+func (testBarcodeAdapter) ParseBarcode(_ context.Context, raw string) (api.ParsedBarcodeResult, error) {
+	p := barcodes.Parse(raw)
+	return api.ParsedBarcodeResult{
+		Supplier:           p.Supplier,
+		PartNumber:         p.PartNumber,
+		SupplierPartNumber: p.SupplierPartNumber,
+		Manufacturer:       p.Manufacturer,
+		Quantity:           p.Quantity,
+		OrderNumber:        p.OrderNumber,
+		RawBarcode:         p.RawBarcode,
+		Format:             p.Format,
+	}, nil
+}
+
+type testProjectAdapter struct {
+	svc projects.Service
+}
+
+func (a testProjectAdapter) ListProjects(ctx context.Context) ([]api.ProjectSummary, error) {
+	rows, err := a.svc.ListProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]api.ProjectSummary, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, api.ProjectSummary{
+			ID:           row.ID,
+			Name:         row.Name,
+			Description:  row.Description.String,
+			Status:       row.Status,
+			BOMItemCount: row.BomItemCount,
+		})
+	}
+	return out, nil
+}
+
+func (a testProjectAdapter) LocateProject(ctx context.Context, projectID int64) error {
+	return a.svc.LocateBOM(ctx, projectID)
+}
+
+func (a testProjectAdapter) BuildProject(ctx context.Context, projectID int64, boardCount int) (api.ProjectBuildResult, error) {
+	if err := a.svc.BuildProject(ctx, projectID, int64(boardCount)); err != nil {
+		var shortageErr *projects.ShortageError
+		if errors.As(err, &shortageErr) {
+			return api.ProjectBuildResult{}, fmt.Errorf("%w: %v", api.ErrProjectShortage, shortageErr)
+		}
+		if errors.Is(err, projects.ErrEmptyBOM) {
+			return api.ProjectBuildResult{}, fmt.Errorf("invalid build request: %w", err)
+		}
+		return api.ProjectBuildResult{}, err
+	}
+	return api.ProjectBuildResult{
+		ProjectID:  projectID,
+		BoardCount: boardCount,
+		Message:    fmt.Sprintf("Built %d board(s)", boardCount),
+	}, nil
+}
+
+func wireWave4RouterEnv(t *testing.T, env *routerTestEnv) (apitoken.Service, projects.Service, http.Handler) {
+	t.Helper()
+	log := slog.New(slog.DiscardHandler)
+	wledClient := wled.NewClient()
+	wledSvc := wled.NewService(env.store, wledClient, log)
+	stockSvc := stock.NewService(env.store, log)
+	hwSvc := hardware.NewService(env.store, wledClient, log)
+	tagsSvc := tags.NewService(env.dbConn, env.store)
+	partsSvc := parts.NewService(env.dbConn, env.store, log, tagsSvc, env.handler.Documents)
+	projectsSvc := projects.NewService(env.store, wledSvc, log, projects.WithWLEDClient(wledClient))
+	tokenSvc := apitoken.NewService(env.store, apitoken.WithLogger(log))
+	tokenHandler := handler.NewAPITokenHandler(env.store, tokenSvc, env.handler.UIError)
+
+	env.handler.Parts = partsSvc
+	env.handler.Stock = stockSvc
+	env.handler.WLED = wledSvc
+	env.handler.WithProjects(projectsSvc)
+	env.handler.WithAPITokens(tokenHandler)
+
+	apiRouter := api.NewRouter(api.Dependencies{
+		Store:    env.store,
+		Tokens:   tokenSvc,
+		Parts:    env.handler.Parts,
+		Stock:    stockSvc,
+		Hardware: hwSvc,
+		WLED:     wledSvc,
+		Barcodes: testBarcodeAdapter{},
+		Projects: testProjectAdapter{svc: projectsSvc},
+		Logger:   log,
+		Version:  "v2",
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	r := NewWithOptions(ctx, env.mw, env.sm, env.handler, Options{
+		UploadsDir: env.uploads,
+		APIRouter:  apiRouter,
+		// Omit TokenHandler to also exercise fallback to h.APITokens.
+	})
+	return tokenSvc, projectsSvc, r
+}
+
+func TestRouter_APIv1_PreSetupHealthAndBearerEndpoints(t *testing.T) {
+	env := setupRouterTestEnv(t, true)
+	defer env.dbConn.Close()
+	tokenSvc, projectsSvc, r := wireWave4RouterEnv(t, env)
+	defer tokenSvc.Close()
+
+	// Pre-setup: remove all users so web UI routes redirect to /setup,
+	// while /api/v1/health remains directly reachable without session cookies.
+	if _, err := env.dbConn.Exec("DELETE FROM users"); err != nil {
+		t.Fatal(err)
+	}
+	middleware.ResetSetupCache()
+
+	webReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	webRec := httptest.NewRecorder()
+	r.ServeHTTP(webRec, webReq)
+	if webRec.Code != http.StatusSeeOther || webRec.Header().Get("Location") != "/setup" {
+		t.Fatalf("expected pre-setup GET / to redirect 303 -> /setup, got %d (%s)", webRec.Code, webRec.Header().Get("Location"))
+	}
+
+	healthReq := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
+	healthRec := httptest.NewRecorder()
+	r.ServeHTTP(healthRec, healthReq)
+	if healthRec.Code != http.StatusOK {
+		t.Fatalf("expected pre-setup GET /api/v1/health 200, got %d (%s)", healthRec.Code, healthRec.Body.String())
+	}
+	if len(healthRec.Result().Cookies()) != 0 {
+		t.Fatalf("expected no session cookies on /api/v1/health, got %v", healthRec.Result().Cookies())
+	}
+	var health api.HealthResponse
+	if err := json.NewDecoder(healthRec.Body).Decode(&health); err != nil {
+		t.Fatalf("decode health JSON: %v", err)
+	}
+	if health.Status != "ok" || health.Version != "v2" {
+		t.Fatalf("unexpected health payload: %+v", health)
+	}
+
+	// Re-create setup users (viewer + editor) for Bearer API checks.
+	ctx := context.Background()
+	viewerHash, _ := auth.HashPassword("viewer-secret-123")
+	viewerUser, err := env.store.CreateUser(ctx, db.CreateUserParams{
+		Email:                  "viewer@example.com",
+		PasswordHash:           viewerHash,
+		Role:                   "viewer",
+		ChangePasswordRequired: sql.NullBool{Bool: false, Valid: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	editorHash, _ := auth.HashPassword("editor-secret-123")
+	editorUser, err := env.store.CreateUser(ctx, db.CreateUserParams{
+		Email:                  "editor@example.com",
+		PasswordHash:           editorHash,
+		Role:                   "editor",
+		ChangePasswordRequired: sql.NullBool{Bool: false, Valid: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	middleware.ResetSetupCache()
+
+	readTok, err := tokenSvc.CreateToken(ctx, apitoken.CreateTokenRequest{
+		UserID: viewerUser.ID,
+		Name:   "ReadOnly",
+		Scopes: "read",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeTok, err := tokenSvc.CreateToken(ctx, apitoken.CreateTokenRequest{
+		UserID: editorUser.ID,
+		Name:   "EditorWrite",
+		Scopes: "write",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Seed part, standalone container + bin + stock, and a linked project BOM.
+	partID, err := env.handler.Parts.CreatePart(ctx, parts.CreatePartRequest{
+		Name:       "10k Resistor",
+		PartNumber: "RC0805FR-0710KL",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	contID, err := env.store.CreateContainer(ctx, db.CreateContainerParams{Name: "Drawer A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	binID, err := env.store.CreateBin(ctx, db.CreateBinParams{Name: "A1", ContainerID: contID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := env.handler.Stock.AssignStock(ctx, stock.AssignStockRequest{
+		PartID:   partID,
+		BinID:    binID,
+		Quantity: 10,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	proj, err := projectsSvc.CreateProject(ctx, projects.CreateProjectRequest{Name: "Sensor Board", Status: "active"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := projectsSvc.AddBOMItem(ctx, projects.AddBOMItemRequest{
+		ProjectID:        proj.ID,
+		PartID:           &partID,
+		Designator:       "R1,R2",
+		MPN:              "RC0805FR-0710KL",
+		QuantityPerBoard: 4,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	callAPI := func(method, path, bearer, body string) *httptest.ResponseRecorder {
+		var rdr io.Reader
+		if body != "" {
+			rdr = strings.NewReader(body)
+		}
+		req := httptest.NewRequest(method, path, rdr)
+		req.Host = "wledger.local"
+		req.Header.Set("Origin", "https://cli.external.example")
+		req.Header.Set("Sec-Fetch-Site", "cross-site")
+		if body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if bearer != "" {
+			req.Header.Set("Authorization", "Bearer "+bearer)
+		}
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		return rec
+	}
+
+	// Unauthenticated /api/v1/parts returns 401.
+	if rec := callAPI(http.MethodGet, "/api/v1/parts", "", ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated GET /api/v1/parts expected 401, got %d", rec.Code)
+	}
+
+	// Read token can GET /api/v1/parts and /api/v1/projects without session cookies.
+	recParts := callAPI(http.MethodGet, "/api/v1/parts", readTok.Plaintext, "")
+	if recParts.Code != http.StatusOK || !strings.Contains(recParts.Body.String(), "10k Resistor") {
+		t.Fatalf("GET /api/v1/parts expected 200 with seeded part, got %d (%s)", recParts.Code, recParts.Body.String())
+	}
+	if len(recParts.Result().Cookies()) != 0 {
+		t.Fatalf("expected no session cookie on Bearer /api/v1/parts, got %v", recParts.Result().Cookies())
+	}
+
+	recProjList := callAPI(http.MethodGet, "/api/v1/projects", readTok.Plaintext, "")
+	if recProjList.Code != http.StatusOK || !strings.Contains(recProjList.Body.String(), "Sensor Board") {
+		t.Fatalf("GET /api/v1/projects expected 200 with project, got %d (%s)", recProjList.Code, recProjList.Body.String())
+	}
+
+	// Read token cannot call write endpoints, while read-only barcode parsing succeeds with ScopeRead.
+	if rec := callAPI(http.MethodPost, "/api/v1/parts", readTok.Plaintext, `{"name":"Blocked Part"}`); rec.Code != http.StatusForbidden {
+		t.Fatalf("read-scoped POST /api/v1/parts expected 403, got %d", rec.Code)
+	}
+	if rec := callAPI(http.MethodGet, "/api/v1/parts", readTok.Plaintext, ""); rec.Code != http.StatusOK {
+		t.Fatalf("read-scoped GET /api/v1/parts expected 200, got %d", rec.Code)
+	}
+	if rec := callAPI(http.MethodPost, fmt.Sprintf("/api/v1/projects/%d/build", proj.ID), readTok.Plaintext, `{"board_count":1}`); rec.Code != http.StatusForbidden {
+		t.Fatalf("read-scoped POST /api/v1/projects/{id}/build expected 403, got %d", rec.Code)
+	}
+
+	// Write token can create parts across origins via Bearer without CSRF cookies.
+	if rec := callAPI(http.MethodPost, "/api/v1/parts", writeTok.Plaintext, `{"name":"API Created Cap"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("write-scoped POST /api/v1/parts expected 201, got %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// Parse barcode works with Bearer token and returns parsed fields.
+	recBarcode := callAPI(http.MethodPost, "/api/v1/barcodes/parse", readTok.Plaintext, `{"barcode":"RC0805FR-0710KL"}`)
+	if recBarcode.Code != http.StatusOK {
+		t.Fatalf("POST /api/v1/barcodes/parse expected 200, got %d (%s)", recBarcode.Code, recBarcode.Body.String())
+	}
+	var parsedResp api.ParsedBarcodeResult
+	if err := json.NewDecoder(recBarcode.Body).Decode(&parsedResp); err != nil {
+		t.Fatalf("decode barcode response: %v", err)
+	}
+	if parsedResp.RawBarcode != "RC0805FR-0710KL" {
+		t.Fatalf("expected raw_barcode preserved, got %+v", parsedResp)
+	}
+
+	// Project build shortage maps to 409 Conflict; valid build maps to 200 OK and deducts stock.
+	buildURL := fmt.Sprintf("/api/v1/projects/%d/build", proj.ID)
+	if recShort := callAPI(http.MethodPost, buildURL, writeTok.Plaintext, `{"board_count":5}`); recShort.Code != http.StatusConflict {
+		t.Fatalf("shortage POST %s expected 409 Conflict, got %d (%s)", buildURL, recShort.Code, recShort.Body.String())
+	}
+	if recBuild := callAPI(http.MethodPost, buildURL, writeTok.Plaintext, `{"board_count":2}`); recBuild.Code != http.StatusOK {
+		t.Fatalf("valid POST %s expected 200, got %d (%s)", buildURL, recBuild.Code, recBuild.Body.String())
+	}
+	stockRows, err := env.store.GetPartAssignments(ctx, partID)
+	if err != nil || len(stockRows) != 1 || stockRows[0].Quantity != 2 {
+		t.Fatalf("expected remaining stock 2 after building 2x4=8, got %+v err=%v", stockRows, err)
+	}
+}
+
+func TestRouter_Wave4_SettingsTokens_Barcode_And_ProjectsRBAC(t *testing.T) {
+	if err := i18n.Init(); err != nil {
+		t.Fatalf("i18n.Init: %v", err)
+	}
+
+	env := setupRouterTestEnv(t, true)
+	defer env.dbConn.Close()
+	ctx := context.Background()
+
+	viewerHash, _ := auth.HashPassword("viewer-secret-123")
+	if _, err := env.store.CreateUser(ctx, db.CreateUserParams{
+		Email:                  "viewer@example.com",
+		PasswordHash:           viewerHash,
+		Role:                   "viewer",
+		ChangePasswordRequired: sql.NullBool{Bool: false, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	editorHash, _ := auth.HashPassword("editor-secret-123")
+	editorUser, err := env.store.CreateUser(ctx, db.CreateUserParams{
+		Email:                  "editor@example.com",
+		PasswordHash:           editorHash,
+		Role:                   "editor",
+		ChangePasswordRequired: sql.NullBool{Bool: false, Valid: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tokenSvc, _, r := wireWave4RouterEnv(t, env)
+	defer tokenSvc.Close()
+
+	viewerCookie := loginSessionCookie(t, r, "viewer@example.com", "viewer-secret-123")
+	editorCookie := loginSessionCookie(t, r, "editor@example.com", "editor-secret-123")
+
+	doCookieReq := func(c *http.Cookie, method, path, body, ct string) *httptest.ResponseRecorder {
+		var rdr io.Reader
+		if body != "" {
+			rdr = strings.NewReader(body)
+		}
+		req := httptest.NewRequest(method, path, rdr)
+		req.Host = "example.com"
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+		if ct != "" {
+			req.Header.Set("Content-Type", ct)
+		}
+		if c != nil {
+			req.AddCookie(c)
+		}
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		return rec
+	}
+
+	// 1. Settings page renders API Tokens card and /settings/tokens lifecycle works.
+	recSettings := doCookieReq(editorCookie, http.MethodGet, "/settings", "", "")
+	if recSettings.Code != http.StatusOK || !strings.Contains(recSettings.Body.String(), "api-tokens-card") {
+		t.Fatalf("GET /settings expected 200 with api-tokens-card, got %d", recSettings.Code)
+	}
+
+	recCreateTok := doCookieReq(editorCookie, http.MethodPost, "/settings/tokens", url.Values{
+		"name":  {"Lab CLI"},
+		"scope": {"read"},
+	}.Encode(), "application/x-www-form-urlencoded")
+	if recCreateTok.Code != http.StatusCreated || !strings.Contains(recCreateTok.Body.String(), "wlg_") {
+		t.Fatalf("POST /settings/tokens expected 201 revealing wlg_ token, got %d (%s)", recCreateTok.Code, recCreateTok.Body.String())
+	}
+	bodyHTML := recCreateTok.Body.String()
+	revealIdx := strings.Index(bodyHTML, `id="api-token-reveal"`)
+	if revealIdx < 0 {
+		t.Fatalf("created token HTML missing #api-token-reveal banner")
+	}
+	idx := strings.Index(bodyHTML[revealIdx:], "wlg_")
+	if idx < 0 {
+		t.Fatalf("created token banner missing wlg_ plaintext")
+	}
+	start := revealIdx + idx
+	endIdx := strings.IndexAny(bodyHTML[start:], `<"'`)
+	if endIdx <= 0 {
+		t.Fatalf("could not extract plaintext token from HTML")
+	}
+	createdPlaintext := bodyHTML[start : start+endIdx]
+	apiReqBefore := httptest.NewRequest(http.MethodGet, "/api/v1/parts", nil)
+	apiReqBefore.Header.Set("Authorization", "Bearer "+createdPlaintext)
+	apiRecBefore := httptest.NewRecorder()
+	r.ServeHTTP(apiRecBefore, apiReqBefore)
+	if apiRecBefore.Code != http.StatusOK {
+		t.Fatalf("newly UI-created Bearer token expected 200 on /api/v1/parts, got %d", apiRecBefore.Code)
+	}
+
+	// Role ceiling enforced on web UI token creation.
+	recEscalate := doCookieReq(editorCookie, http.MethodPost, "/settings/tokens", url.Values{
+		"name":  {"Escalate"},
+		"scope": {"admin"},
+	}.Encode(), "application/x-www-form-urlencoded")
+	if recEscalate.Code < 400 || recEscalate.Code >= 500 {
+		t.Fatalf("editor POST /settings/tokens with scope=admin expected 4xx, got %d", recEscalate.Code)
+	}
+
+	recListTok := doCookieReq(editorCookie, http.MethodGet, "/settings/tokens", "", "")
+	if recListTok.Code != http.StatusOK || !strings.Contains(recListTok.Body.String(), "Lab CLI") {
+		t.Fatalf("GET /settings/tokens expected 200 containing Lab CLI, got %d", recListTok.Code)
+	}
+
+	rows, err := env.store.ListAPITokensByUser(ctx, editorUser.ID)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("expected 1 persisted token for editor, got %d err=%v", len(rows), err)
+	}
+	tokID := rows[0].ID
+
+	// Viewer cannot revoke editor's token.
+	_ = doCookieReq(viewerCookie, http.MethodPost, fmt.Sprintf("/settings/tokens/%d/delete", tokID), "", "")
+	afterCrossRevoke, err := env.store.ListAPITokensByUser(ctx, editorUser.ID)
+	if err != nil || len(afterCrossRevoke) != 1 {
+		t.Fatalf("viewer cross-user revoke must not delete editor token (len=%d, err=%v)", len(afterCrossRevoke), err)
+	}
+
+	// Owner revokes via /revoke alias (303 redirect on standard form POST), plus verify /delete and DELETE /{id} routes work.
+	recRevoke := doCookieReq(editorCookie, http.MethodPost, fmt.Sprintf("/settings/tokens/%d/revoke", tokID), "", "")
+	if recRevoke.Code != http.StatusSeeOther || recRevoke.Header().Get("Location") != "/settings" {
+		t.Fatalf("POST /settings/tokens/%d/revoke expected 303 -> /settings, got %d", tokID, recRevoke.Code)
+	}
+	apiReqAfter := httptest.NewRequest(http.MethodGet, "/api/v1/parts", nil)
+	apiReqAfter.Header.Set("Authorization", "Bearer "+createdPlaintext)
+	apiRecAfter := httptest.NewRecorder()
+	r.ServeHTTP(apiRecAfter, apiReqAfter)
+	if apiRecAfter.Code != http.StatusUnauthorized {
+		t.Fatalf("revoked UI-created Bearer token expected 401 on /api/v1/parts, got %d", apiRecAfter.Code)
+	}
+	tok2, _ := tokenSvc.CreateToken(ctx, apitoken.CreateTokenRequest{UserID: editorUser.ID, Name: "Temp2", Scopes: "read"})
+	if recDelPost := doCookieReq(editorCookie, http.MethodPost, fmt.Sprintf("/settings/tokens/%d/delete", tok2.Token.ID), "", ""); recDelPost.Code != http.StatusSeeOther || recDelPost.Header().Get("Location") != "/settings" {
+		t.Fatalf("POST /settings/tokens/%d/delete expected 303 -> /settings, got %d", tok2.Token.ID, recDelPost.Code)
+	}
+	tok3, _ := tokenSvc.CreateToken(ctx, apitoken.CreateTokenRequest{UserID: editorUser.ID, Name: "Temp3", Scopes: "read"})
+	if recDelHTTP := doCookieReq(editorCookie, http.MethodDelete, fmt.Sprintf("/settings/tokens/%d", tok3.Token.ID), "", ""); recDelHTTP.Code != http.StatusOK {
+		t.Fatalf("DELETE /settings/tokens/%d expected 200, got %d", tok3.Token.ID, recDelHTTP.Code)
+	}
+
+	// 2. /parts/parse-barcode RBAC (viewer 403, editor 200).
+	if rec := doCookieReq(viewerCookie, http.MethodPost, "/parts/parse-barcode", `{"barcode":"ABC123"}`, "application/json"); rec.Code != http.StatusForbidden {
+		t.Fatalf("viewer POST /parts/parse-barcode expected 403, got %d", rec.Code)
+	}
+	recParse := doCookieReq(editorCookie, http.MethodPost, "/parts/parse-barcode", `{"barcode":"ABC123"}`, "application/json")
+	if recParse.Code != http.StatusOK || !strings.Contains(recParse.Body.String(), `"raw_barcode":"ABC123"`) {
+		t.Fatalf("editor POST /parts/parse-barcode expected 200, got %d (%s)", recParse.Code, recParse.Body.String())
+	}
+
+	// 3. /projects Read + Locate vs Write RBAC.
+	if rec := doCookieReq(viewerCookie, http.MethodGet, "/projects", "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("viewer GET /projects expected 200, got %d", rec.Code)
+	}
+	if rec := doCookieReq(viewerCookie, http.MethodPost, "/projects", url.Values{"name": {"Blocked"}}.Encode(), "application/x-www-form-urlencoded"); rec.Code != http.StatusForbidden {
+		t.Fatalf("viewer POST /projects expected 403, got %d", rec.Code)
+	}
+
+	recProjCreate := doCookieReq(editorCookie, http.MethodPost, "/projects", url.Values{
+		"name":   {"Controller Rev2"},
+		"status": {"draft"},
+	}.Encode(), "application/x-www-form-urlencoded")
+	if recProjCreate.Code != http.StatusSeeOther || !strings.HasPrefix(recProjCreate.Header().Get("Location"), "/projects/") {
+		t.Fatalf("editor POST /projects expected 303 -> /projects/{id}, got %d (%s)", recProjCreate.Code, recProjCreate.Header().Get("Location"))
+	}
+	projPath := recProjCreate.Header().Get("Location")
+
+	if rec := doCookieReq(viewerCookie, http.MethodGet, projPath, "", ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Controller Rev2") {
+		t.Fatalf("viewer GET %s expected 200 with project name, got %d", projPath, rec.Code)
+	}
+	if rec := doCookieReq(viewerCookie, http.MethodPost, projPath+"/locate", "", ""); rec.Code != http.StatusSeeOther {
+		t.Fatalf("viewer Pick Mode POST %s/locate expected 303, got %d", projPath, rec.Code)
+	}
+
+	// Write mutations on project are forbidden to viewer.
+	for _, writePath := range []string{
+		projPath + "/update",
+		projPath + "/bom",
+		projPath + "/bom/import",
+		projPath + "/bom/1/link",
+		projPath + "/bom/1/delete",
+		projPath + "/build",
+		projPath + "/delete",
+	} {
+		if rec := doCookieReq(viewerCookie, http.MethodPost, writePath, "name=x", "application/x-www-form-urlencoded"); rec.Code != http.StatusForbidden {
+			t.Fatalf("viewer POST %s expected 403, got %d", writePath, rec.Code)
+		}
+	}
+
+	// Editor can add a BOM item and delete the project.
+	recAddBOM := doCookieReq(editorCookie, http.MethodPost, projPath+"/bom", url.Values{
+		"designator":         {"U1"},
+		"mpn":                {"ESP32-S3"},
+		"quantity_per_board": {"1"},
+	}.Encode(), "application/x-www-form-urlencoded")
+	if recAddBOM.Code != http.StatusSeeOther {
+		t.Fatalf("editor POST %s/bom expected 303, got %d (%s)", projPath, recAddBOM.Code, recAddBOM.Body.String())
+	}
+	if rec := doCookieReq(editorCookie, http.MethodPost, projPath+"/delete", "", ""); rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/projects" {
+		t.Fatalf("editor POST %s/delete expected 303 -> /projects, got %d", projPath, rec.Code)
 	}
 }

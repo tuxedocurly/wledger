@@ -204,3 +204,82 @@ func TestDocumentService_UploadValidation(t *testing.T) {
 		t.Fatalf("expected exactly 6 valid saved files, got %d", len(entries))
 	}
 }
+
+func TestValidateLinkURL_AndAddLink(t *testing.T) {
+	_, s, dbCleanup := setupTestDB(t)
+	defer dbCleanup()
+
+	ctx := context.Background()
+	svc := NewService(s, slog.New(slog.DiscardHandler))
+
+	partID, err := s.CreatePart(ctx, db.CreatePartParams{Name: "LinkPart"})
+	if err != nil {
+		t.Fatalf("failed to create part: %v", err)
+	}
+
+	validCases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{name: "https_trimmed", raw: "  https://example.com/datasheet.pdf  ", want: "https://example.com/datasheet.pdf"},
+		{name: "http_uppercase_scheme", raw: "HTTP://Example.com:8080/docs?id=1#top", want: "HTTP://Example.com:8080/docs?id=1#top"},
+	}
+
+	for _, tc := range validCases {
+		t.Run("valid/"+tc.name, func(t *testing.T) {
+			got, err := ValidateLinkURL(tc.raw)
+			if err != nil {
+				t.Fatalf("ValidateLinkURL(%q) unexpected error: %v", tc.raw, err)
+			}
+			if got != tc.want {
+				t.Fatalf("ValidateLinkURL(%q) = %q, want %q", tc.raw, got, tc.want)
+			}
+			if err := svc.AddLink(ctx, s, partID, tc.raw, "Valid"); err != nil {
+				t.Fatalf("AddLink(%q) unexpected error: %v", tc.raw, err)
+			}
+		})
+	}
+
+	// Empty / whitespace-only URL is ignored by AddLink without error or insert.
+	if err := svc.AddLink(ctx, s, partID, "   \t\n ", "Blank"); err != nil {
+		t.Fatalf("AddLink whitespace should return nil, got: %v", err)
+	}
+
+	invalidCases := []struct {
+		name string
+		raw  string
+	}{
+		{name: "empty", raw: ""},
+		{name: "whitespace", raw: "   "},
+		{name: "javascript", raw: "javascript:alert(1)"},
+		{name: "javascript_uppercase_spaces", raw: "  JaVaScRiPt:alert(document.cookie) "},
+		{name: "data_html", raw: "data:text/html,<script>alert(1)</script>"},
+		{name: "vbscript", raw: "vbscript:msgbox(1)"},
+		{name: "file_scheme", raw: "file:///etc/passwd"},
+		{name: "relative_path", raw: "/parts/1"},
+		{name: "protocol_relative_or_hostless", raw: "https://"},
+		{name: "missing_scheme", raw: "example.com/datasheet"},
+	}
+
+	for _, tc := range invalidCases {
+		t.Run("invalid/"+tc.name, func(t *testing.T) {
+			if _, err := ValidateLinkURL(tc.raw); err == nil {
+				t.Fatalf("ValidateLinkURL(%q) expected error, got nil", tc.raw)
+			}
+			if strings.TrimSpace(tc.raw) != "" {
+				if err := svc.AddLink(ctx, s, partID, tc.raw, "Invalid"); err == nil {
+					t.Fatalf("AddLink(%q) expected error, got nil", tc.raw)
+				}
+			}
+		})
+	}
+
+	links, err := s.GetPartLinks(ctx, partID)
+	if err != nil {
+		t.Fatalf("GetPartLinks failed: %v", err)
+	}
+	if len(links) != len(validCases) {
+		t.Fatalf("expected %d persisted valid links, got %d (%+v)", len(validCases), len(links), links)
+	}
+}

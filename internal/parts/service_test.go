@@ -545,3 +545,141 @@ func TestGetPartDetail_StandaloneContainers(t *testing.T) {
 		t.Errorf("expected standalone container %d in PartDetail, got %+v", standaloneID, detail.StandaloneContainers)
 	}
 }
+
+func TestPartService_LinkValidationAndIDOR(t *testing.T) {
+	database, s, dbCleanup := setupTestDB(t)
+	defer dbCleanup()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	svc := NewService(database, s, logger, tags.NewService(database, s), documents.NewService(s, logger))
+	ctx := context.Background()
+
+	// Create victim part with a valid initial external link.
+	victimID, err := svc.CreatePart(ctx, CreatePartRequest{
+		Name: "Victim Part",
+		Links: []LinkDTO{
+			{URL: "https://victim.example.com/datasheet.pdf", Label: "Victim DS"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreatePart victim failed: %v", err)
+	}
+	victimDetail, err := svc.GetPartDetail(ctx, victimID)
+	if err != nil || len(victimDetail.Links) != 1 {
+		t.Fatalf("expected 1 victim link, got len=%d err=%v", len(victimDetail.Links), err)
+	}
+	victimLinkID := victimDetail.Links[0].ID
+
+	// CreatePart rejects XSS/unsafe/relative link schemes.
+	badURLs := []string{
+		"javascript:alert(1)",
+		"data:text/html,<script>alert(1)</script>",
+		"vbscript:msgbox(1)",
+		"file:///etc/passwd",
+		"/relative/link",
+	}
+	for _, bad := range badURLs {
+		if _, err := svc.CreatePart(ctx, CreatePartRequest{
+			Name:  "Bad Link Part",
+			Links: []LinkDTO{{URL: bad, Label: "Evil"}},
+		}); err == nil {
+			t.Fatalf("CreatePart accepted unsafe link URL %q", bad)
+		}
+	}
+
+	// Create attacker part with its own valid link.
+	attackerID, err := svc.CreatePart(ctx, CreatePartRequest{
+		Name: "Attacker Part",
+		Links: []LinkDTO{
+			{URL: "https://attacker.example.com/orig.pdf", Label: "Orig"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreatePart attacker failed: %v", err)
+	}
+	attackerDetail, err := svc.GetPartDetail(ctx, attackerID)
+	if err != nil || len(attackerDetail.Links) != 1 {
+		t.Fatalf("expected 1 attacker link, got len=%d err=%v", len(attackerDetail.Links), err)
+	}
+	attackerLinkID := attackerDetail.Links[0].ID
+
+	// UpdatePart rejects unsafe ExistingLinks and rolls back other mutations.
+	for _, bad := range badURLs {
+		if err := svc.UpdatePart(ctx, UpdatePartRequest{
+			ID:   attackerID,
+			Name: "Should Rollback",
+			ExistingLinks: []LinkDTO{
+				{ID: attackerLinkID, URL: bad, Label: "Evil"},
+			},
+		}); err == nil {
+			t.Fatalf("UpdatePart accepted unsafe ExistingLinks URL %q", bad)
+		}
+		if err := svc.UpdatePart(ctx, UpdatePartRequest{
+			ID:       attackerID,
+			Name:     "Should Rollback",
+			NewLinks: []LinkDTO{{URL: bad, Label: "EvilNew"}},
+		}); err == nil {
+			t.Fatalf("UpdatePart accepted unsafe NewLinks URL %q", bad)
+		}
+	}
+
+	// Cross-part ExistingLinks IDOR must fail and leave victim link untouched.
+	if err := svc.UpdatePart(ctx, UpdatePartRequest{
+		ID:   attackerID,
+		Name: "IDOR Attempt",
+		ExistingLinks: []LinkDTO{
+			{ID: victimLinkID, URL: "https://hijacked.example.com/pwn", Label: "Pwned"},
+		},
+	}); err == nil {
+		t.Fatal("expected cross-part ExistingLinks IDOR to fail, got nil")
+	}
+	if err := svc.UpdatePart(ctx, UpdatePartRequest{
+		ID:   attackerID,
+		Name: "Negative Link ID",
+		ExistingLinks: []LinkDTO{
+			{ID: -1, URL: "https://example.com/ok", Label: "Neg"},
+		},
+	}); err == nil {
+		t.Fatal("expected negative ExistingLinks ID to fail, got nil")
+	}
+
+	// Confirm transaction rollback preserved attacker name and victim link was untouched.
+	gotAttacker, err := svc.GetPart(ctx, attackerID)
+	if err != nil {
+		t.Fatalf("GetPart attacker failed: %v", err)
+	}
+	if gotAttacker.Name != "Attacker Part" {
+		t.Fatalf("expected attacker name rollback to 'Attacker Part', got %q", gotAttacker.Name)
+	}
+	gotVictimDetail, err := svc.GetPartDetail(ctx, victimID)
+	if err != nil || len(gotVictimDetail.Links) != 1 {
+		t.Fatalf("expected 1 victim link after blocked IDOR, got %d err=%v", len(gotVictimDetail.Links), err)
+	}
+	if gotVictimDetail.Links[0].Url != "https://victim.example.com/datasheet.pdf" || gotVictimDetail.Links[0].Label.String != "Victim DS" {
+		t.Fatalf("victim link was mutated by cross-part IDOR: %+v", gotVictimDetail.Links[0])
+	}
+
+	// Valid own link update + new link creation still succeeds and trims whitespace.
+	if err := svc.UpdatePart(ctx, UpdatePartRequest{
+		ID:   attackerID,
+		Name: "Attacker Updated",
+		ExistingLinks: []LinkDTO{
+			{ID: attackerLinkID, URL: "  https://attacker.example.com/updated.pdf ", Label: "Updated"},
+		},
+		NewLinks: []LinkDTO{
+			{URL: "http://attacker.example.com/extra", Label: "Extra"},
+		},
+	}); err != nil {
+		t.Fatalf("valid UpdatePart with links failed: %v", err)
+	}
+	gotAttackerDetail, err := svc.GetPartDetail(ctx, attackerID)
+	if err != nil {
+		t.Fatalf("GetPartDetail attacker failed: %v", err)
+	}
+	if len(gotAttackerDetail.Links) != 2 {
+		t.Fatalf("expected 2 links on attacker part, got %d", len(gotAttackerDetail.Links))
+	}
+	if gotAttackerDetail.Links[0].Url != "https://attacker.example.com/updated.pdf" {
+		t.Fatalf("expected trimmed updated URL, got %q", gotAttackerDetail.Links[0].Url)
+	}
+}

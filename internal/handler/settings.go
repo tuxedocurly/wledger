@@ -20,6 +20,7 @@ func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
 
 	var settings db.Setting
 	var users []db.ListUsersRow
+	var apiTokens []db.ListAPITokensByUserRow
 	var err error
 
 	// Fetch Admin Data (Only if User is Admin)
@@ -40,8 +41,18 @@ func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
 		users = []db.ListUsersRow{}
 	}
 
+	if user.IsAuthenticated() && h.Queries != nil {
+		apiTokens, err = h.Queries.ListAPITokensByUser(r.Context(), user.ID)
+		if err != nil {
+			if h.Logger != nil {
+				h.Logger.Error("failed to list api tokens", "err", err, "user_id", user.ID)
+			}
+			apiTokens = []db.ListAPITokensByUserRow{}
+		}
+	}
+
 	// Render with User object
-	pages.Settings(user, settings, users).Render(r.Context(), w)
+	pages.Settings(user, settings, users, apiTokens).Render(r.Context(), w)
 }
 
 // POST /settings

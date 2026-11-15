@@ -40,6 +40,7 @@ type Handler struct {
 	Stock       stock.Service
 	Documents   documents.Service
 	Projects    projects.Service
+	APITokens   *APITokenHandler
 }
 
 // New creates a new Handler with dependencies
@@ -89,5 +90,11 @@ func New(
 // WithProjects sets the Projects service (for example configured with projects.WithWLEDClient) on the Handler.
 func (h *Handler) WithProjects(s projects.Service) *Handler {
 	h.Projects = s
+	return h
+}
+
+// WithAPITokens sets the APITokenHandler on the Handler.
+func (h *Handler) WithAPITokens(th *APITokenHandler) *Handler {
+	h.APITokens = th
 	return h
 }

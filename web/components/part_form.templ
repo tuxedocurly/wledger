@@ -90,9 +90,9 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 								type="button"
 								id="parse-barcode-btn"
 								class="btn join-item btn-outline"
-								title="Parse 2D Supplier Label"
+								title={ i18n.T(ctx, "ParseBarcode") }
 							>
-								Parse 2D Label
+								{ i18n.T(ctx, "ParseBarcode") }
 							</button>
 							@BarcodeTrigger("barcode_data")
 						</div>

@@ -380,13 +380,39 @@ func (s *service) UpdatePart(ctx context.Context, req UpdatePartRequest) error {
 			return err
 		}
 
+		var ownedLinkIDs map[int64]bool
+		if len(req.ExistingLinks) > 0 {
+			existingLinks, err := q.GetPartLinks(ctx, req.ID)
+			if err != nil {
+				return fmt.Errorf("failed to load part links: %w", err)
+			}
+			ownedLinkIDs = make(map[int64]bool, len(existingLinks))
+			for _, existing := range existingLinks {
+				ownedLinkIDs[existing.ID] = true
+			}
+		}
+
 		for _, l := range req.ExistingLinks {
-			if l.ID == 0 || l.URL == "" {
+			if l.ID < 0 {
+				return fmt.Errorf("invalid link id %d", l.ID)
+			}
+			if l.ID == 0 {
 				continue
 			}
-			s.logger.Debug("updating existing link", "id", req.ID, "link_id", l.ID, "url", l.URL)
+			if !ownedLinkIDs[l.ID] {
+				return fmt.Errorf("link id %d does not belong to part %d", l.ID, req.ID)
+			}
+			trimmedURL := strings.TrimSpace(l.URL)
+			if trimmedURL == "" {
+				continue
+			}
+			validURL, err := documents.ValidateLinkURL(trimmedURL)
+			if err != nil {
+				return fmt.Errorf("failed to update link: %w", err)
+			}
+			s.logger.Debug("updating existing link", "id", req.ID, "link_id", l.ID, "url", validURL)
 			err = q.UpdatePartLink(ctx, db.UpdatePartLinkParams{
-				Url:   l.URL,
+				Url:   validURL,
 				Label: sql.NullString{String: l.Label, Valid: l.Label != ""},
 				ID:    l.ID,
 			})

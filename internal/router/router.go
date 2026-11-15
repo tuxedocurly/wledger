@@ -22,6 +22,8 @@ type Options struct {
 	TrustProxy       bool
 	UploadsDir       string
 	LoginRateLimiter *middleware.IPRateLimiter
+	APIRouter        http.Handler
+	TokenHandler     *handler.APITokenHandler
 }
 
 // New creates and configures a new chi router using default background context and runtime config.
@@ -58,6 +60,11 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 		)
 	}
 
+	tokenHandler := opts.TokenHandler
+	if tokenHandler == nil && h != nil {
+		tokenHandler = h.APITokens
+	}
+
 	r := chi.NewRouter()
 
 	// Base outer middlewares (RealIP is gated behind WLEDGER_TRUST_PROXY)
@@ -71,6 +78,14 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 	// Serve embedded static assets BEFORE SessionLoad, I18n, Authenticate, FirstRunCheck, or CSRF.
 	staticFS := http.FS(web.StaticFS)
 	r.Handle(config.UrlPrefixStatic+"*", http.StripPrefix(config.UrlPrefixStatic, noDirFileServer(staticFS)))
+
+	// JSON REST API v1 (Bearer-authenticated; /api/v1/health succeeds pre-setup and emits no session cookies).
+	if opts.APIRouter != nil {
+		r.Group(func(r chi.Router) {
+			r.Use(csrfProtectionMiddleware())
+			r.Mount("/api/v1", opts.APIRouter)
+		})
+	}
 
 	// Application routes protected by CSRF + Session + Auth + FirstRunCheck + StockColors.
 	r.Group(func(r chi.Router) {
@@ -123,6 +138,12 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 			// Inspiration
 			r.Get("/inspiration", h.HandleInspiration)
 			r.Get("/inspiration/{id}/generate", h.HandleInspirationGenerate)
+
+			// Projects (Read + Pick Mode Locate)
+			r.Get("/projects", h.HandleProjectsList)
+			r.Get("/projects/{id}", h.HandleProjectDetail)
+			r.Post("/projects/{id}/locate", h.HandleProjectLocate)
+			r.Post("/projects/{id}/bom/{itemID}/locate", h.HandleProjectBOMItemLocate)
 		})
 
 		// -----------------------------------------------------------------
@@ -142,7 +163,14 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 			// Self-Service Password Change
 			r.Post("/settings/password", h.HandleSettingsPassword)
 
-			// Wave 3/4 hook: /projects/* and /settings/tokens* routes mount here.
+			// Personal Access Tokens (User Self-Service)
+			if tokenHandler != nil {
+				r.Get("/settings/tokens", tokenHandler.HandleListAPITokens)
+				r.Post("/settings/tokens", tokenHandler.HandleCreateAPIToken)
+				r.Post("/settings/tokens/{id}/delete", tokenHandler.HandleRevokeAPIToken)
+				r.Post("/settings/tokens/{id}/revoke", tokenHandler.HandleRevokeAPIToken)
+				r.Delete("/settings/tokens/{id}", tokenHandler.HandleRevokeAPIToken)
+			}
 
 			// -------------------------------------------------------------
 			// INVENTORY MANAGEMENT ROUTES (Editors & Admins)
@@ -153,6 +181,7 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 				// Parts CRUD
 				r.Get("/parts/new", h.HandlePartsNew)
 				r.With(middleware.MaxBodyBytes(config.MaxUploadSizeParts)).Post("/parts", h.HandlePartsCreate)
+				r.Post("/parts/parse-barcode", h.HandleParseBarcode)
 				r.Get("/parts/import/template", h.HandlePartsImportTemplate)
 				r.With(middleware.MaxBodyBytes(config.MaxUploadSizeImport)).Post("/parts/import", h.HandlePartsImport)
 				r.Handle("/parts/bulk", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -183,6 +212,16 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 				r.Get("/inspiration/{id}/edit", h.HandleInspirationEdit)
 				r.Put("/inspiration/{id}", h.HandleInspirationUpdate)
 				r.Delete("/inspiration/{id}", h.HandleInspirationDelete)
+
+				// Projects & BOM Management
+				r.Post("/projects", h.HandleProjectCreate)
+				r.Post("/projects/{id}/update", h.HandleProjectUpdate)
+				r.Post("/projects/{id}/delete", h.HandleProjectDelete)
+				r.Post("/projects/{id}/bom", h.HandleProjectBOMAdd)
+				r.With(middleware.MaxBodyBytes(config.MaxUploadSizeImport)).Post("/projects/{id}/bom/import", h.HandleProjectBOMImport)
+				r.Post("/projects/{id}/bom/{itemID}/link", h.HandleProjectBOMLink)
+				r.Post("/projects/{id}/bom/{itemID}/delete", h.HandleProjectBOMDelete)
+				r.Post("/projects/{id}/build", h.HandleProjectBuild)
 			})
 
 			// -------------------------------------------------------------
@@ -225,8 +264,6 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 				r.Post("/walls/{id}/delete", h.HandleWallDelete)
 			})
 		})
-
-		// Wave 3/4 hook: Bearer-authenticated /api/v1/* JSON routes mount here.
 	})
 
 	return r

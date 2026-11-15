@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,9 +12,12 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/tuxedocurly/wledger/internal/api"
+	"github.com/tuxedocurly/wledger/internal/apitoken"
 	"github.com/tuxedocurly/wledger/internal/audit"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/backup"
+	"github.com/tuxedocurly/wledger/internal/barcodes"
 	"github.com/tuxedocurly/wledger/internal/config"
 	"github.com/tuxedocurly/wledger/internal/dashboard"
 	"github.com/tuxedocurly/wledger/internal/db"
@@ -26,6 +30,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/logger"
 	"github.com/tuxedocurly/wledger/internal/middleware"
 	"github.com/tuxedocurly/wledger/internal/parts"
+	"github.com/tuxedocurly/wledger/internal/projects"
 	"github.com/tuxedocurly/wledger/internal/router"
 	settingsServicePkg "github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/internal/stock"
@@ -152,6 +157,11 @@ func main() {
 		log.Error("Failed to seed inspiration templates", "error", err)
 	}
 
+	// Projects & API Token Services
+	projectsService := projects.NewService(store, wledService, log, projects.WithWLEDClient(wledClient))
+	tokenSvc := apitoken.NewService(store, apitoken.WithLogger(log))
+	defer tokenSvc.Close()
+
 	// Initialize Image Processor
 	if err := images.Init(); err != nil {
 		log.Error("Failed to init images", "error", err)
@@ -176,13 +186,31 @@ func main() {
 		dashboardService,
 		stockService,
 		docsService,
-	)
+	).WithProjects(projectsService)
+	tokenHandler := handler.NewAPITokenHandler(store, tokenSvc, uiErrorResponder)
+	h.WithAPITokens(tokenHandler)
+
+	// JSON REST API v1 Router
+	apiRouter := api.NewRouter(api.Dependencies{
+		Store:    store,
+		Tokens:   tokenSvc,
+		Parts:    partsService,
+		Stock:    stockService,
+		Hardware: hardwareService,
+		WLED:     wledService,
+		Barcodes: barcodeParserAdapter{},
+		Projects: projectManagerAdapter{svc: projectsService},
+		Logger:   log,
+		Version:  "v2",
+	})
 
 	// Middleware Manager & Router Setup
 	mw := middleware.New(store, sessionManager, log, uiErrorResponder)
 	r := router.NewWithOptions(appCtx, mw, sessionManager, h, router.Options{
-		TrustProxy: cfg.TrustProxy,
-		UploadsDir: cfg.UploadsDir,
+		TrustProxy:   cfg.TrustProxy,
+		UploadsDir:   cfg.UploadsDir,
+		APIRouter:    apiRouter,
+		TokenHandler: tokenHandler,
 	})
 
 	listenAddr := normalizeListenAddr(cfg.Port)
@@ -219,6 +247,7 @@ func main() {
 	case serveErr := <-serverErrCh:
 		log.Error("Server failed", "error", serveErr)
 		stopSignals()
+		tokenSvc.Close()
 		_ = database.Close()
 		os.Exit(1)
 	case <-appCtx.Done():
@@ -230,6 +259,89 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Error("Server shutdown error", "error", err)
 	}
+}
+
+type barcodeParserAdapter struct{}
+
+func (barcodeParserAdapter) ParseBarcode(_ context.Context, raw string) (api.ParsedBarcodeResult, error) {
+	parsed := barcodes.Parse(raw)
+	return api.ParsedBarcodeResult{
+		Supplier:           parsed.Supplier,
+		PartNumber:         parsed.PartNumber,
+		SupplierPartNumber: parsed.SupplierPartNumber,
+		Manufacturer:       parsed.Manufacturer,
+		Quantity:           parsed.Quantity,
+		OrderNumber:        parsed.OrderNumber,
+		RawBarcode:         parsed.RawBarcode,
+		Format:             parsed.Format,
+	}, nil
+}
+
+type projectManagerAdapter struct {
+	svc projects.Service
+}
+
+func (a projectManagerAdapter) ListProjects(ctx context.Context) ([]api.ProjectSummary, error) {
+	rows, err := a.svc.ListProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]api.ProjectSummary, 0, len(rows))
+	for _, row := range rows {
+		summary := api.ProjectSummary{
+			ID:           row.ID,
+			Name:         row.Name,
+			Description:  row.Description.String,
+			Status:       row.Status,
+			BOMItemCount: row.BomItemCount,
+		}
+		if row.CreatedAt.Valid {
+			t := row.CreatedAt.Time.UTC()
+			summary.CreatedAt = &t
+		}
+		if row.UpdatedAt.Valid {
+			t := row.UpdatedAt.Time.UTC()
+			summary.UpdatedAt = &t
+		}
+		out = append(out, summary)
+	}
+	return out, nil
+}
+
+func (a projectManagerAdapter) LocateProject(ctx context.Context, projectID int64) error {
+	return a.svc.LocateBOM(ctx, projectID)
+}
+
+func (a projectManagerAdapter) BuildProject(ctx context.Context, projectID int64, boardCount int) (api.ProjectBuildResult, error) {
+	if boardCount < 1 {
+		return api.ProjectBuildResult{}, projects.ErrInvalidBoardCount
+	}
+	if err := a.svc.BuildProject(ctx, projectID, int64(boardCount)); err != nil {
+		var shortageErr *projects.ShortageError
+		if errors.As(err, &shortageErr) {
+			return api.ProjectBuildResult{}, fmt.Errorf("%w: %v", api.ErrProjectShortage, shortageErr)
+		}
+		if errors.Is(err, projects.ErrEmptyBOM) {
+			return api.ProjectBuildResult{}, fmt.Errorf("invalid build request: %w", err)
+		}
+		return api.ProjectBuildResult{}, err
+	}
+
+	res := api.ProjectBuildResult{
+		ProjectID:  projectID,
+		BoardCount: boardCount,
+		Message:    fmt.Sprintf("Built %d board(s)", boardCount),
+	}
+	if detail, err := a.svc.GetProjectDetail(ctx, projectID, int64(boardCount)); err == nil {
+		res.ProjectName = detail.Project.Name
+		res.ItemsBuilt = len(detail.Items)
+		var totalDeducted int
+		for _, item := range detail.Items {
+			totalDeducted += int(item.RequiredQuantity)
+		}
+		res.TotalDeducted = totalDeducted
+	}
+	return res, nil
 }
 
 func runSessionCleanup(ctx context.Context, store *auth.SQLCStore, log interface{ Warn(string, ...any) }) {
