@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -335,15 +336,10 @@ func (h *apiHandler) handleCreatePart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links := make([]parts.LinkDTO, 0, len(payload.Links))
-	for _, l := range payload.Links {
-		if strings.TrimSpace(l.URL) == "" {
-			continue
-		}
-		links = append(links, parts.LinkDTO{
-			Label: strings.TrimSpace(l.Label),
-			URL:   strings.TrimSpace(l.URL),
-		})
+	_, links, linkErr := parseLinkPayloads(payload.Links, nil, false)
+	if linkErr != nil {
+		writeError(w, http.StatusBadRequest, linkErr.Error())
+		return
 	}
 
 	id, err := h.deps.Parts.CreatePart(r.Context(), parts.CreatePartRequest{
@@ -506,21 +502,17 @@ func (h *apiHandler) handleUpdatePart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Links != nil {
-		for _, l := range *payload.Links {
-			if strings.TrimSpace(l.URL) == "" {
-				continue
-			}
-			dto := parts.LinkDTO{
-				ID:    l.ID,
-				Label: strings.TrimSpace(l.Label),
-				URL:   strings.TrimSpace(l.URL),
-			}
-			if dto.ID > 0 {
-				req.ExistingLinks = append(req.ExistingLinks, dto)
-			} else {
-				req.NewLinks = append(req.NewLinks, dto)
-			}
+		ownedLinkIDs := make(map[int64]bool, len(existing.Links))
+		for _, existingLink := range existing.Links {
+			ownedLinkIDs[existingLink.ID] = true
 		}
+		existingLinks, newLinks, linkErr := parseLinkPayloads(*payload.Links, ownedLinkIDs, true)
+		if linkErr != nil {
+			writeError(w, http.StatusBadRequest, linkErr.Error())
+			return
+		}
+		req.ExistingLinks = existingLinks
+		req.NewLinks = newLinks
 	} else {
 		for _, l := range existing.Links {
 			req.ExistingLinks = append(req.ExistingLinks, parts.LinkDTO{
@@ -1344,7 +1336,7 @@ func partDetailToResponse(detail parts.PartDetail, tags []string) PartDetailResp
 	assignments := make([]PartAssignmentResponse, 0, len(detail.Stock))
 	for _, s := range detail.Stock {
 		totalStock += s.Quantity
-		if s.BinID.Valid && s.ControllerID.Valid {
+		if s.BinID.Valid {
 			validStock += s.Quantity
 		} else {
 			orphanedStock += s.Quantity
@@ -1532,4 +1524,58 @@ func nullTimePtr(ts sql.NullTime) *time.Time {
 	}
 	t := ts.Time.UTC()
 	return &t
+}
+
+func parseLinkPayloads(raw []LinkPayload, ownedLinkIDs map[int64]bool, allowExisting bool) ([]parts.LinkDTO, []parts.LinkDTO, error) {
+	var existingLinks []parts.LinkDTO
+	newLinks := make([]parts.LinkDTO, 0, len(raw))
+
+	for _, l := range raw {
+		if allowExisting {
+			if l.ID < 0 {
+				return nil, nil, errors.New("link id must be a positive integer")
+			}
+			if l.ID > 0 && !ownedLinkIDs[l.ID] {
+				return nil, nil, errors.New("link id does not belong to this part")
+			}
+		}
+
+		rawURL := strings.TrimSpace(l.URL)
+		if rawURL == "" {
+			if allowExisting && l.ID > 0 {
+				return nil, nil, errors.New("link url is required when updating an existing link")
+			}
+			continue
+		}
+
+		validURL, err := validateLinkURL(rawURL)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		dto := parts.LinkDTO{
+			Label: strings.TrimSpace(l.Label),
+			URL:   validURL,
+		}
+		if allowExisting && l.ID > 0 {
+			dto.ID = l.ID
+			existingLinks = append(existingLinks, dto)
+		} else {
+			newLinks = append(newLinks, dto)
+		}
+	}
+
+	return existingLinks, newLinks, nil
+}
+
+func validateLinkURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", errors.New("invalid link url")
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if (scheme != "http" && scheme != "https") || u.Host == "" {
+		return "", errors.New("link url must use http or https with a valid host")
+	}
+	return raw, nil
 }

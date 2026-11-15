@@ -707,3 +707,130 @@ func TestAPI_BarcodesHardwareAndProjects(t *testing.T) {
 		t.Fatalf("expected 400 Bad Request for board_count=0, got %d", badBuildRR.Code)
 	}
 }
+
+func TestAPI_SecurityAndStandaloneStockConsistency(t *testing.T) {
+	h := newHarness(t, false, false)
+	ctx := context.Background()
+
+	_, writeTok := seedUserAndToken(t, h.tokenSvc, h.store, "secwrite@example.com", "editor", "read,write", nil)
+	_, readTok := seedUserAndToken(t, h.tokenSvc, h.store, "secread@example.com", "viewer", "read", nil)
+
+	// 1. Standalone container stock (controller_id = NULL, bin_id != NULL) must match between /parts and /parts/{id}.
+	standaloneContID, err := h.hwSvc.CreateStandaloneContainer(ctx, "Organizer Case", 1, 2)
+	if err != nil {
+		t.Fatalf("CreateStandaloneContainer: %v", err)
+	}
+	standaloneBinID, err := h.store.CreateBin(ctx, db.CreateBinParams{
+		Name:        "S1",
+		ContainerID: standaloneContID,
+	})
+	if err != nil {
+		t.Fatalf("CreateBin standalone: %v", err)
+	}
+
+	p1Res := doAPIRequest(t, h.handler, http.MethodPost, "/api/v1/parts", writeTok.Plaintext, map[string]any{
+		"name":  "Standalone Stock Part",
+		"links": []map[string]string{{"label": "Spec", "url": "https://example.com/spec.pdf"}},
+	})
+	if p1Res.Code != http.StatusCreated {
+		t.Fatalf("POST /parts p1 expected 201, got %d (%s)", p1Res.Code, p1Res.Body.String())
+	}
+	var p1 api.PartDetailResponse
+	decodeBody(t, p1Res, &p1)
+	if len(p1.Links) != 1 {
+		t.Fatalf("expected 1 link on p1, got %+v", p1.Links)
+	}
+
+	assignRR := doAPIRequest(t, h.handler, http.MethodPost, "/api/v1/stock/assign", writeTok.Plaintext, map[string]any{
+		"part_id":  p1.ID,
+		"bin_id":   standaloneBinID,
+		"quantity": 7,
+	})
+	if assignRR.Code != http.StatusOK {
+		t.Fatalf("POST /stock/assign standalone expected 200, got %d (%s)", assignRR.Code, assignRR.Body.String())
+	}
+
+	listRR := doAPIRequest(t, h.handler, http.MethodGet, "/api/v1/parts", readTok.Plaintext, nil)
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("GET /parts expected 200, got %d", listRR.Code)
+	}
+	var listRes api.PartListResponse
+	decodeBody(t, listRR, &listRes)
+
+	detailRR := doAPIRequest(t, h.handler, http.MethodGet, "/api/v1/parts/"+strconv.FormatInt(p1.ID, 10), readTok.Plaintext, nil)
+	if detailRR.Code != http.StatusOK {
+		t.Fatalf("GET /parts/%d expected 200, got %d", p1.ID, detailRR.Code)
+	}
+	var detailRes api.PartDetailResponse
+	decodeBody(t, detailRR, &detailRes)
+
+	if len(listRes.Parts) != 1 {
+		t.Fatalf("expected 1 part in list, got %d", len(listRes.Parts))
+	}
+	lp := listRes.Parts[0]
+	if lp.TotalStock != 7 || lp.ValidStock != 7 || lp.OrphanedStock != 0 {
+		t.Fatalf("expected /parts standalone stock (total=7, valid=7, orphaned=0), got %+v", lp)
+	}
+	if detailRes.TotalStock != lp.TotalStock || detailRes.ValidStock != lp.ValidStock || detailRes.OrphanedStock != lp.OrphanedStock {
+		t.Fatalf("standalone stock mismatch between /parts (%d/%d/%d) and /parts/{id} (%d/%d/%d)",
+			lp.TotalStock, lp.ValidStock, lp.OrphanedStock,
+			detailRes.TotalStock, detailRes.ValidStock, detailRes.OrphanedStock,
+		)
+	}
+
+	// 2. Reject unsafe link URL schemes on POST and PUT /parts.
+	for _, badURL := range []string{
+		"javascript:alert(1)",
+		"data:text/html,<script>alert(1)</script>",
+		"vbscript:msgbox(1)",
+		"/relative/path",
+		"http://",
+	} {
+		badCreate := doAPIRequest(t, h.handler, http.MethodPost, "/api/v1/parts", writeTok.Plaintext, map[string]any{
+			"name":  "Bad URL Part",
+			"links": []map[string]string{{"label": "Bad", "url": badURL}},
+		})
+		if badCreate.Code != http.StatusBadRequest {
+			t.Fatalf("POST /parts with %q expected 400 Bad Request, got %d (%s)", badURL, badCreate.Code, badCreate.Body.String())
+		}
+
+		badUpdate := doAPIRequest(t, h.handler, http.MethodPut, "/api/v1/parts/"+strconv.FormatInt(p1.ID, 10), writeTok.Plaintext, map[string]any{
+			"links": []map[string]any{{"id": p1.Links[0].ID, "label": "XSS", "url": badURL}},
+		})
+		if badUpdate.Code != http.StatusBadRequest {
+			t.Fatalf("PUT /parts with %q expected 400 Bad Request, got %d (%s)", badURL, badUpdate.Code, badUpdate.Body.String())
+		}
+	}
+
+	// 3. Reject cross-part part_links IDOR on PUT /parts/{id}.
+	p2Res := doAPIRequest(t, h.handler, http.MethodPost, "/api/v1/parts", writeTok.Plaintext, map[string]any{
+		"name": "Second Part",
+	})
+	if p2Res.Code != http.StatusCreated {
+		t.Fatalf("POST /parts p2 expected 201, got %d", p2Res.Code)
+	}
+	var p2 api.PartDetailResponse
+	decodeBody(t, p2Res, &p2)
+
+	idorRes := doAPIRequest(t, h.handler, http.MethodPut, "/api/v1/parts/"+strconv.FormatInt(p2.ID, 10), writeTok.Plaintext, map[string]any{
+		"links": []map[string]any{{
+			"id":    p1.Links[0].ID,
+			"label": "Hijacked",
+			"url":   "https://evil.example/payload",
+		}},
+	})
+	if idorRes.Code != http.StatusBadRequest {
+		t.Fatalf("cross-part link IDOR expected 400 Bad Request, got %d (%s)", idorRes.Code, idorRes.Body.String())
+	}
+
+	// Verify part 1's original link was not modified.
+	p1After := doAPIRequest(t, h.handler, http.MethodGet, "/api/v1/parts/"+strconv.FormatInt(p1.ID, 10), readTok.Plaintext, nil)
+	if p1After.Code != http.StatusOK {
+		t.Fatalf("GET p1 after IDOR check expected 200, got %d", p1After.Code)
+	}
+	var p1Check api.PartDetailResponse
+	decodeBody(t, p1After, &p1Check)
+	if len(p1Check.Links) != 1 || p1Check.Links[0].Label != "Spec" || p1Check.Links[0].URL != "https://example.com/spec.pdf" {
+		t.Fatalf("p1 link should remain untouched after IDOR attempt, got %+v", p1Check.Links)
+	}
+}
