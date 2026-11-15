@@ -265,3 +265,205 @@ func TestHardwareAuditLogging(t *testing.T) {
 		t.Errorf("expected summary in delete log, got %s", string(deleteLog.OldValue))
 	}
 }
+
+type mockRoundTripper func(*http.Request) (*http.Response, error)
+
+func (f mockRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func setupHardwareHandlerTest(t *testing.T, name string, rt mockRoundTripper) (*Handler, db.Store, context.Context) {
+	t.Helper()
+	dbConn, err := db.Open("file:" + name + "?mode=memory&cache=shared")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(func() { dbConn.Close() })
+	setupTestSchema(t, dbConn)
+
+	s := db.NewStore(dbConn)
+	_ = s.InitSettings(context.Background())
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	uiError := uierror.New(logger)
+	wClient := wled.NewClient()
+	if rt != nil {
+		wClient = wled.NewClientWithHTTPClient(&http.Client{Transport: rt})
+	}
+	wService := wled.NewService(s, wClient, logger)
+	hwService := hardware.NewService(s, wClient, logger)
+	settService := settings.NewService(s)
+
+	h := &Handler{
+		Logger:   logger,
+		Queries:  s,
+		Database: dbConn,
+		Session:  scs.New(),
+		UIError:  uiError,
+		Hardware: hwService,
+		Settings: settService,
+		WLED:     wService,
+	}
+
+	u, err := s.CreateUser(context.Background(), db.CreateUserParams{Email: "admin@test.com", Role: "admin"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	ctx := context.WithValue(context.Background(), middleware.UserContextKey, u.ID)
+	return h, s, ctx
+}
+
+func TestHandler_ControllerValidationEditAndStatusBadge(t *testing.T) {
+	rt := func(r *http.Request) (*http.Response, error) {
+		return nil, fmt.Errorf("offline")
+	}
+	h, s, ctx := setupHardwareHandlerTest(t, "handler_ctrl_val", rt)
+
+	r := chi.NewRouter()
+	r.Post("/hardware", h.HandleHardwareCreate)
+	r.Post("/hardware/{id}/update", h.HandleControllerUpdate)
+	r.Get("/hardware/{id}/status", h.HandleHardwareStatus)
+
+	// SSRF rejection on create
+	badForm := url.Values{}
+	badForm.Add("name", "Bad")
+	badForm.Add("ip_address", "http://192.168.1.1/evil")
+	badForm.Add("port", "80")
+	reqBad := httptest.NewRequest(http.MethodPost, "/hardware", strings.NewReader(badForm.Encode()))
+	reqBad.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	reqBad = reqBad.WithContext(ctx)
+	rrBad := httptest.NewRecorder()
+	r.ServeHTTP(rrBad, reqBad)
+	if rrBad.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 BadRequest for SSRF URL scheme, got %d", rrBad.Code)
+	}
+
+	// Create valid controller and edit via HandleControllerUpdate
+	cRow, err := h.Hardware.CreateController(ctx, db.CreateControllerParams{Name: "Desk", IpAddress: "10.0.0.5", Port: sql.NullInt64{Int64: 80, Valid: true}})
+	if err != nil {
+		t.Fatalf("CreateController failed: %v", err)
+	}
+
+	updForm := url.Values{}
+	updForm.Add("name", "Desk Pro")
+	updForm.Add("ip_address", "10.0.0.6")
+	updForm.Add("port", "8080")
+	updForm.Add("use_udp", "true")
+	updForm.Add("udp_port", "21325")
+	updForm.Add("restore_state", "true")
+	updForm.Add("idle_preset_id", "2")
+	reqUpd := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/%d/update", cRow.ID), strings.NewReader(updForm.Encode()))
+	reqUpd.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	reqUpd = reqUpd.WithContext(ctx)
+	rrUpd := httptest.NewRecorder()
+	r.ServeHTTP(rrUpd, reqUpd)
+	if rrUpd.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect on update, got %d (%s)", rrUpd.Code, rrUpd.Body.String())
+	}
+
+	updated, _ := s.GetController(ctx, cRow.ID)
+	if updated.Name != "Desk Pro" || updated.IpAddress != "10.0.0.6" || updated.Port.Int64 != 8080 || !updated.UseUdp.Bool || updated.UdpPort.Int64 != 21325 || updated.IdlePresetID.Int64 != 2 {
+		t.Errorf("controller update fields did not persist: %+v", updated)
+	}
+
+	// Status badge returns hx-swap="outerHTML" to prevent nested .badge duplication
+	reqStatus := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/hardware/%d/status", cRow.ID), nil).WithContext(ctx)
+	rrStatus := httptest.NewRecorder()
+	r.ServeHTTP(rrStatus, reqStatus)
+	if rrStatus.Code != http.StatusOK || !strings.Contains(rrStatus.Body.String(), `hx-swap="outerHTML"`) {
+		t.Errorf("expected outerHTML badge snippet, got code=%d body=%q", rrStatus.Code, rrStatus.Body.String())
+	}
+}
+
+func TestHandler_StandaloneContainerAndIDORForbidden(t *testing.T) {
+	h, s, ctx := setupHardwareHandlerTest(t, "handler_standalone", nil)
+
+	r := chi.NewRouter()
+	r.Post("/hardware/containers", h.HandleContainerCreateStandalone)
+	r.Get("/hardware/containers/{id}/configure", h.HandleContainerConfigure)
+	r.Post("/hardware/containers/{id}/configure", h.HandleContainerConfigureSave)
+	r.Post("/hardware/containers/{id}/controller", h.HandleContainerBindController)
+	r.Post("/hardware/{id}/grid", h.HandleHardwareGridSave)
+
+	// Create standalone container via handler
+	form := url.Values{}
+	form.Add("name", "Organizer Box")
+	form.Add("rows", "2")
+	form.Add("cols", "3")
+	req := httptest.NewRequest(http.MethodPost, "/hardware/containers", strings.NewReader(form.Encode())).WithContext(ctx)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("expected redirect creating standalone container, got %d", rr.Code)
+	}
+
+	standaloneList, _ := h.Hardware.ListStandaloneContainers(ctx)
+	if len(standaloneList) != 1 {
+		t.Fatalf("expected 1 standalone container, got %d", len(standaloneList))
+	}
+	contID := standaloneList[0].ID
+
+	// GET configure renders StandaloneGridPainter
+	reqGet := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/hardware/containers/%d/configure", contID), nil).WithContext(ctx)
+	rrGet := httptest.NewRecorder()
+	r.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK || !strings.Contains(rrGet.Body.String(), "Organizer Box") {
+		t.Fatalf("expected 200 standalone configure page, got %d", rrGet.Code)
+	}
+
+	// IDOR check: try saving standalone container ID under controller grid save
+	cRow, _ := h.Hardware.CreateController(ctx, db.CreateControllerParams{Name: "C1", IpAddress: "10.0.0.70"})
+	idorCfg := fmt.Sprintf(`[{"id":%d,"name":"Hijacked","segment_id":0,"config":{"type":"grid","rows":2,"cols":2}}]`, contID)
+	idorForm := url.Values{}
+	idorForm.Add("grid_data", `[]`)
+	idorForm.Add("config_data", idorCfg)
+	reqIDOR := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/%d/grid", cRow.ID), strings.NewReader(idorForm.Encode())).WithContext(ctx)
+	reqIDOR.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrIDOR := httptest.NewRecorder()
+	r.ServeHTTP(rrIDOR, reqIDOR)
+	if rrIDOR.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden on cross-controller container IDOR, got %d", rrIDOR.Code)
+	}
+
+	// Bind standalone container to controller cRow.ID
+	bindForm := url.Values{}
+	bindForm.Add("controller_id", strconv.FormatInt(cRow.ID, 10))
+	reqBind := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/containers/%d/controller", contID), strings.NewReader(bindForm.Encode())).WithContext(ctx)
+	reqBind.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrBind := httptest.NewRecorder()
+	r.ServeHTTP(rrBind, reqBind)
+	if rrBind.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect on container bind, got %d", rrBind.Code)
+	}
+
+	bound, _ := s.GetContainer(ctx, contID)
+	if !bound.ControllerID.Valid || bound.ControllerID.Int64 != cRow.ID {
+		t.Errorf("expected container bound to controller %d, got %+v", cRow.ID, bound.ControllerID)
+	}
+}
+
+func TestHandler_LocateNetworkErrorPropagatesHTMXToast(t *testing.T) {
+	rt := func(r *http.Request) (*http.Response, error) {
+		return nil, fmt.Errorf("network unreachable")
+	}
+	h, s, ctx := setupHardwareHandlerTest(t, "handler_locate_err", rt)
+
+	cRow, _ := h.Hardware.CreateController(ctx, db.CreateControllerParams{Name: "Dead", IpAddress: "10.0.0.99", Port: sql.NullInt64{Int64: 80, Valid: true}})
+	conts, _ := h.Hardware.GetContainers(ctx, cRow.ID)
+	binID, _ := s.CreateBin(ctx, db.CreateBinParams{Name: "A1", ContainerID: conts[0].ID, LedIndex: sql.NullInt64{Int64: 0, Valid: true}})
+
+	r := chi.NewRouter()
+	r.Post("/hardware/{id}/locate", h.HandleHardwareLocate)
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hardware/%d/locate?bin_id=%d", cRow.ID, binID), nil).WithContext(ctx)
+	req.Header.Set("HX-Request", "true")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code == http.StatusOK {
+		t.Fatalf("expected non-200 status on WLED network error, got 200")
+	}
+	if rr.Header().Get("HX-Reswap") != "none" {
+		t.Errorf("expected HX-Reswap=none HTMX error toast header, got %q", rr.Header().Get("HX-Reswap"))
+	}
+}
