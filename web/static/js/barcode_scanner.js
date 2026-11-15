@@ -257,8 +257,14 @@ function onGlobalScanSuccess(decodedText, decodedResult) {
 
     const targetInput = targetId ? document.getElementById(targetId) : null;
     if (targetInput) {
+        targetInput.dataset.barcodeScanning = '1';
+        targetInput.dataset.rawScannedBarcode = decodedText;
         targetInput.value = decodedText;
-        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+        try {
+            targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } finally {
+            delete targetInput.dataset.barcodeScanning;
+        }
         targetInput.dispatchEvent(new CustomEvent('barcode-scanned', {
             bubbles: true,
             detail: scanDetail

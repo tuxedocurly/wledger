@@ -17,6 +17,7 @@ import (
 // - isEdit: Boolean to toggle specific "Edit Mode" features like deleting existing files
 templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLink, docs []db.PartDoc, action string, isEdit bool) {
 	<form
+		id="part-form"
 		action={ templ.SafeURL(action) }
 		method="POST"
 		enctype="multipart/form-data"
@@ -29,12 +30,13 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div class="form-control w-full">
 						<label class="label pt-0 pb-2"><span class="label-text font-medium">{ i18n.T(ctx, "PartName") }</span></label>
-						<input type="text" name="name" value={ part.Name } placeholder="e.g. ESP32-WROOM-32" class="input input-bordered w-full" required/>
+						<input id="name" type="text" name="name" value={ part.Name } placeholder="e.g. ESP32-WROOM-32" class="input input-bordered w-full" required/>
 					</div>
 					@TagInput(tags, allTags)
 					<div class="form-control w-full md:col-span-2">
 						<label class="label pt-0 pb-2"><span class="label-text font-medium">{ i18n.T(ctx, "Description") }</span></label>
 						<textarea
+							id="description"
 							name="description"
 							class="textarea textarea-bordered h-24 text-base leading-relaxed resize-y w-full"
 							placeholder={ i18n.T(ctx, "EnterDescriptionPlaceholder") }
@@ -63,29 +65,38 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div class="form-control w-full">
 						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "PartNumberMPN") }</span></label>
-						<input type="text" name="part_number" value={ part.PartNumber.String } placeholder="e.g. SN74HC595N" class="input input-bordered w-full font-mono"/>
+						<input id="part_number" type="text" name="part_number" value={ part.PartNumber.String } placeholder="e.g. SN74HC595N" class="input input-bordered w-full font-mono"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Manufacturer") }</span></label>
-						<input type="text" name="manufacturer" value={ part.Manufacturer.String } placeholder="e.g. Texas Instruments" class="input input-bordered w-full"/>
+						<input id="manufacturer" type="text" name="manufacturer" value={ part.Manufacturer.String } placeholder="e.g. Texas Instruments" class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Supplier") }</span></label>
-						<input type="text" name="supplier" value={ part.Supplier.String } placeholder="e.g. DigiKey" class="input input-bordered w-full"/>
+						<input id="supplier" type="text" name="supplier" value={ part.Supplier.String } placeholder="e.g. DigiKey" class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full md:col-span-3">
 						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "Barcode") }</span></label>
 						<div class="join w-full">
 							<input
-								id="barcode_input"
+								id="barcode_data"
 								type="text"
 								name="barcode_data"
 								value={ part.BarcodeData.String }
 								placeholder={ i18n.T(ctx, "ScanBarcodePlaceholder") }
 								class="input input-bordered join-item w-full font-mono"
 							/>
-							@BarcodeTrigger("barcode_input")
+							<button
+								type="button"
+								id="parse-barcode-btn"
+								class="btn join-item btn-outline"
+								title="Parse 2D Supplier Label"
+							>
+								Parse 2D Label
+							</button>
+							@BarcodeTrigger("barcode_data")
 						</div>
+						<div id="barcode-parse-banner" class="hidden mt-2"></div>
 					</div>
 				</div>
 			</div>
@@ -96,21 +107,21 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div class="form-control w-full">
 						<label class="label"><span class="label-text font-medium mb-2">{ i18n.T(ctx, "UnitCostLabel") }</span></label>
-						<input type="number" step="0.01" name="unit_cost" value={ fmt.Sprintf("%.2f", part.UnitCost.Float64) } class="input input-bordered w-full"/>
+						<input id="unit_cost" type="number" step="0.01" name="unit_cost" value={ fmt.Sprintf("%.2f", part.UnitCost.Float64) } class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label mb-2">
 							<span class="label-text font-medium">{ i18n.T(ctx, "MinStockLevel") }</span>
 							@QuestionTooltip(i18n.T(ctx, "MinStockTooltip"))
 						</label>
-						<input type="number" name="min_stock" value={ fmt.Sprintf("%d", part.MinStockThreshold.Int64) } class="input input-bordered w-full"/>
+						<input id="min_stock" type="number" name="min_stock" value={ fmt.Sprintf("%d", part.MinStockThreshold.Int64) } class="input input-bordered w-full"/>
 					</div>
 					<div class="form-control w-full">
 						<label class="label mb-2">
 							<span class="label-text font-medium">{ i18n.T(ctx, "ReorderLevelLabel") }</span>
 							@QuestionTooltip(i18n.T(ctx, "ReorderLevelTooltip"))
 						</label>
-						<input type="number" name="reorder_level" value={ fmt.Sprintf("%d", part.ReorderLevel.Int64) } class="input input-bordered w-full"/>
+						<input id="reorder_level" type="number" name="reorder_level" value={ fmt.Sprintf("%d", part.ReorderLevel.Int64) } class="input input-bordered w-full"/>
 					</div>
 				</div>
 			</div>
