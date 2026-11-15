@@ -2,11 +2,13 @@
 INSERT OR REPLACE INTO settings (
     id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout,
     enable_debug_logs, color_locate, color_stock_ok, color_stock_low, color_stock_critical,
-    created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock
+    created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock,
+    enable_controller_ping, controller_ping_interval_seconds
 ) VALUES (
     1, ?, ?, ?,
     ?, ?, ?, ?, ?,
-    ?, ?, ?, ?
+    ?, ?, ?, ?,
+    ?, ?
 );
 
 -- name: GetSettings :one
@@ -16,9 +18,10 @@ SELECT * FROM settings WHERE id = 1;
 INSERT OR IGNORE INTO settings (
     id, require_auth_for_read, color_locate, color_stock_ok, color_stock_low,
     color_stock_critical, locate_timeout_seconds, enable_locate_timeout,
-    enable_debug_logs, inspiration_seeds_applied, locate_color_by_stock
+    enable_debug_logs, inspiration_seeds_applied, locate_color_by_stock,
+    enable_controller_ping, controller_ping_interval_seconds
 )
-VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0, 0, 0);
+VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0, 0, 0, 1, 600);
 
 -- name: UpdateGeneralSettings :exec
 UPDATE settings 
@@ -28,6 +31,8 @@ SET
     enable_locate_timeout = COALESCE(sqlc.narg('enable_locate_timeout'), enable_locate_timeout), 
     enable_debug_logs = COALESCE(sqlc.narg('enable_debug_logs'), enable_debug_logs),
     locate_color_by_stock = COALESCE(sqlc.narg('locate_color_by_stock'), locate_color_by_stock),
+    enable_controller_ping = COALESCE(sqlc.narg('enable_controller_ping'), enable_controller_ping),
+    controller_ping_interval_seconds = COALESCE(sqlc.narg('controller_ping_interval_seconds'), controller_ping_interval_seconds),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = 1;
 

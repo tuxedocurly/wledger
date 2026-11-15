@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tuxedocurly/wledger/internal/audit"
@@ -30,6 +31,7 @@ type Service interface {
 	UpdateController(ctx context.Context, params db.UpdateControllerParams) error
 	DeleteController(ctx context.Context, id int64) error
 	UpdateStatus(ctx context.Context, id int64) (bool, error)
+	PingAllControllers(ctx context.Context) error
 	DiscoverControllers(ctx context.Context) (DiscoveryResult, error)
 	ReconcileDiscoveredDevices(ctx context.Context, devices []wled.DiscoveredDevice) (DiscoveryResult, error)
 
@@ -287,6 +289,60 @@ func (s *service) UpdateStatus(ctx context.Context, id int64) (bool, error) {
 	}
 
 	return false, nil
+}
+
+const (
+	pingConcurrencyLimit = 8
+	pingPerControllerTTL = 3 * time.Second
+)
+
+func (s *service) PingAllControllers(ctx context.Context) error {
+	controllers, err := s.store.GetControllers(ctx)
+	if err != nil {
+		return err
+	}
+	if len(controllers) == 0 {
+		return nil
+	}
+
+	sem := make(chan struct{}, pingConcurrencyLimit)
+	var (
+		wg   sync.WaitGroup
+		mu   sync.Mutex
+		errs []error
+	)
+
+	for _, c := range controllers {
+		if ctx.Err() != nil {
+			break
+		}
+		wg.Add(1)
+		go func(ctrlID int64) {
+			defer wg.Done()
+
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				return
+			}
+
+			ctrlCtx, cancel := context.WithTimeout(ctx, pingPerControllerTTL)
+			defer cancel()
+
+			if _, statusErr := s.UpdateStatus(ctrlCtx, ctrlID); statusErr != nil && !errors.Is(statusErr, sql.ErrNoRows) {
+				mu.Lock()
+				errs = append(errs, fmt.Errorf("controller %d: %w", ctrlID, statusErr))
+				mu.Unlock()
+			}
+		}(c.ID)
+	}
+
+	wg.Wait()
+	if ctx.Err() != nil {
+		errs = append(errs, ctx.Err())
+	}
+	return errors.Join(errs...)
 }
 
 func (s *service) DiscoverControllers(ctx context.Context) (DiscoveryResult, error) {

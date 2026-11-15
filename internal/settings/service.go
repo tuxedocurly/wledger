@@ -43,14 +43,16 @@ func NewService(store db.Store) Service {
 }
 
 type UpdateSettingsParams struct {
-	RequireAuth         bool
-	LocateTimeout       int
-	EnableLocateTimeout bool
-	EnableDebugLogs     bool
-	ColorLocate         string
-	ColorOk             string
-	ColorLow            string
-	ColorCritical       string
+	RequireAuth            bool
+	LocateTimeout          int
+	EnableLocateTimeout    bool
+	EnableDebugLogs        bool
+	EnableControllerPing   *bool
+	ControllerPingInterval *int
+	ColorLocate            string
+	ColorOk                string
+	ColorLow               string
+	ColorCritical          string
 }
 
 type CreateUserParams struct {
@@ -68,11 +70,22 @@ func (s *service) UpdateSettings(ctx context.Context, params UpdateSettingsParam
 	current, _ := s.store.GetSettings(ctx)
 
 	err := s.store.ExecTx(ctx, func(q db.Querier) error {
+		var enablePingParam sql.NullBool
+		if params.EnableControllerPing != nil {
+			enablePingParam = sql.NullBool{Bool: *params.EnableControllerPing, Valid: true}
+		}
+		var pingIntervalParam sql.NullInt64
+		if params.ControllerPingInterval != nil {
+			pingIntervalParam = sql.NullInt64{Int64: int64(*params.ControllerPingInterval), Valid: true}
+		}
+
 		err := q.UpdateGeneralSettings(ctx, db.UpdateGeneralSettingsParams{
-			RequireAuthForRead:   sql.NullBool{Bool: params.RequireAuth, Valid: true},
-			LocateTimeoutSeconds: sql.NullInt64{Int64: int64(params.LocateTimeout), Valid: true},
-			EnableLocateTimeout:  sql.NullBool{Bool: params.EnableLocateTimeout, Valid: true},
-			EnableDebugLogs:      sql.NullBool{Bool: params.EnableDebugLogs, Valid: true},
+			RequireAuthForRead:            sql.NullBool{Bool: params.RequireAuth, Valid: true},
+			LocateTimeoutSeconds:          sql.NullInt64{Int64: int64(params.LocateTimeout), Valid: true},
+			EnableLocateTimeout:           sql.NullBool{Bool: params.EnableLocateTimeout, Valid: true},
+			EnableDebugLogs:               sql.NullBool{Bool: params.EnableDebugLogs, Valid: true},
+			EnableControllerPing:          enablePingParam,
+			ControllerPingIntervalSeconds: pingIntervalParam,
 		})
 		if err != nil {
 			return err
@@ -107,6 +120,15 @@ func (s *service) UpdateSettings(ctx context.Context, params UpdateSettingsParam
 		if int(current.LocateTimeoutSeconds.Int64) != params.LocateTimeout {
 			oldDiff["locate_timeout"] = current.LocateTimeoutSeconds.Int64
 			newDiff["locate_timeout"] = params.LocateTimeout
+		}
+		currentPingEnabled := !current.EnableControllerPing.Valid || current.EnableControllerPing.Bool
+		if params.EnableControllerPing != nil && currentPingEnabled != *params.EnableControllerPing {
+			oldDiff["enable_controller_ping"] = currentPingEnabled
+			newDiff["enable_controller_ping"] = *params.EnableControllerPing
+		}
+		if params.ControllerPingInterval != nil && int(current.ControllerPingIntervalSeconds.Int64) != *params.ControllerPingInterval {
+			oldDiff["controller_ping_interval"] = current.ControllerPingIntervalSeconds.Int64
+			newDiff["controller_ping_interval"] = *params.ControllerPingInterval
 		}
 		if params.ColorLocate != "" && current.ColorLocate.String != params.ColorLocate {
 			oldDiff["color_locate"] = current.ColorLocate.String

@@ -39,8 +39,9 @@ type Handler struct {
 	Dashboard   dashboard.Service
 	Stock       stock.Service
 	Documents   documents.Service
-	Projects    projects.Service
-	APITokens   *APITokenHandler
+	Projects     projects.Service
+	APITokens    *APITokenHandler
+	StatusPoller *hardware.StatusPoller
 }
 
 // New creates a new Handler with dependencies
@@ -97,4 +98,22 @@ func (h *Handler) WithProjects(s projects.Service) *Handler {
 func (h *Handler) WithAPITokens(th *APITokenHandler) *Handler {
 	h.APITokens = th
 	return h
+}
+
+// WithStatusPoller attaches the background controller status poller to the Handler.
+func (h *Handler) WithStatusPoller(p *hardware.StatusPoller) *Handler {
+	h.StatusPoller = p
+	return h
+}
+
+func (h *Handler) notifyStatusPollerSettingsChanged() {
+	if h != nil && h.StatusPoller != nil {
+		h.StatusPoller.NotifySettingsChanged()
+	}
+}
+
+func (h *Handler) triggerStatusPollerNow() {
+	if h != nil && h.StatusPoller != nil {
+		h.StatusPoller.TriggerNow()
+	}
 }

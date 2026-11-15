@@ -580,3 +580,57 @@ func TestV2_APITokensAndProjectsBOMShortages(t *testing.T) {
 		t.Fatalf("unexpected second shortage (unlinked ESP32): %+v", shortages[1])
 	}
 }
+
+func TestMigration008_ControllerPingSettings(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "mig008.db")
+	conn, err := db.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	defer conn.Close()
+
+	goose.SetBaseFS(schema.Migrations)
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		t.Fatalf("SetDialect failed: %v", err)
+	}
+	if err := goose.UpTo(conn, ".", 7); err != nil {
+		t.Fatalf("UpTo 7 failed: %v", err)
+	}
+
+	// Seed pre-008 settings row at version 7.
+	if _, err := conn.Exec(`INSERT INTO settings (id, require_auth_for_read) VALUES (1, 1)`); err != nil {
+		t.Fatalf("seed pre-008 settings failed: %v", err)
+	}
+
+	if err := goose.Up(conn, "."); err != nil {
+		t.Fatalf("Up to 008 failed: %v", err)
+	}
+
+	store := db.NewStore(conn)
+	ctx := context.Background()
+	sett, err := store.GetSettings(ctx)
+	if err != nil {
+		t.Fatalf("GetSettings after 008 failed: %v", err)
+	}
+	if !sett.EnableControllerPing.Valid || !sett.EnableControllerPing.Bool {
+		t.Fatalf("expected EnableControllerPing=true by default, got %+v", sett.EnableControllerPing)
+	}
+	if !sett.ControllerPingIntervalSeconds.Valid || sett.ControllerPingIntervalSeconds.Int64 != 600 {
+		t.Fatalf("expected ControllerPingIntervalSeconds=600 by default, got %+v", sett.ControllerPingIntervalSeconds)
+	}
+
+	if err := store.UpdateGeneralSettings(ctx, db.UpdateGeneralSettingsParams{
+		EnableControllerPing:          sql.NullBool{Bool: false, Valid: true},
+		ControllerPingIntervalSeconds: sql.NullInt64{Int64: 180, Valid: true},
+	}); err != nil {
+		t.Fatalf("UpdateGeneralSettings failed: %v", err)
+	}
+
+	sett, err = store.GetSettings(ctx)
+	if err != nil {
+		t.Fatalf("GetSettings after update failed: %v", err)
+	}
+	if sett.EnableControllerPing.Bool || sett.ControllerPingIntervalSeconds.Int64 != 180 {
+		t.Fatalf("expected updated ping settings (false, 180), got %+v", sett)
+	}
+}

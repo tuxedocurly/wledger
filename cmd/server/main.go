@@ -141,6 +141,7 @@ func main() {
 
 	// Hardware Service
 	hardwareService := hardware.NewService(store, wledClient, log)
+	statusPoller := hardware.NewStatusPoller(store, hardwareService, log)
 
 	// Settings Service
 	settingsService := settingsServicePkg.NewService(store)
@@ -186,7 +187,7 @@ func main() {
 		dashboardService,
 		stockService,
 		docsService,
-	).WithProjects(projectsService)
+	).WithProjects(projectsService).WithStatusPoller(statusPoller)
 	tokenHandler := handler.NewAPITokenHandler(store, tokenSvc, uiErrorResponder)
 	h.WithAPITokens(tokenHandler)
 
@@ -218,6 +219,8 @@ func main() {
 	if tlsEnabled {
 		scheme = "https"
 	}
+	go statusPoller.Run(appCtx)
+
 	log.Info("Server listening", "url", scheme+"://localhost"+listenAddr, "tls", tlsEnabled)
 
 	srv := &http.Server{

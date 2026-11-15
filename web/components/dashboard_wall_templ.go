@@ -195,7 +195,7 @@ func DashboardContainerCard(container DashboardContainer) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"modal modal-bottom sm:modal-middle\"><div class=\"modal-box max-w-4xl p-0 overflow-hidden border border-base-300 shadow-2xl bg-base-100\"><div class=\"bg-base-200 p-6 border-b border-base-300 flex justify-between items-center\"><div><h3 class=\"font-bold text-md uppercase tracking-wider\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"modal modal-bottom sm:modal-middle\" @click.stop><div class=\"modal-box max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden border border-base-300 shadow-2xl bg-base-100\"><div class=\"bg-base-200 p-6 border-b border-base-300 flex justify-between items-center shrink-0\"><div><h3 class=\"font-bold text-md uppercase tracking-wider\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -316,7 +316,7 @@ func DashboardContainerCard(container DashboardContainer) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div></div><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost\">✕</button></form></div><div class=\"p-6\"><div class=\"overflow-x-auto bg-base-200/50 rounded-xl border border-base-300 p-4 shadow-inner\"><div class=\"grid gap-1.5 p-1 mx-auto\" style=\"width: fit-content; min-width: 100%;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div></div><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost\">✕</button></form></div><div class=\"p-6 flex flex-col flex-1 min-h-0\"><div class=\"overflow-auto flex-1 min-h-0 bg-base-200/50 rounded-xl border border-base-300 p-4 shadow-inner\" tabindex=\"0\"><div class=\"grid gap-1.5 p-1 mx-auto\" style=\"width: fit-content; min-width: 100%;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -424,7 +424,7 @@ func DashboardContainerCard(container DashboardContainer) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></div><div class=\"modal-action justify-between items-center mt-6 pt-6 border-t border-base-200\"><div class=\"flex gap-4 text-sm font-bold uppercase tracking-wider\"><div class=\"flex items-center gap-1.5\"><div class=\"w-2.5 h-2.5 rounded-full border border-base-content/20\" style=\"background-color: var(--color-stock-ok);\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></div><div class=\"modal-action justify-between items-center mt-6 pt-6 border-t border-base-200 shrink-0\"><div class=\"flex flex-wrap gap-4 text-sm font-bold uppercase tracking-wider\"><div class=\"flex items-center gap-1.5\"><div class=\"w-2.5 h-2.5 rounded-full border border-base-content/20\" style=\"background-color: var(--color-stock-ok);\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -412,6 +412,16 @@ func (s *service) executeLocate(ctx context.Context, ctrl db.Controller, contain
 		return sendErr
 	}
 
+	// HTTP locate proved the controller is reachable; mark it online immediately.
+	if !ctrl.UseUdp.Bool && !ctrl.IsOnline.Bool {
+		if err := s.store.UpdateControllerStatus(ctx, db.UpdateControllerStatusParams{
+			IsOnline: sql.NullBool{Bool: true, Valid: true},
+			ID:       ctrl.ID,
+		}); err != nil && s.logger != nil {
+			s.logger.Debug("failed to mark controller online after locate", "controller", ctrl.Name, "err", err)
+		}
+	}
+
 	s.timersMu.Lock()
 	st.gen++
 	myGen := st.gen

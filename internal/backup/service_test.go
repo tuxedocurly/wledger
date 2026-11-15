@@ -256,20 +256,22 @@ func TestExportAndRestore_V2FullFidelity(t *testing.T) {
 	srcSvc := NewService(srcDB, srcStore, srcUploads, log)
 	ctx := context.Background()
 
-	// Seed v2 settings including EnableDebugLogs, InspirationSeedsApplied, LocateColorByStock.
+	// Seed v2 settings including EnableDebugLogs, InspirationSeedsApplied, LocateColorByStock, and ping interval settings.
 	if err := srcStore.RestoreSettings(ctx, db.RestoreSettingsParams{
-		RequireAuthForRead:      sql.NullBool{Bool: true, Valid: true},
-		LocateTimeoutSeconds:    sql.NullInt64{Int64: 45, Valid: true},
-		EnableLocateTimeout:     sql.NullBool{Bool: true, Valid: true},
-		EnableDebugLogs:         sql.NullBool{Bool: true, Valid: true},
-		ColorLocate:             sql.NullString{String: "#112233", Valid: true},
-		ColorStockOk:            sql.NullString{String: "#00FF00", Valid: true},
-		ColorStockLow:           sql.NullString{String: "#FFAA00", Valid: true},
-		ColorStockCritical:      sql.NullString{String: "#FF0000", Valid: true},
-		InspirationSeedsApplied: sql.NullBool{Bool: true, Valid: true},
-		LocateColorByStock:      sql.NullBool{Bool: true, Valid: true},
-		CreatedAt:               sql.NullTime{Time: time.Now().UTC(), Valid: true},
-		UpdatedAt:               sql.NullTime{Time: time.Now().UTC(), Valid: true},
+		RequireAuthForRead:            sql.NullBool{Bool: true, Valid: true},
+		LocateTimeoutSeconds:          sql.NullInt64{Int64: 45, Valid: true},
+		EnableLocateTimeout:           sql.NullBool{Bool: true, Valid: true},
+		EnableDebugLogs:               sql.NullBool{Bool: true, Valid: true},
+		ColorLocate:                   sql.NullString{String: "#112233", Valid: true},
+		ColorStockOk:                  sql.NullString{String: "#00FF00", Valid: true},
+		ColorStockLow:                 sql.NullString{String: "#FFAA00", Valid: true},
+		ColorStockCritical:            sql.NullString{String: "#FF0000", Valid: true},
+		InspirationSeedsApplied:       sql.NullBool{Bool: true, Valid: true},
+		LocateColorByStock:            sql.NullBool{Bool: true, Valid: true},
+		EnableControllerPing:          sql.NullBool{Bool: false, Valid: true},
+		ControllerPingIntervalSeconds: sql.NullInt64{Int64: 120, Valid: true},
+		CreatedAt:                     sql.NullTime{Time: time.Now().UTC(), Valid: true},
+		UpdatedAt:                     sql.NullTime{Time: time.Now().UTC(), Valid: true},
 	}); err != nil {
 		t.Fatalf("failed to seed settings: %v", err)
 	}
@@ -447,6 +449,12 @@ func TestExportAndRestore_V2FullFidelity(t *testing.T) {
 	}
 	if !gotSettings.LocateColorByStock.Bool {
 		t.Error("expected LocateColorByStock=true after restore")
+	}
+	if !gotSettings.EnableControllerPing.Valid || gotSettings.EnableControllerPing.Bool {
+		t.Errorf("expected EnableControllerPing=false after restore, got %+v", gotSettings.EnableControllerPing)
+	}
+	if !gotSettings.ControllerPingIntervalSeconds.Valid || gotSettings.ControllerPingIntervalSeconds.Int64 != 120 {
+		t.Errorf("expected ControllerPingIntervalSeconds=120 after restore, got %+v", gotSettings.ControllerPingIntervalSeconds)
 	}
 	if gotSettings.ColorLocate.String != "#112233" {
 		t.Errorf("expected ColorLocate=#112233, got %q", gotSettings.ColorLocate.String)
@@ -635,6 +643,12 @@ func TestRestore_V1BackwardCompatibility(t *testing.T) {
 	gotSettings, err := s.GetSettings(ctx)
 	if err != nil || !gotSettings.EnableDebugLogs.Bool || !gotSettings.InspirationSeedsApplied.Bool || gotSettings.LocateColorByStock.Bool {
 		t.Errorf("unexpected settings after v1 restore: %+v (err=%v)", gotSettings, err)
+	}
+	if !gotSettings.EnableControllerPing.Valid || !gotSettings.EnableControllerPing.Bool {
+		t.Errorf("expected default EnableControllerPing=true after v1 restore, got %+v", gotSettings.EnableControllerPing)
+	}
+	if !gotSettings.ControllerPingIntervalSeconds.Valid || gotSettings.ControllerPingIntervalSeconds.Int64 != 600 {
+		t.Errorf("expected default ControllerPingIntervalSeconds=600 after v1 restore, got %+v", gotSettings.ControllerPingIntervalSeconds)
 	}
 
 	gotLogs, err := s.GetAllAuditLogs(ctx)
