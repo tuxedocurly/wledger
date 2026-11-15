@@ -1,0 +1,253 @@
+package components
+
+import (
+	"fmt"
+
+	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
+	"github.com/tuxedocurly/wledger/web/icons"
+)
+
+templ CreateProjectModal() {
+	@Modal(ModalProps{ID: "create-project-modal", Title: "Create Project"}) {
+		<form action="/projects" method="POST" class="space-y-4">
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "Name") }</span>
+				</label>
+				<input type="text" name="name" required placeholder="e.g. Sensor Node RevB" class="input input-bordered w-full"/>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "DescriptionOptional") }</span>
+				</label>
+				<textarea name="description" rows="3" placeholder="Board summary, revision notes, or target enclosure..." class="textarea textarea-bordered w-full"></textarea>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "Status") }</span>
+				</label>
+				<select name="status" class="select select-bordered w-full">
+					<option value="draft" selected>Draft</option>
+					<option value="active">Active</option>
+					<option value="completed">Completed</option>
+					<option value="archived">Archived</option>
+				</select>
+			</div>
+			<div class="modal-action">
+				<button type="button" class="btn" onclick="document.getElementById('create-project-modal').close()">{ i18n.T(ctx, "Cancel") }</button>
+				<button type="submit" class="btn btn-primary gap-2">
+					@icons.Plus(templ.Attributes{"class": "w-4 h-4"})
+					Create Project
+				</button>
+			</div>
+		</form>
+	}
+}
+
+templ EditProjectModal(project db.Project) {
+	@Modal(ModalProps{ID: "edit-project-modal", Title: "Edit Project"}) {
+		<form action={ templ.SafeURL(fmt.Sprintf("/projects/%d/update", project.ID)) } method="POST" class="space-y-4">
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "Name") }</span>
+				</label>
+				<input type="text" name="name" required value={ project.Name } class="input input-bordered w-full"/>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "DescriptionOptional") }</span>
+				</label>
+				<textarea name="description" rows="3" class="textarea textarea-bordered w-full">{ project.Description.String }</textarea>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "Status") }</span>
+				</label>
+				<select name="status" class="select select-bordered w-full">
+					<option value="draft" selected?={ project.Status == "draft" }>Draft</option>
+					<option value="active" selected?={ project.Status == "active" }>Active</option>
+					<option value="completed" selected?={ project.Status == "completed" }>Completed</option>
+					<option value="archived" selected?={ project.Status == "archived" }>Archived</option>
+				</select>
+			</div>
+			<div class="modal-action">
+				<button type="button" class="btn" onclick="document.getElementById('edit-project-modal').close()">{ i18n.T(ctx, "Cancel") }</button>
+				<button type="submit" class="btn btn-primary">{ i18n.T(ctx, "SaveChanges") }</button>
+			</div>
+		</form>
+	}
+}
+
+templ AddBOMItemModal(projectID int64, allParts []db.Part) {
+	@Modal(ModalProps{ID: "add-bom-item-modal", Title: "Add BOM Line Item"}) {
+		<form action={ templ.SafeURL(fmt.Sprintf("/projects/%d/bom", projectID)) } method="POST" class="space-y-4">
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">Designator(s)</span>
+					</label>
+					<input type="text" name="designator" placeholder="e.g. R1, R2" class="input input-bordered w-full"/>
+				</div>
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">{ i18n.T(ctx, "Qty") } / Board</span>
+					</label>
+					<input type="number" name="quantity_per_board" min="1" value="1" required class="input input-bordered w-full"/>
+				</div>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">Link Inventory Part (Optional)</span>
+				</label>
+				<select name="part_id" class="select select-bordered w-full">
+					<option value="">-- Unlinked / Match Later --</option>
+					for _, p := range allParts {
+						<option value={ fmt.Sprintf("%d", p.ID) }>
+							{ p.Name }
+							if p.PartNumber.Valid && p.PartNumber.String != "" {
+								({ p.PartNumber.String })
+							}
+						</option>
+					}
+				</select>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "MPN") }</span>
+				</label>
+				<input type="text" name="mpn" placeholder="e.g. CL10B104KB8NNNC" class="input input-bordered w-full font-mono"/>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">Value / Description</span>
+				</label>
+				<input type="text" name="description" placeholder="e.g. 100nF 0603 X7R" class="input input-bordered w-full"/>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">Notes</span>
+				</label>
+				<input type="text" name="notes" placeholder="DNP, alternate footprint, etc." class="input input-bordered w-full"/>
+			</div>
+			<div class="modal-action">
+				<button type="button" class="btn" onclick="document.getElementById('add-bom-item-modal').close()">{ i18n.T(ctx, "Cancel") }</button>
+				<button type="submit" class="btn btn-primary gap-2">
+					@icons.Plus(templ.Attributes{"class": "w-4 h-4"})
+					Add BOM Item
+				</button>
+			</div>
+		</form>
+	}
+}
+
+templ ImportBOMModal(projectID int64) {
+	@Modal(ModalProps{ID: "import-bom-modal", Title: "Import BOM (CSV / KiCad)", BoxClass: "w-11/12 max-w-2xl"}) {
+		<form
+			hx-post={ fmt.Sprintf("/projects/%d/bom/import", projectID) }
+			hx-encoding="multipart/form-data"
+			hx-target="#import-bom-result"
+			hx-swap="innerHTML"
+			hx-indicator="#import-bom-spinner"
+			action={ templ.SafeURL(fmt.Sprintf("/projects/%d/bom/import", projectID)) }
+			method="POST"
+			enctype="multipart/form-data"
+			class="space-y-4"
+		>
+			<div class="alert alert-info text-xs">
+				<span>
+					Auto-detects columns: <strong>Reference/Designator</strong>, <strong>Value/Name</strong>, <strong>MPN/Part Number</strong>, <strong>Qty/Quantity</strong>, <strong>Description</strong>, <strong>Notes</strong>.
+					Automatically links inventory parts by MPN, barcode, or exact name.
+				</span>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "UploadFile") }</span>
+				</label>
+				<input type="file" name="file" accept=".csv,.tsv,text/csv" class="file-input file-input-bordered w-full"/>
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">{ i18n.T(ctx, "OrPasteCSVData") }</span>
+				</label>
+				<textarea
+					name="csv_data"
+					rows="6"
+					placeholder="Reference,Value,MPN,Qty,Description&#10;C1 C2,100nF,CL10B104KB8NNNC,2,Decoupling capacitor"
+					class="textarea textarea-bordered w-full font-mono text-xs"
+				></textarea>
+			</div>
+			<div id="import-bom-spinner" class="htmx-indicator flex items-center gap-2 text-primary text-sm">
+				<span class="loading loading-spinner loading-sm"></span>
+				<span>Importing and auto-linking BOM...</span>
+			</div>
+			<div id="import-bom-result"></div>
+			<div class="modal-action">
+				<button type="button" class="btn" onclick="document.getElementById('import-bom-modal').close()">{ i18n.T(ctx, "Cancel") }</button>
+				<button type="submit" class="btn btn-primary gap-2">
+					@icons.Import(templ.Attributes{"class": "w-4 h-4"})
+					{ i18n.T(ctx, "StartImport") }
+				</button>
+			</div>
+		</form>
+	}
+}
+
+templ ProjectBOMImportResult(projectID int64, importedCount, matchedCount, unmatchedCount int, errMsg string) {
+	if errMsg != "" {
+		<div class="alert alert-error text-sm">
+			@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5 shrink-0"})
+			<span>{ errMsg }</span>
+		</div>
+	} else {
+		<div class="alert alert-success text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+			<div>
+				<div class="font-bold">
+					{ fmt.Sprintf("Imported %d BOM line(s): %d auto-linked, %d unmatched.", importedCount, matchedCount, unmatchedCount) }
+				</div>
+				if unmatchedCount > 0 {
+					<div class="text-xs opacity-80">Link unmatched rows directly from the BOM table before building.</div>
+				}
+			</div>
+			<a href={ templ.SafeURL(fmt.Sprintf("/projects/%d", projectID)) } class="btn btn-sm btn-neutral shrink-0">
+				{ i18n.T(ctx, "RefreshPage") }
+			</a>
+		</div>
+	}
+}
+
+templ LinkBOMPartModal(projectID, itemID int64, currentPartID *int64, designator, mpn, description string, allParts []db.Part) {
+	@Modal(ModalProps{ID: fmt.Sprintf("link-bom-modal-%d", itemID), Title: "Link BOM Item to Inventory Part"}) {
+		<form action={ templ.SafeURL(fmt.Sprintf("/projects/%d/bom/%d/link", projectID, itemID)) } method="POST" class="space-y-4">
+			<div class="text-sm bg-base-200 p-3 rounded-lg space-y-1">
+				<div><span class="font-semibold">Designator:</span> { designator }</div>
+				if mpn != "" {
+					<div><span class="font-semibold">MPN:</span> <span class="font-mono">{ mpn }</span></div>
+				}
+				if description != "" {
+					<div><span class="font-semibold">Description:</span> { description }</div>
+				}
+			</div>
+			<div class="form-control">
+				<label class="label">
+					<span class="label-text font-semibold">Inventory Part</span>
+				</label>
+				<select name="part_id" class="select select-bordered w-full">
+					<option value="">-- Unlinked --</option>
+					for _, p := range allParts {
+						<option value={ fmt.Sprintf("%d", p.ID) } selected?={ currentPartID != nil && *currentPartID == p.ID }>
+							{ p.Name }
+							if p.PartNumber.Valid && p.PartNumber.String != "" {
+								({ p.PartNumber.String })
+							}
+						</option>
+					}
+				</select>
+			</div>
+			<div class="modal-action">
+				<button type="button" class="btn" onclick={ templ.ComponentScript{Call: fmt.Sprintf("document.getElementById('link-bom-modal-%d').close()", itemID)} }>{ i18n.T(ctx, "Cancel") }</button>
+				<button type="submit" class="btn btn-primary">{ i18n.T(ctx, "SaveChanges") }</button>
+			</div>
+		</form>
+	}
+}

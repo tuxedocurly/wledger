@@ -1,0 +1,419 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
+	"github.com/tuxedocurly/wledger/web/components"
+	"github.com/tuxedocurly/wledger/web/icons"
+	"github.com/tuxedocurly/wledger/web/layouts"
+)
+
+type ProjectBOMLocationView struct {
+	AssignmentID   int64
+	BinID          int64
+	BinName        string
+	ContainerID    int64
+	ContainerName  string
+	ControllerID   int64
+	ControllerName string
+	Quantity       int64
+	IsOrphaned     bool
+	IsStandalone   bool
+	HasLED         bool
+}
+
+type ProjectBOMItemView struct {
+	ID                       int64
+	ProjectID                int64
+	PartID                   *int64
+	Designator               string
+	MPN                      string
+	Description              string
+	Notes                    string
+	PartName                 string
+	ResolvedPartNumber       string
+	UnitCost                 float64
+	QuantityPerBoard         int64
+	RequiredQuantity         int64
+	AvailableStock           int64
+	ShortageQuantity         int64
+	CombinedRequiredQuantity int64
+	CombinedShortageQuantity int64
+	HasShortage              bool
+	IsLinked                 bool
+	Locations                []ProjectBOMLocationView
+	HasLocatableLED          bool
+}
+
+type ProjectShortageView struct {
+	PartID           *int64
+	PrimaryBOMItemID int64
+	Designators      string
+	DisplayName      string
+	PartNumber       string
+	QuantityPerBoard int64
+	RequiredQuantity int64
+	AvailableStock   int64
+	ShortageQuantity int64
+	Unlinked         bool
+}
+
+type ProjectDetailView struct {
+	Project           db.Project
+	BoardCount        int64
+	Items             []ProjectBOMItemView
+	Shortages         []ProjectShortageView
+	Buildable         bool
+	TotalCost         float64
+	LocatableBinCount int
+}
+
+templ ProjectDetail(user auth.User, detail ProjectDetailView, allParts []db.Part, builtBoards int64) {
+	@layouts.Base(detail.Project.Name, user) {
+		@ProjectDetailContent(user, detail, allParts, builtBoards)
+	}
+}
+
+templ ProjectDetailContent(user auth.User, detail ProjectDetailView, allParts []db.Part, builtBoards int64) {
+	<div id="project-detail-shell" class="space-y-6">
+		@components.PageHeader(
+			detail.Project.Name,
+			detail.Project.Description.String,
+			[]components.Breadcrumb{
+				{Label: i18n.T(ctx, "Dashboard"), URL: "/"},
+				{Label: "Projects", URL: "/projects"},
+				{Label: detail.Project.Name},
+			},
+		) {
+			<div class="flex flex-wrap items-center gap-2">
+				<span class={ "badge badge-md uppercase", projectStatusBadgeClass(detail.Project.Status) }>
+					{ detail.Project.Status }
+				</span>
+				<form
+					hx-post={ fmt.Sprintf("/projects/%d/locate", detail.Project.ID) }
+					hx-swap="none"
+					action={ templ.SafeURL(fmt.Sprintf("/projects/%d/locate", detail.Project.ID)) }
+					method="POST"
+				>
+					<button
+						type="submit"
+						class="btn btn-accent gap-2"
+						disabled?={ len(detail.Items) == 0 }
+						title="Light up all positive-stock BOM bins across WLED controllers"
+					>
+						@icons.Lightbulb(templ.Attributes{"class": "w-4 h-4"})
+						Pick Mode: Locate All ({ fmt.Sprintf("%d", detail.LocatableBinCount) })
+					</button>
+				</form>
+				if user.CanWrite() {
+					<button
+						type="button"
+						class="btn btn-outline gap-2"
+						onclick="document.getElementById('edit-project-modal').showModal()"
+					>
+						@icons.Pencil(templ.Attributes{"class": "w-4 h-4"})
+						Edit
+					</button>
+					<button
+						type="button"
+						class="btn btn-outline gap-2"
+						onclick="document.getElementById('import-bom-modal').showModal()"
+					>
+						@icons.Import(templ.Attributes{"class": "w-4 h-4"})
+						Import CSV
+					</button>
+					<button
+						type="button"
+						class="btn btn-primary gap-2"
+						onclick="document.getElementById('add-bom-item-modal').showModal()"
+					>
+						@icons.Plus(templ.Attributes{"class": "w-4 h-4"})
+						Add BOM Item
+					</button>
+				}
+			</div>
+		}
+
+		if builtBoards > 0 {
+			<div class="alert alert-success shadow-sm">
+				@icons.Zap(templ.Attributes{"class": "w-5 h-5 shrink-0"})
+				<span>{ fmt.Sprintf("Built %d board(s) and atomically deducted BOM inventory stock.", builtBoards) }</span>
+			</div>
+		}
+
+		<!-- Build Planning & Summary Bar -->
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+			<div class="card bg-base-100 border border-base-300 shadow-sm">
+				<div class="card-body p-4">
+					<div class="text-xs uppercase font-bold opacity-60">Boards to Build</div>
+					<form
+						action={ templ.SafeURL(fmt.Sprintf("/projects/%d", detail.Project.ID)) }
+						method="GET"
+						hx-get={ fmt.Sprintf("/projects/%d", detail.Project.ID) }
+						hx-target="#project-detail-shell"
+						hx-swap="outerHTML"
+						hx-push-url="true"
+						class="flex items-center gap-2 mt-1"
+					>
+						<input
+							type="number"
+							name="boards"
+							min="1"
+							value={ fmt.Sprintf("%d", detail.BoardCount) }
+							class="input input-bordered input-sm w-24 font-mono"
+						/>
+						<button type="submit" class="btn btn-sm btn-outline">Calculate</button>
+					</form>
+				</div>
+			</div>
+
+			<div class="card bg-base-100 border border-base-300 shadow-sm">
+				<div class="card-body p-4 justify-center">
+					<div class="text-xs uppercase font-bold opacity-60">Build Readiness</div>
+					<div class="mt-1">
+						if len(detail.Items) == 0 {
+							<span class="badge badge-ghost badge-lg">Empty BOM</span>
+						} else if detail.Buildable {
+							<span class="badge badge-success badge-lg gap-1">{ fmt.Sprintf("Ready for %d board(s)", detail.BoardCount) }</span>
+						} else {
+							<span class="badge badge-warning badge-lg gap-1">{ fmt.Sprintf("%d Shortage(s)", len(detail.Shortages)) }</span>
+						}
+					</div>
+				</div>
+			</div>
+
+			<div class="card bg-base-100 border border-base-300 shadow-sm">
+				<div class="card-body p-4 justify-center">
+					<div class="text-xs uppercase font-bold opacity-60">Estimated BOM Cost</div>
+					<div class="text-2xl font-bold font-mono mt-1">{ fmt.Sprintf("$%.2f", detail.TotalCost) }</div>
+					<div class="text-xs opacity-60">{ fmt.Sprintf("for %d board(s)", detail.BoardCount) }</div>
+				</div>
+			</div>
+
+			<div class="card bg-base-100 border border-base-300 shadow-sm">
+				<div class="card-body p-4 justify-center">
+					<div class="text-xs uppercase font-bold opacity-60">Atomic Stock Deduction</div>
+					if user.CanWrite() {
+						<form
+							action={ templ.SafeURL(fmt.Sprintf("/projects/%d/build", detail.Project.ID)) }
+							method="POST"
+							hx-post={ fmt.Sprintf("/projects/%d/build", detail.Project.ID) }
+							hx-target="#project-detail-shell"
+							hx-swap="outerHTML"
+							data-confirm={ fmt.Sprintf("Build %d board(s) of %s and deduct inventory stock?", detail.BoardCount, detail.Project.Name) }
+							onsubmit="if (!confirm(this.dataset.confirm)) { event.preventDefault(); return false; }"
+							class="mt-1"
+						>
+							<input type="hidden" name="board_count" value={ fmt.Sprintf("%d", detail.BoardCount) }/>
+							<button
+								type="submit"
+								class="btn btn-primary w-full gap-2"
+								disabled?={ !detail.Buildable }
+							>
+								@icons.Zap(templ.Attributes{"class": "w-4 h-4"})
+								Build { fmt.Sprintf("%d", detail.BoardCount) } Board(s)
+							</button>
+						</form>
+					} else {
+						<div class="text-xs opacity-60 mt-1">Editor or admin role required to deduct stock.</div>
+					}
+				</div>
+			</div>
+		</div>
+
+		<!-- Shortages Alert -->
+		if len(detail.Shortages) > 0 {
+			<div class="alert alert-warning shadow-sm items-start">
+				@icons.TriangleAlert(templ.Attributes{"class": "w-5 h-5 shrink-0 mt-0.5"})
+				<div class="space-y-1 w-full">
+					<div class="font-bold">
+						{ fmt.Sprintf("Cannot build %d board(s): %d BOM shortage(s) or unlinked line(s)", detail.BoardCount, len(detail.Shortages)) }
+					</div>
+					<ul class="list-disc list-inside text-xs space-y-0.5">
+						for _, sh := range detail.Shortages {
+							<li>
+								<span class="font-semibold">
+									if sh.DisplayName != "" {
+										{ sh.DisplayName }
+									} else if sh.PartNumber != "" {
+										{ sh.PartNumber }
+									} else {
+										{ sh.Designators }
+									}
+								</span>
+								if sh.Designators != "" {
+									<span class="opacity-75"> ({ sh.Designators })</span>
+								}
+								if sh.Unlinked {
+									— Unlinked inventory part (need { fmt.Sprintf("%d", sh.RequiredQuantity) })
+								} else {
+									— Need { fmt.Sprintf("%d", sh.RequiredQuantity) }, Available { fmt.Sprintf("%d", sh.AvailableStock) }, Short { fmt.Sprintf("%d", sh.ShortageQuantity) }
+								}
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+		}
+
+		<!-- BOM Table -->
+		if len(detail.Items) == 0 {
+			@components.EmptyState(
+				"BOM is empty",
+				"Import a KiCad CSV BOM or add BOM line items manually to track stock and locate bins.",
+				"📋",
+			)
+		} else {
+			<div class="card bg-base-100 border border-base-300 shadow-sm overflow-x-auto">
+				<table class="table table-zebra w-full">
+					<thead>
+						<tr>
+							<th>Designator</th>
+							<th>Part / MPN</th>
+							<th class="text-right">{ i18n.T(ctx, "Qty") } / Bd</th>
+							<th class="text-right">Required</th>
+							<th class="text-right">{ i18n.T(ctx, "Stock") }</th>
+							<th>{ i18n.T(ctx, "Locations") }</th>
+							<th>{ i18n.T(ctx, "Status") }</th>
+							<th class="text-right">{ i18n.T(ctx, "Actions") }</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, item := range detail.Items {
+							<tr>
+								<td class="font-mono text-xs font-semibold">{ item.Designator }</td>
+								<td>
+									if item.IsLinked && item.PartID != nil {
+										<a href={ templ.SafeURL(fmt.Sprintf("/parts/%d", *item.PartID)) } class="link link-primary font-semibold">
+											{ item.PartName }
+										</a>
+										if item.ResolvedPartNumber != "" || item.MPN != "" {
+											<div class="text-xs font-mono opacity-70">
+												if item.ResolvedPartNumber != "" {
+													{ item.ResolvedPartNumber }
+												} else {
+													{ item.MPN }
+												}
+											</div>
+										}
+									} else {
+										<div class="font-semibold">
+											if item.Description != "" {
+												{ item.Description }
+											} else if item.MPN != "" {
+												{ item.MPN }
+											} else {
+												Unlabeled Part
+											}
+										</div>
+										if item.MPN != "" {
+											<div class="text-xs font-mono opacity-70">{ item.MPN }</div>
+										}
+									}
+									if item.Notes != "" {
+										<div class="text-xs opacity-60 italic">{ item.Notes }</div>
+									}
+								</td>
+								<td class="text-right font-mono">{ fmt.Sprintf("%d", item.QuantityPerBoard) }</td>
+								<td class="text-right font-mono font-semibold">
+									{ fmt.Sprintf("%d", item.RequiredQuantity) }
+									if item.CombinedRequiredQuantity != item.RequiredQuantity {
+										<div class="text-xs opacity-60">BOM sum: { fmt.Sprintf("%d", item.CombinedRequiredQuantity) }</div>
+									}
+								</td>
+								<td class="text-right font-mono">{ fmt.Sprintf("%d", item.AvailableStock) }</td>
+								<td>
+									if !item.IsLinked {
+										<span class="text-xs opacity-50">Not linked</span>
+									} else if len(item.Locations) == 0 {
+										<span class="text-xs opacity-50">No bin assignments</span>
+									} else {
+										<div class="flex flex-wrap gap-1">
+											for _, loc := range item.Locations {
+												if loc.IsOrphaned {
+													<span class="badge badge-xs badge-ghost gap-1">
+														{ i18n.T(ctx, "Orphaned") }: { fmt.Sprintf("%d", loc.Quantity) }
+													</span>
+												} else if loc.IsStandalone {
+													<span class="badge badge-xs badge-outline gap-1">
+														{ loc.ContainerName } &gt; { loc.BinName } ({ fmt.Sprintf("%d", loc.Quantity) })
+														<span class="opacity-60">{ i18n.T(ctx, "Unmanaged") }</span>
+													</span>
+												} else {
+													<span class="badge badge-xs badge-info badge-outline gap-1">
+														@icons.MapPin(templ.Attributes{"class": "w-3 h-3"})
+														{ loc.ContainerName } &gt; { loc.BinName } ({ fmt.Sprintf("%d", loc.Quantity) })
+													</span>
+												}
+											}
+										</div>
+									}
+								</td>
+								<td>
+									if !item.IsLinked {
+										<span class="badge badge-warning badge-sm">Unlinked</span>
+									} else if item.CombinedShortageQuantity > 0 {
+										<span class="badge badge-error badge-sm">Short { fmt.Sprintf("-%d", item.CombinedShortageQuantity) }</span>
+									} else {
+										<span class="badge badge-success badge-sm">OK</span>
+									}
+								</td>
+								<td>
+									<div class="flex items-center justify-end gap-1">
+										<form
+											hx-post={ fmt.Sprintf("/projects/%d/bom/%d/locate", detail.Project.ID, item.ID) }
+											hx-swap="none"
+											action={ templ.SafeURL(fmt.Sprintf("/projects/%d/bom/%d/locate", detail.Project.ID, item.ID)) }
+											method="POST"
+										>
+											<button
+												type="submit"
+												class="btn btn-xs btn-ghost text-info"
+												disabled?={ !item.IsLinked }
+												title="Locate Part Bins"
+											>
+												@icons.Eye(templ.Attributes{"class": "w-4 h-4"})
+											</button>
+										</form>
+										if user.CanWrite() {
+											<button
+												type="button"
+												class="btn btn-xs btn-ghost"
+												title="Link / Change Part"
+												onclick={ templ.ComponentScript{Call: fmt.Sprintf("document.getElementById('link-bom-modal-%d').showModal()", item.ID)} }
+											>
+												@icons.Pencil(templ.Attributes{"class": "w-4 h-4"})
+											</button>
+											<form
+												action={ templ.SafeURL(fmt.Sprintf("/projects/%d/bom/%d/delete", detail.Project.ID, item.ID)) }
+												method="POST"
+												data-confirm="Remove this line item from the BOM?"
+												onsubmit="return confirm(this.dataset.confirm);"
+											>
+												<button type="submit" class="btn btn-xs btn-ghost text-error" title={ i18n.T(ctx, "Delete") }>
+													@icons.Trash(templ.Attributes{"class": "w-4 h-4"})
+												</button>
+											</form>
+										}
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+
+		if user.CanWrite() {
+			@components.EditProjectModal(detail.Project)
+			@components.AddBOMItemModal(detail.Project.ID, allParts)
+			@components.ImportBOMModal(detail.Project.ID)
+			for _, item := range detail.Items {
+				@components.LinkBOMPartModal(detail.Project.ID, item.ID, item.PartID, item.Designator, item.MPN, item.Description, allParts)
+			}
+		}
+	</div>
+}
