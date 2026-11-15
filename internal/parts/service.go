@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/tuxedocurly/wledger/internal/audit"
 	"github.com/tuxedocurly/wledger/internal/config"
@@ -27,15 +28,25 @@ type Service interface {
 	DeleteParts(ctx context.Context, ids []int64) error
 	GetPart(ctx context.Context, id int64) (db.Part, error)
 	ListParts(ctx context.Context, search string, page int, binID *int64) ([]pages.PartView, error)
+	ListPartsFiltered(ctx context.Context, filter ListPartsFilter) ([]pages.PartView, error)
 	GetPartDetail(ctx context.Context, id int64) (PartDetail, error)
 }
 
+// ListPartsFilter specifies pagination, search, and hardware filters for listing parts.
+type ListPartsFilter struct {
+	Search       string
+	Page         int
+	BinID        *int64
+	ControllerID *int64
+}
+
 type PartDetail struct {
-	Part        db.Part
-	Stock       []db.GetPartAssignmentsRow
-	Links       []db.PartLink
-	Docs        []db.PartDoc
-	Controllers []db.Controller
+	Part                 db.Part
+	Stock                []db.GetPartAssignmentsRow
+	Links                []db.PartLink
+	Docs                 []db.PartDoc
+	Controllers          []db.Controller
+	StandaloneContainers []db.Container
 }
 
 type LinkDTO struct {
@@ -105,7 +116,40 @@ func (s *service) GetPart(ctx context.Context, id int64) (db.Part, error) {
 	return s.store.GetPart(ctx, id)
 }
 
+// SanitizeFTSQuery converts arbitrary user search text into a safe SQLite FTS5
+// MATCH query of lowercase double-quoted prefix terms (e.g. `"esp32"* "s3"*`).
+// Syntax characters and standalone FTS5 boolean operators are stripped; it
+// returns "" when no valid alphanumeric tokens remain.
+func SanitizeFTSQuery(input string) string {
+	rawTokens := strings.FieldsFunc(input, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+
+	terms := make([]string, 0, len(rawTokens))
+	for _, tok := range rawTokens {
+		switch tok {
+		case "AND", "OR", "NOT", "NEAR":
+			continue
+		}
+		clean := strings.ToLower(strings.ReplaceAll(tok, `"`, ""))
+		if clean == "" {
+			continue
+		}
+		terms = append(terms, `"`+clean+`"*`)
+	}
+	return strings.Join(terms, " ")
+}
+
 func (s *service) ListParts(ctx context.Context, search string, page int, binID *int64) ([]pages.PartView, error) {
+	return s.ListPartsFiltered(ctx, ListPartsFilter{
+		Search: search,
+		Page:   page,
+		BinID:  binID,
+	})
+}
+
+func (s *service) ListPartsFiltered(ctx context.Context, filter ListPartsFilter) ([]pages.PartView, error) {
+	page := filter.Page
 	if page < 1 {
 		page = 1
 	}
@@ -113,21 +157,28 @@ func (s *service) ListParts(ctx context.Context, search string, page int, binID 
 	offset := (page - 1) * limit
 
 	var binIDParam interface{}
-	if binID != nil {
-		binIDParam = sql.NullInt64{Int64: *binID, Valid: true}
-	} else {
-		binIDParam = sql.NullInt64{Valid: false}
+	if filter.BinID != nil {
+		binIDParam = sql.NullInt64{Int64: *filter.BinID, Valid: true}
+	}
+
+	var controllerIDParam interface{}
+	if filter.ControllerID != nil {
+		controllerIDParam = sql.NullInt64{Int64: *filter.ControllerID, Valid: true}
 	}
 
 	var viewParts []pages.PartView
-	if search != "" {
+	if strings.TrimSpace(filter.Search) != "" {
 		// FTS5 Search
-		query := search + "*"
+		query := SanitizeFTSQuery(filter.Search)
+		if query == "" {
+			return []pages.PartView{}, nil
+		}
 		rows, err := s.store.SearchParts(ctx, db.SearchPartsParams{
-			Query:  sql.NullString{String: query, Valid: true},
-			BinID:  binIDParam,
-			Limit:  int64(limit),
-			Offset: int64(offset),
+			Query:        sql.NullString{String: query, Valid: true},
+			BinID:        binIDParam,
+			ControllerID: controllerIDParam,
+			Limit:        int64(limit),
+			Offset:       int64(offset),
 		})
 		if err != nil {
 			return nil, err
@@ -149,9 +200,10 @@ func (s *service) ListParts(ctx context.Context, search string, page int, binID 
 	} else {
 		// Standard List
 		rows, err := s.store.ListParts(ctx, db.ListPartsParams{
-			BinID:  binIDParam,
-			Limit:  int64(limit),
-			Offset: int64(offset),
+			BinID:        binIDParam,
+			ControllerID: controllerIDParam,
+			Limit:        int64(limit),
+			Offset:       int64(offset),
 		})
 		if err != nil {
 			return nil, err
@@ -184,13 +236,15 @@ func (s *service) GetPartDetail(ctx context.Context, id int64) (PartDetail, erro
 	links, _ := s.store.GetPartLinks(ctx, id)
 	docs, _ := s.store.GetPartDocs(ctx, id)
 	controllers, _ := s.store.GetControllers(ctx)
+	standaloneContainers, _ := s.store.GetStandaloneContainers(ctx)
 
 	return PartDetail{
-		Part:        p,
-		Stock:       stock,
-		Links:       links,
-		Docs:        docs,
-		Controllers: controllers,
+		Part:                 p,
+		Stock:                stock,
+		Links:                links,
+		Docs:                 docs,
+		Controllers:          controllers,
+		StandaloneContainers: standaloneContainers,
 	}, nil
 }
 
@@ -274,7 +328,7 @@ func (s *service) CreatePart(ctx context.Context, req CreatePartRequest) (int64,
 	})
 
 	if err != nil {
-		s.cleanupFiles(imagePath, uploadedDocs)
+		s.cleanupFiles(imagePath != "", imagePath, uploadedDocs)
 		return 0, err
 	}
 
@@ -495,26 +549,11 @@ func (s *service) DeleteParts(ctx context.Context, ids []int64) error {
 	})
 }
 
-func (s *service) cleanupFiles(args ...interface{}) {
-	var imagePath string
-	var docs []string
-	var uploadedNewImage bool
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case bool:
-			uploadedNewImage = v
-		case string:
-			imagePath = v
-		case []string:
-			docs = v
-		}
-	}
-
-	if (uploadedNewImage || imagePath != "") && imagePath != "" {
+func (s *service) cleanupFiles(uploadedNewImage bool, imagePath string, uploadedDocs []string) {
+	if uploadedNewImage && imagePath != "" {
 		images.DeleteByWebPath(imagePath)
 	}
-	for _, p := range docs {
+	for _, p := range uploadedDocs {
 		rel := strings.TrimPrefix(p, config.UrlPrefixUploads)
 		relPath := filepath.Join(config.DirUploads, rel)
 		os.Remove(relPath)

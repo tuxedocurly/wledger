@@ -165,7 +165,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 							</div>
 						</template>
 					</div>
-					<button type="button" @click="addLink()" class="btn btn-s btn-primary gap-2 mt-2">
+					<button type="button" @click="addLink()" class="btn btn-sm btn-primary gap-2 mt-2">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
 						{ i18n.T(ctx, "AddLink") }
 					</button>
@@ -183,7 +183,7 @@ templ PartForm(part db.Part, tags []db.Tag, allTags []db.Tag, links []db.PartLin
 									</div>
 									<button
 										type="button"
-										class="btn btn-s btn-error"
+										class="btn btn-sm btn-error"
 										hx-delete={ fmt.Sprintf("/parts/docs/%d", doc.ID) }
 										hx-target={ fmt.Sprintf("#doc-%d", doc.ID) }
 										hx-swap="outerHTML"

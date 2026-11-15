@@ -12,10 +12,15 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/config"
 	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
 	"github.com/tuxedocurly/wledger/web/layouts"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 )
 
 type PartView struct {
@@ -32,7 +37,7 @@ type PartView struct {
 }
 
 // PartsList is the full page wrapper
-func PartsList(user auth.User, parts []PartView, search string, page int, binID *int64) templ.Component {
+func PartsList(user auth.User, parts []PartView, search string, page int, binID *int64, filters ...components.PartSearchFilters) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -77,7 +82,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = components.PartSearchBar(search, user.CanWrite()).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.PartSearchBar(search, user.CanWrite(), filters...).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -88,7 +93,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "ItemsSelected"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 58, Col: 116}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 63, Col: 116}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -101,7 +106,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Cancel"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 59, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 64, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -114,7 +119,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "SelectAllVisible"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 62, Col: 120}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 67, Col: 120}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -132,7 +137,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 64, Col: 154}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 69, Col: 154}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -168,7 +173,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 						var templ_7745c5c3_Var8 string
 						templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "ClearSearch"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 75, Col: 36}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 80, Col: 36}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 						if templ_7745c5c3_Err != nil {
@@ -186,7 +191,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = PartCards(parts, search, page, binID).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = PartCards(parts, search, page, binID, filters...).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -219,7 +224,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "BulkDeleteConfirmPrefix"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 87, Col: 46}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 92, Col: 46}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -232,7 +237,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "BulkDeleteConfirmSuffix"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 87, Col: 149}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 92, Col: 149}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -245,7 +250,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Cancel"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 91, Col: 50}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 96, Col: 50}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -258,7 +263,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "ConfirmDelete"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 97, Col: 37}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 102, Col: 37}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -290,7 +295,7 @@ func PartsList(user auth.User, parts []PartView, search string, page int, binID 
 }
 
 // TODO: refactor into a standalone component
-func PartCards(parts []PartView, search string, page int, binID *int64) templ.Component {
+func PartCards(parts []PartView, search string, page int, binID *int64, filters ...components.PartSearchFilters) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -332,7 +337,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", part.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 118, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 123, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -345,7 +350,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("selectedIds.includes(%d)", part.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 119, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 124, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -358,7 +363,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("toggleSelection(%d)", part.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 120, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 125, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -374,9 +379,9 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var19 string
-				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(part.ImagePath.String)
+				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(ImageThumbURL(part.ImagePath.String))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 126, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 131, Col: 48}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -389,7 +394,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 				var templ_7745c5c3_Var20 string
 				templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(part.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 127, Col: 21}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 132, Col: 21}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 				if templ_7745c5c3_Err != nil {
@@ -412,7 +417,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(part.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 137, Col: 17}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 142, Col: 17}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -435,7 +440,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(part.Description.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 148, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 153, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -448,20 +453,20 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(part.Description.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 157, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 162, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</p></div></div><div class=\"flex justify-between items-end mt-4\"><div class=\"flex flex-col\"><span class=\"text-s font-mono opacity-50\"># ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</p></div></div><div class=\"flex justify-between items-end mt-4\"><div class=\"flex flex-col\"><span class=\"text-sm font-mono opacity-50\"># ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(part.PartNumber.String)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 162, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 167, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -474,7 +479,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "Stock"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 163, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 168, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -487,7 +492,7 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", part.TotalStock))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 163, Col: 118}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 168, Col: 118}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -520,9 +525,9 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/parts?page=%d&q=%s&scroll=true%s", page+1, url.QueryEscape(search), binQuery(binID)))
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(partsScrollURL(page+1, search, binID, filters...))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 180, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/parts.templ`, Line: 185, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -537,11 +542,60 @@ func PartCards(parts []PartView, search string, page int, binID *int64) templ.Co
 	})
 }
 
-func binQuery(binID *int64) string {
-	if binID == nil {
-		return ""
+// ImageThumbURL returns the thumbnail web path (<base>_thumb.jpg) when
+// imagePath references an uploaded file whose thumbnail exists on disk, or
+// falls back to imagePath otherwise.
+func ImageThumbURL(imagePath string) string {
+	if imagePath == "" || !strings.HasPrefix(imagePath, config.UrlPrefixUploads) {
+		return imagePath
 	}
-	return fmt.Sprintf("&bin=%d", *binID)
+	ext := path.Ext(imagePath)
+	if ext == "" {
+		return imagePath
+	}
+	base := strings.TrimSuffix(imagePath, ext)
+	if strings.HasSuffix(base, "_thumb") {
+		return imagePath
+	}
+	thumbWebPath := base + "_thumb.jpg"
+	relPath := strings.TrimPrefix(thumbWebPath, config.UrlPrefixUploads)
+	diskPath := filepath.Join(config.DirUploads, filepath.FromSlash(relPath))
+	info, err := os.Stat(diskPath)
+	if err != nil || info.IsDir() {
+		return imagePath
+	}
+	return thumbWebPath
+}
+
+func partsScrollURL(page int, search string, binID *int64, filters ...components.PartSearchFilters) string {
+	vals := url.Values{}
+	vals.Set("page", fmt.Sprintf("%d", page))
+	vals.Set("q", search)
+	vals.Set("scroll", "true")
+	var f components.PartSearchFilters
+	if len(filters) > 0 {
+		f = filters[0]
+	}
+	if f.Bin != "" {
+		vals.Set("bin", f.Bin)
+	} else if f.BinID != "" {
+		vals.Set("bin_id", f.BinID)
+	} else if binID != nil {
+		vals.Set("bin", fmt.Sprintf("%d", *binID))
+	}
+	if f.Tag != "" {
+		vals.Set("tag", f.Tag)
+	}
+	if f.ControllerID != "" {
+		vals.Set("controller_id", f.ControllerID)
+	}
+	if f.Stock != "" {
+		vals.Set("stock", f.Stock)
+	}
+	if f.Sort != "" {
+		vals.Set("sort", f.Sort)
+	}
+	return "/parts?" + vals.Encode()
 }
 
 func navigateTo(url string) templ.ComponentScript {

@@ -188,3 +188,96 @@ func TestMoveStock_SameBin(t *testing.T) {
 		t.Errorf("Expected quantity 10, got %d", assignments[0].Quantity)
 	}
 }
+
+func TestAdjustStock_OrphanedAssignment(t *testing.T) {
+	_, s, dbCleanup := setupTestDB(t)
+	defer dbCleanup()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	svc := NewService(s, logger)
+	ctx := context.WithValue(context.Background(), middleware.UserContextKey, int64(1))
+
+	_, _ = s.CreateUser(context.Background(), db.CreateUserParams{Email: "admin@test.com", Role: "admin"})
+	partID, err := s.CreatePart(ctx, db.CreatePartParams{Name: "Orphaned Part"})
+	if err != nil {
+		t.Fatalf("CreatePart failed: %v", err)
+	}
+
+	// Create orphaned stock row directly (bin_id IS NULL)
+	if err := s.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID:   partID,
+		BinID:    sql.NullInt64{Valid: false},
+		Quantity: 5,
+	}); err != nil {
+		t.Fatalf("CreatePartAssignment failed: %v", err)
+	}
+
+	assignments, err := s.GetPartAssignments(ctx, partID)
+	if err != nil || len(assignments) != 1 {
+		t.Fatalf("expected 1 orphaned assignment, got %d (err=%v)", len(assignments), err)
+	}
+	if assignments[0].BinID.Valid {
+		t.Fatalf("expected BinID to be NULL, got %+v", assignments[0].BinID)
+	}
+	assignID := assignments[0].ID
+
+	// Increment orphaned stock
+	if err := svc.AdjustStock(ctx, assignID, 3); err != nil {
+		t.Fatalf("AdjustStock(+3) failed: %v", err)
+	}
+	updated, err := s.GetAssignment(ctx, assignID)
+	if err != nil {
+		t.Fatalf("GetAssignment failed: %v", err)
+	}
+	if updated.Quantity != 8 {
+		t.Fatalf("orphaned stock quantity did not persist: got %d, want 8", updated.Quantity)
+	}
+
+	// Decrement orphaned stock
+	if err := svc.AdjustStock(ctx, assignID, -4); err != nil {
+		t.Fatalf("AdjustStock(-4) failed: %v", err)
+	}
+	updated, err = s.GetAssignment(ctx, assignID)
+	if err != nil {
+		t.Fatalf("GetAssignment failed: %v", err)
+	}
+	if updated.Quantity != 4 {
+		t.Fatalf("orphaned stock quantity after decrement: got %d, want 4", updated.Quantity)
+	}
+
+	// Clamp at zero
+	if err := svc.AdjustStock(ctx, assignID, -10); err != nil {
+		t.Fatalf("AdjustStock(-10) failed: %v", err)
+	}
+	updated, _ = s.GetAssignment(ctx, assignID)
+	if updated.Quantity != 0 {
+		t.Fatalf("expected orphaned stock clamped to 0, got %d", updated.Quantity)
+	}
+
+	logs, err := s.GetAllAuditLogs(ctx)
+	if err != nil {
+		t.Fatalf("GetAllAuditLogs failed: %v", err)
+	}
+	var incFound, decFound bool
+	for _, l := range logs {
+		if l.ActionType == "STOCK_INC" && l.EntityID == partID {
+			var ov, nv map[string]float64
+			_ = json.Unmarshal(l.OldValue, &ov)
+			_ = json.Unmarshal(l.NewValue, &nv)
+			if ov["quantity"] == 5 && nv["quantity"] == 8 {
+				incFound = true
+			}
+		}
+		if l.ActionType == "STOCK_DEC" && l.EntityID == partID {
+			var ov, nv map[string]float64
+			_ = json.Unmarshal(l.OldValue, &ov)
+			_ = json.Unmarshal(l.NewValue, &nv)
+			if ov["quantity"] == 8 && nv["quantity"] == 4 {
+				decFound = true
+			}
+		}
+	}
+	if !incFound || !decFound {
+		t.Errorf("expected accurate STOCK_INC (5->8) and STOCK_DEC (8->4) audit logs, got %+v", logs)
+	}
+}

@@ -271,3 +271,53 @@ func TestHandlePartsImport_LinkLabels(t *testing.T) {
 		t.Errorf("expected label 'www.google.com', got '%s'", links["https://www.google.com/search?q=test"])
 	}
 }
+
+func TestHandlePartsImport_StandaloneContainer(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	// Create standalone container (controller_id NULL) and bin
+	contID, err := h.Queries.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "Standalone Drawer",
+		ControllerID: sql.NullInt64{Valid: false},
+	})
+	if err != nil {
+		t.Fatalf("CreateContainer failed: %v", err)
+	}
+	binID, err := h.Queries.CreateBin(ctx, db.CreateBinParams{
+		Name:        "B4",
+		ContainerID: contID,
+	})
+	if err != nil {
+		t.Fatalf("CreateBin failed: %v", err)
+	}
+
+	csvContent := "Name,Container,Bin Name,Quantity\n" +
+		"Standalone Capacitor,Standalone Drawer,B4,40\n"
+
+	req := createMultipartRequest(t, "/parts/import", "POST", map[string]string{
+		"raw_text": csvContent,
+	}, map[string]string{})
+	req = req.WithContext(auth.WithUser(req.Context(), auth.User{Role: "admin"}))
+
+	rr := httptest.NewRecorder()
+	h.HandlePartsImport(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d. Body: %s", rr.Code, rr.Body.String())
+	}
+
+	var partID int64
+	if err := dbConn.QueryRow("SELECT id FROM parts WHERE name = ?", "Standalone Capacitor").Scan(&partID); err != nil {
+		t.Fatalf("expected imported part in DB: %v", err)
+	}
+	var qty int
+	if err := dbConn.QueryRow("SELECT quantity FROM part_assignments WHERE part_id = ? AND bin_id = ?", partID, binID).Scan(&qty); err != nil {
+		t.Fatalf("expected standalone bin assignment: %v", err)
+	}
+	if qty != 40 {
+		t.Errorf("expected quantity 40 in standalone bin %d, got %d", binID, qty)
+	}
+}

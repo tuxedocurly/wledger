@@ -40,7 +40,7 @@ func TagInput(currentTags []db.Tag, allTags []db.Tag) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"form-control w-full\" x-data=\"tagInput('tag-input-data')\"><label class=\"label pt-0 pb-2\"><span class=\"label-text font-medium\">Tags</span></label><div class=\"flex flex-wrap gap-2 p-2 border border-base-300 rounded-lg bg-base-100 min-h-12 focus-within:border-primary transition-colors\"><template x-for=\"(tag, index) in tags\" :key=\"index\"><div class=\"badge badge-primary badge-soft gap-1 py-3 px-3\"><span x-text=\"tag\" class=\"text-sm font-medium\"></span> <button type=\"button\" @click=\"removeTag(index)\" class=\"btn btn-ghost btn-xs btn-circle hover:bg-primary-focus p-0 min-h-0 h-4 w-4\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-3 w-3\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div></template><input type=\"text\" placeholder=\"Add tag and press Enter...\" class=\"bg-transparent border-none outline-none flex-grow min-w-32 text-sm px-2 py-1\" x-model=\"inputValue\" @keydown.enter.prevent=\"addTag()\" list=\"tag-suggestions\"></div><input type=\"hidden\" name=\"tags\" x-ref=\"hiddenInput\" :value=\"tags.join(',')\"> <datalist id=\"tag-suggestions\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"form-control w-full\" x-data=\"tagInput('tag-input-data')\"><label class=\"label pt-0 pb-2\"><span class=\"label-text font-medium\">Tags</span></label><div class=\"flex flex-wrap gap-2 p-2 border border-base-300 rounded-lg bg-base-100 min-h-12 focus-within:border-primary transition-colors\"><template x-for=\"(tag, index) in tags\" :key=\"index\"><div class=\"badge badge-primary badge-soft gap-1 py-3 px-3\"><span x-text=\"tag\" class=\"text-sm font-medium\"></span> <button type=\"button\" @click=\"removeTag(index)\" class=\"btn btn-ghost btn-xs btn-circle hover:bg-primary-focus p-0 min-h-0 h-4 w-4\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-3 w-3\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div></template><input type=\"text\" placeholder=\"Add tag and press Enter...\" class=\"bg-transparent border-none outline-none flex-grow min-w-32 text-sm px-2 py-1\" x-model=\"inputValue\" @keydown.enter.prevent=\"addTag()\" @keydown=\"handleKeydown($event)\" @input=\"handleInput()\" @blur=\"addTag()\" list=\"tag-suggestions\"></div><input type=\"hidden\" name=\"tags\" x-ref=\"hiddenInput\" :value=\"tags.join(',')\"> <datalist id=\"tag-suggestions\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -52,7 +52,7 @@ func TagInput(currentTags []db.Tag, allTags []db.Tag) templ.Component {
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(t.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/tag_input.templ`, Line: 46, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/components/tag_input.templ`, Line: 49, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {

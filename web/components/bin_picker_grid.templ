@@ -7,7 +7,11 @@ templ BinPickerGrid(ctrl DashboardController) {
 		if len(ctrl.Containers) == 0 {
 			<div class="text-center py-12 opacity-50 border-2 border-dashed border-base-300 rounded-xl">
 				<p class="text-lg font-medium">No containers configured</p>
-				<p class="text-sm">This controller has no containers or mapped bins.</p>
+				if ctrl.Name == "Standalone" {
+					<p class="text-sm">No standalone containers or bins configured.</p>
+				} else {
+					<p class="text-sm">This controller has no containers or mapped bins.</p>
+				}
 			</div>
 		} else {
 			<div class="grid grid-cols-1 gap-8">

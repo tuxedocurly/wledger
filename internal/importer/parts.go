@@ -25,6 +25,8 @@ type PartImportRow struct {
 	Tags              []string
 	Links             []string
 	ControllerIP      string
+	ContainerName     string
+	BinName           string
 	SegmentID         *int
 	LEDIndex          *int
 }
@@ -55,19 +57,26 @@ func (r PartImportRow) Validate() error {
 
 	// Location Validation
 	hasIP := r.ControllerIP != ""
+	hasContainer := r.ContainerName != ""
+	hasBinName := r.BinName != ""
 	hasSeg := r.SegmentID != nil
 	hasLed := r.LEDIndex != nil
 
-	if hasIP || hasSeg || hasLed {
-		if !hasIP {
-			return fmt.Errorf("row %d: 'Controller IP' is required when specifying location", r.RowNumber)
-		}
+	if hasIP {
 		if !hasSeg {
 			return fmt.Errorf("row %d: 'Segment ID' is required when specifying location", r.RowNumber)
 		}
 		if !hasLed {
 			return fmt.Errorf("row %d: 'LED Index' is required when specifying location", r.RowNumber)
 		}
+	} else if hasContainer {
+		if !hasBinName && !hasLed {
+			return fmt.Errorf("row %d: 'Bin Name' or 'LED Index' is required when specifying container", r.RowNumber)
+		}
+	} else if hasBinName {
+		return fmt.Errorf("row %d: 'Container' is required when specifying bin name", r.RowNumber)
+	} else if hasSeg || hasLed {
+		return fmt.Errorf("row %d: 'Controller IP' is required when specifying location", r.RowNumber)
 	}
 
 	return nil
@@ -214,8 +223,20 @@ func ParsePartsCSV(input io.Reader) ([]PartImportRow, error) {
 		}
 
 		// Location Fields
+		if key := findColumn("container", "containername"); key != "" {
+			row.ContainerName = getString(key)
+		}
+
 		if key := findColumn("controllerip", "ipaddress", "ip"); key != "" {
-			row.ControllerIP = getString(key)
+			ip := getString(key)
+			if strings.EqualFold(ip, "standalone") && row.ContainerName != "" {
+				ip = ""
+			}
+			row.ControllerIP = ip
+		}
+
+		if key := findColumn("binname"); key != "" {
+			row.BinName = getString(key)
 		}
 
 		if key := findColumn("segmentid", "segment", "seg"); key != "" {
@@ -233,7 +254,11 @@ func ParsePartsCSV(input io.Reader) ([]PartImportRow, error) {
 			s := getString(key)
 			if s != "" {
 				if val, err := parseColumnInt(key); err != nil {
-					return nil, fmt.Errorf("row %d: %w", rowNum, err)
+					if key == "bin" && row.ControllerIP == "" && row.ContainerName != "" {
+						row.BinName = s
+					} else {
+						return nil, fmt.Errorf("row %d: %w", rowNum, err)
+					}
 				} else {
 					row.LEDIndex = &val
 				}

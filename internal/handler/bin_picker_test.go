@@ -96,3 +96,40 @@ func TestBinPicker_InvalidController(t *testing.T) {
 		t.Error("Should not find bins for invalid controller")
 	}
 }
+
+func TestBinPicker_Standalone(t *testing.T) {
+	h, dbConn := setupPartTest(t)
+	defer dbConn.Close()
+	defer cleanupPartTest()
+	ctx := context.Background()
+
+	contID, err := h.Queries.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "Shelf Box",
+		ControllerID: sql.NullInt64{Valid: false},
+	})
+	if err != nil {
+		t.Fatalf("CreateContainer failed: %v", err)
+	}
+	if _, err := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "S1", ContainerID: contID}); err != nil {
+		t.Fatalf("CreateBin S1 failed: %v", err)
+	}
+	if _, err := h.Queries.CreateBin(ctx, db.CreateBinParams{Name: "S2", ContainerID: contID}); err != nil {
+		t.Fatalf("CreateBin S2 failed: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/parts/bin_picker?controller_id=standalone", nil)
+	rr := httptest.NewRecorder()
+	r := chi.NewRouter()
+	r.Get("/parts/bin_picker", h.HandleBinPicker)
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rr.Code)
+	}
+	body := rr.Body.String()
+	for _, want := range []string{"Shelf Box", "Standalone", "S1", "S2"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected standalone bin picker body to contain %q; body=%s", want, body)
+		}
+	}
+}
