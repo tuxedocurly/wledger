@@ -7,55 +7,85 @@ import (
 	"github.com/tuxedocurly/wledger/web/icons"
 )
 
-// GridPainter renders the interactive LED mapping tool with Linear, Grid, and Compound support.
+// GridPainter renders the interactive LED mapping tool for a WLED controller.
 templ GridPainter(controller db.Controller, containers []db.Container, bins []db.Bin, canEdit bool) {
+	@gridPainterView(
+		controller.ID,
+		fmt.Sprintf("/hardware/%d/grid", controller.ID),
+		false,
+		containers,
+		bins,
+		canEdit,
+	)
+}
+
+// StandaloneGridPainter renders the grid builder for a standalone container without a controller.
+templ StandaloneGridPainter(container db.Container, bins []db.Bin, canEdit bool) {
+	@gridPainterView(
+		0,
+		fmt.Sprintf("/hardware/containers/%d/configure", container.ID),
+		true,
+		[]db.Container{container},
+		bins,
+		canEdit,
+	)
+}
+
+templ gridPainterView(controllerID int64, formAction string, isStandalone bool, containers []db.Container, bins []db.Bin, canEdit bool) {
 	@templ.JSONScript("grid-bins-data", bins)
 	@templ.JSONScript("grid-containers-data", containers)
 	<div
-		x-data={ fmt.Sprintf(`gridPainter(%d, 'grid-bins-data', 'grid-containers-data', %t)`, 
-        controller.ID, 
-        canEdit) }
+		x-data={ fmt.Sprintf(`gridPainter(%d, 'grid-bins-data', 'grid-containers-data', %t, %t)`,
+        controllerID,
+        canEdit,
+        isStandalone) }
 		class="w-full"
 	>
 		if canEdit {
 			<div class="flex flex-col lg:flex-row gap-8 mb-12">
-				<!-- Container List -->
-				<div class="lg:w-1/3">
-					<div class="flex items-center justify-between mb-4 px-1">
-						<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">{ i18n.T(ctx, "Containers") }</h3>
-						<button @click="addContainer()" class="btn btn-md btn-primary">
-							@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
-							{ i18n.T(ctx, "AddContainer") }
-						</button>
-					</div>
-					<div
-						class="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 bg-base-200 p-3 rounded-xl border border-base-300 shadow-inner"
-					>
-						<template x-for="(container, idx) in containers" :key="idx">
-							<div
-								class="p-4 rounded-lg border border-base-300 cursor-pointer transition-all duration-200 flex items-center justify-between group"
-								:class="selectedContainerIndex === idx ? 'bg-base-100 border-primary shadow-md ring-1 ring-primary/20' : 'bg-base-100/50 hover:bg-base-100 hover:border-base-content/20'"
-								@click="selectedContainerIndex = idx"
-							>
-								<div class="flex flex-col gap-1">
-									<span class="font-bold text-sm" :class="selectedContainerIndex === idx ? 'text-primary' : ''" x-text="container.name"></span>
-									<span class="text-xs uppercase font-bold opacity-40 tracking-widest" x-text={ fmt.Sprintf("'%s ' + container.segment_id + ' • ' + container.config.type", i18n.T(ctx, "Segment")) }></span>
+				if !isStandalone {
+					<!-- Container List -->
+					<div class="lg:w-1/3">
+						<div class="flex items-center justify-between mb-4 px-1">
+							<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">{ i18n.T(ctx, "Containers") }</h3>
+							<button type="button" @click="addContainer()" class="btn btn-md btn-primary">
+								@icons.Plus(templ.Attributes{"class": "w-5 h-5"})
+								{ i18n.T(ctx, "AddContainer") }
+							</button>
+						</div>
+						<div
+							class="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 bg-base-200 p-3 rounded-xl border border-base-300 shadow-inner"
+						>
+							<template x-for="(container, idx) in containers" :key="idx">
+								<div
+									class="p-4 rounded-lg border border-base-300 cursor-pointer transition-all duration-200 flex items-center justify-between group"
+									:class="selectedContainerIndex === idx ? 'bg-base-100 border-primary shadow-md ring-1 ring-primary/20' : 'bg-base-100/50 hover:bg-base-100 hover:border-base-content/20'"
+									@click="selectedContainerIndex = idx; selectedCellKey = null"
+								>
+									<div class="flex flex-col gap-1">
+										<span class="font-bold text-sm" :class="selectedContainerIndex === idx ? 'text-primary' : ''" x-text="container.name"></span>
+										<span class="text-xs uppercase font-bold opacity-40 tracking-widest" x-text={ fmt.Sprintf("'%s ' + container.segment_id + ' • ' + container.config.type", i18n.T(ctx, "Segment")) }></span>
+									</div>
+									<button type="button" @click.stop="removeContainer(idx)" class="btn btn-ghost btn-sm text-error btn-square hover:bg-error/10">
+										@icons.X(templ.Attributes{"class": "w-5 h-5"})
+									</button>
 								</div>
-								<button @click.stop="removeContainer(idx)" class="btn btn-ghost btn-sm text-error btn-square hover:bg-error/10">
-									@icons.X(templ.Attributes{"class": "w-5 h-5"})
-								</button>
-							</div>
-						</template>
+							</template>
+						</div>
 					</div>
-				</div>
+				}
 				<!-- Selected Container Editor -->
-				<div class="lg:w-2/3">
+				<div class={ templ.KV("lg:w-2/3", !isStandalone), templ.KV("w-full", isStandalone) }>
 					<div x-show="containers.length > 0" class="card bg-base-200 border border-base-300 shadow-xl h-full">
 						<div class="card-body p-0 gap-0">
-							<!-- Header -->
 							<div class="bg-base-300/50 p-6 border-b border-base-300 flex justify-between items-center rounded-t-xl">
 								<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">{ i18n.T(ctx, "EditContainer") }</h3>
-								<div class="badge badge-neutral font-mono text-xs" x-text="'ID: ' + (currentContainer.id || 'NEW')"></div>
+								<div class="flex items-center gap-2">
+									if isStandalone {
+										<span class="badge badge-ghost uppercase text-xs">Standalone</span>
+									}
+									<div class="badge badge-neutral font-mono text-xs" x-text="'ID: ' + (currentContainer.id || 'NEW')"></div>
+								</div>
 							</div>
 							<div class="p-6 space-y-8">
 								<!-- Basic Info -->
@@ -66,16 +96,18 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "Name") }</span></label>
 											<input type="text" x-model="currentContainer.name" class="input input-bordered w-full input-md"/>
 										</div>
-										<div class="form-control w-full">
-											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "WledSegmentId") }</span></label>
-											<input type="number" x-model.number="currentContainer.segment_id" class="input input-bordered w-full input-md" min="0"/>
-										</div>
+										if !isStandalone {
+											<div class="form-control w-full">
+												<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "WledSegmentId") }</span></label>
+												<input type="number" x-model.number="currentContainer.segment_id" class="input input-bordered w-full input-md" min="0"/>
+											</div>
+										}
 									</div>
 								</fieldset>
 								<!-- Configuration -->
 								<fieldset class="fieldset w-full bg-base-100 p-6 rounded-xl border border-base-300 shadow-sm">
 									<legend class="fieldset-legend font-bold text-sm uppercase tracking-widest opacity-40">{ i18n.T(ctx, "GridConfiguration") }</legend>
-									<div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+									<div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
 										<div class="form-control w-full">
 											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "LayoutType") }</span></label>
 											<select x-model="currentContainer.config.type" class="select select-bordered w-full select-md">
@@ -93,17 +125,19 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 												<option value="br">{ i18n.T(ctx, "BottomRight") }</option>
 											</select>
 										</div>
+										<div class="form-control w-full">
+											<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">Default Bin Width (LEDs)</span></label>
+											<input type="number" x-model.number="defaultBinWidth" class="input input-bordered w-full input-md" min="1" max="100"/>
+										</div>
 									</div>
 									<!-- Dynamic Dimensions -->
 									<div class="mt-6 pt-6 border-t border-base-200">
-										<!-- Linear -->
 										<div x-show="currentContainer.config.type === 'linear'">
 											<div class="form-control w-full">
 												<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "TotalLeds") }</span></label>
 												<input type="number" x-model.number="currentContainer.config.total" class="input input-bordered w-full input-md" min="1"/>
 											</div>
 										</div>
-										<!-- Grid -->
 										<div x-show="currentContainer.config.type === 'grid'" class="grid grid-cols-2 gap-6">
 											<div class="form-control w-full">
 												<label class="label pt-0"><span class="label-text font-bold text-sm mb-2">{ i18n.T(ctx, "Rows") }</span></label>
@@ -114,7 +148,6 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 												<input type="number" x-model.number="currentContainer.config.cols" class="input input-bordered w-full input-md" min="1"/>
 											</div>
 										</div>
-										<!-- Compound -->
 										<div x-show="currentContainer.config.type === 'compound'" class="space-y-6">
 											<div class="flex items-center justify-between">
 												<span class="text-sm font-bold opacity-50 uppercase tracking-widest">{ i18n.T(ctx, "Sections") }</span>
@@ -151,20 +184,44 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 									</div>
 								</fieldset>
 								<!-- Tools -->
-								<div class="bg-base-300/30 p-4 rounded-xl border border-base-300">
+								<div class="bg-base-300/30 p-4 rounded-xl border border-base-300 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+									<div class="join">
+										<button
+											type="button"
+											@click="editMode = 'paint'"
+											class="btn btn-sm join-item"
+											:class="editMode === 'paint' ? 'btn-primary' : 'btn-ghost border-base-300'"
+										>
+											Paint / Edit
+										</button>
+										<button
+											type="button"
+											@click="editMode = 'erase'"
+											class="btn btn-sm join-item"
+											:class="editMode === 'erase' ? 'btn-error text-white' : 'btn-ghost border-base-300'"
+										>
+											Erase
+										</button>
+									</div>
 									<div class="flex flex-col sm:flex-row flex-wrap justify-center sm:justify-end gap-2">
-										<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapLinear") }>
-											<button @click="autoFill('linear')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
-												{ i18n.T(ctx, "AutoMapLinear") }
+										if isStandalone {
+											<button type="button" @click="autoFill('standalone')" class="btn btn-md btn-success text-white gap-2 whitespace-nowrap">
+												Populate Bins (No LEDs)
 											</button>
-										</div>
-										<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapSnake") }>
-											<button @click="autoFill('serpentine')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
-												{ i18n.T(ctx, "AutoMapSnake") }
-											</button>
-										</div>
+										} else {
+											<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapLinear") }>
+												<button type="button" @click="autoFill('linear')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
+													{ i18n.T(ctx, "AutoMapLinear") }
+												</button>
+											</div>
+											<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "AutoMapSnake") }>
+												<button type="button" @click="autoFill('serpentine')" class="btn btn-md btn-success text-white gap-2 w-full whitespace-nowrap">
+													{ i18n.T(ctx, "AutoMapSnake") }
+												</button>
+											</div>
+										}
 										<div class="tooltip tooltip-top lg:tooltip-left w-full sm:w-auto before:text-xs before:max-w-[12rem] md:before:max-w-[16rem] before:whitespace-normal z-50" data-tip={ i18n.T(ctx, "ClearMapping") }>
-											<button @click="askConfirm('clear')" class="btn btn-md btn-outline btn-error gap-2 w-full whitespace-nowrap">
+											<button type="button" @click="askConfirm('clear')" class="btn btn-md btn-outline btn-error gap-2 w-full whitespace-nowrap">
 												{ i18n.T(ctx, "ClearMapping") }
 											</button>
 										</div>
@@ -173,6 +230,34 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 							</div>
 						</div>
 					</div>
+				</div>
+			</div>
+			<!-- Selected Bin Inspector -->
+			<div x-show="selectedCell" x-cloak class="mb-8 card bg-base-200 border border-primary/40 shadow-md">
+				<div class="card-body p-4 flex flex-col md:flex-row items-end gap-4">
+					<div class="form-control flex-1 w-full">
+						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">Selected Bin Name</span></label>
+						<input type="text" x-model="selectedCell.name" class="input input-bordered input-sm w-full"/>
+					</div>
+					<div class="form-control w-full md:w-36">
+						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">Width (LEDs)</span></label>
+						<input type="number" x-model.number="selectedCell.width" min="1" max="100" class="input input-bordered input-sm w-full"/>
+					</div>
+					<div class="form-control w-full md:w-44" x-show="selectedCell && selectedCell.led_index !== null">
+						<label class="label py-1"><span class="label-text text-xs font-bold uppercase opacity-60">LED Start Index</span></label>
+						<input type="number" x-model.number="selectedCell.led_index" min="0" class="input input-bordered input-sm w-full"/>
+					</div>
+					if isStandalone {
+						<button
+							type="button"
+							class="btn btn-sm btn-outline"
+							@click="toggleSelectedLedMapping(selectedCell.led_index === null)"
+							x-text="selectedCell && selectedCell.led_index === null ? 'Assign LED' : 'Unset LED'"
+						></button>
+					}
+					<button type="button" @click="removeSelectedCell()" class="btn btn-sm btn-error btn-outline">
+						Remove Bin
+					</button>
 				</div>
 			</div>
 		} else {
@@ -186,7 +271,11 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 					<div class="bg-base-300/50 px-6 py-4 border-b border-base-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 						<div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
 							<h4 class="font-bold text-sm uppercase tracking-wider opacity-50" x-text="container.name"></h4>
-							<span class="badge badge-sm badge-neutral font-mono text-xs whitespace-nowrap" x-text={ fmt.Sprintf("'%s ' + container.segment_id", i18n.T(ctx, "Segment")) }></span>
+							if isStandalone {
+								<span class="badge badge-sm badge-ghost uppercase text-xs whitespace-nowrap">Standalone</span>
+							} else {
+								<span class="badge badge-sm badge-neutral font-mono text-xs whitespace-nowrap" x-text={ fmt.Sprintf("'%s ' + container.segment_id", i18n.T(ctx, "Segment")) }></span>
+							}
 						</div>
 						<div class="text-sm font-bold opacity-40 uppercase tracking-widest" x-text={ fmt.Sprintf("getContainerTotalLeds(cIdx) + ' %s'", i18n.T(ctx, "LedsTotal")) }></div>
 					</div>
@@ -202,17 +291,22 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 										class="grid gap-1.5 select-none mx-auto"
 										:style="`grid-template-columns: repeat(${section.cols}, 2.5rem); width: fit-content;`"
 									>
-										<template x-for="i in (section.rows * section.cols)">
+										<template x-for="i in (section.rows * section.cols)" :key="`${secIdx}-${i}`">
 											<div
 												class="aspect-square border border-base-300 rounded-md flex flex-col items-center justify-center text-xs transition-all duration-200 relative overflow-hidden shadow-sm"
 												:class="[
-													getCellClass(cIdx, getSectionBaseIndex(cIdx, secIdx) + i - 1), 
+													getCellClass(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols)),
 													canEdit ? 'cursor-pointer hover:scale-110 hover:z-10 hover:shadow-md hover:border-base-content/50' : 'cursor-default'
 												]"
-												@click="toggleCell(cIdx, getSectionBaseIndex(cIdx, secIdx) + i - 1)"
+												@click="clickCell(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))"
 											>
-												<span x-text="getGlobalLedIndex(cIdx, getSectionBaseIndex(cIdx, secIdx) + i - 1)" class="font-black text-[9px] leading-tight"></span>
-												<span x-show="getBinName(cIdx, getSectionBaseIndex(cIdx, secIdx) + i - 1)" x-text="getBinName(cIdx, getSectionBaseIndex(cIdx, secIdx) + i - 1)" class="text-[7px] font-bold opacity-70 truncate w-full text-center px-0.5 leading-tight"></span>
+												<span
+													x-show="getCellWidth(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols)) > 1"
+													x-text="getCellWidth(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols)) + 'L'"
+													class="absolute top-0 right-0.5 text-[7px] font-mono font-bold opacity-80"
+												></span>
+												<span x-text="getGlobalLedIndex(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" class="font-black text-[9px] leading-tight"></span>
+												<span x-show="getBinName(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" x-text="getBinName(cIdx, secIdx, (i - 1) % section.cols, Math.floor((i - 1) / section.cols))" class="text-[7px] font-bold opacity-70 truncate w-full text-center px-0.5 leading-tight"></span>
 											</div>
 										</template>
 									</div>
@@ -224,7 +318,7 @@ templ GridPainter(controller db.Controller, containers []db.Container, bins []db
 			</template>
 		</div>
 		if canEdit {
-			<form x-ref="gridForm" method="POST" action={ templ.SafeURL(fmt.Sprintf("/hardware/%d/grid", controller.ID)) } class="mt-16 bg-base-200 p-8 rounded-2xl border border-base-300 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+			<form x-ref="gridForm" method="POST" action={ templ.SafeURL(formAction) } class="mt-16 bg-base-200 p-8 rounded-2xl border border-base-300 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
 				<div>
 					<h3 class="font-bold text-sm uppercase tracking-wider opacity-50">{ i18n.T(ctx, "SaveConfiguration") }</h3>
 					<p class="text-xs opacity-40 mt-1">{ i18n.T(ctx, "SaveConfigurationDesc") }</p>

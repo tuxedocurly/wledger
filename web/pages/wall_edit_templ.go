@@ -245,7 +245,7 @@ func WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboar
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"></div></div><div class=\"card-body p-6 space-y-8\"><!-- Hidden Inputs for Form Submission (Order Guaranteed by Alpine Data) --><div class=\"hidden\"><template x-for=\"c in wallContainers\" :key=\"c.id\"><input type=\"hidden\" name=\"container_ids[]\" :value=\"c.id\"></template></div><div x-ref=\"wallContainerList\" class=\"space-y-3 max-h-[500px] overflow-y-auto pr-2 bg-base-100 p-4 rounded-xl border border-base-300 shadow-inner\"><template x-for=\"(c, idx) in wallContainers\" :key=\"c.id\"><div x-data=\"{ item: c, i: idx }\" class=\"flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-300 hover:border-primary/50 transition-all duration-200 group\"><div class=\"flex items-center gap-4\"><div class=\"drag-handle cursor-grab active:cursor-grabbing p-2 -ml-2 opacity-20 group-hover:opacity-100 transition-opacity\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"></div></div><div class=\"card-body p-6 space-y-8\"><!-- Hidden Inputs for Form Submission (Order Guaranteed by Alpine Data) --><div class=\"hidden\"><template x-for=\"c in wallContainers\" :key=\"c.id\"><input type=\"hidden\" name=\"container_ids[]\" :value=\"c.id\"></template></div><div x-ref=\"wallContainerList\" class=\"space-y-3 max-h-[500px] overflow-y-auto pr-2 bg-base-100 p-4 rounded-xl border border-base-300 shadow-inner\"><template x-for=\"(c, idx) in wallContainers\" :key=\"c.id\"><div class=\"flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-300 hover:border-primary/50 transition-all duration-200 group\"><div class=\"flex items-center gap-4\"><div class=\"drag-handle cursor-grab active:cursor-grabbing p-2 -ml-2 opacity-20 group-hover:opacity-100 transition-opacity\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -253,7 +253,7 @@ func WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboar
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div><div class=\"w-8 h-8 rounded-full bg-base-300 flex items-center justify-center font-mono font-bold text-xs opacity-40\" x-text=\"(i+1)\"></div><div class=\"flex flex-col\"><span class=\"font-bold text-base\" x-text=\"item.name\"></span> <span class=\"text-[10px] opacity-40 uppercase font-bold tracking-widest\" x-text=\"'ID: ' + item.id\"></span></div></div><div class=\"flex items-center gap-2\"><button type=\"button\" @click=\"wallContainers.splice(i, 1)\" class=\"btn btn-ghost btn-sm text-error btn-square hover:bg-error/10\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z\" clip-rule=\"evenodd\"></path></svg></button></div></div></template><div x-show=\"wallContainers.length === 0\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div><div class=\"w-8 h-8 rounded-full bg-base-300 flex items-center justify-center font-mono font-bold text-xs opacity-40\" x-text=\"(idx + 1)\"></div><div class=\"flex flex-col\"><div class=\"flex items-center gap-2\"><span class=\"font-bold text-base\" x-text=\"c.name\"></span> <span x-show=\"c.is_standalone || (c.controller_id && !c.controller_id.Valid)\" class=\"badge badge-xs badge-ghost uppercase\">Standalone</span></div><span class=\"text-[10px] opacity-40 uppercase font-bold tracking-widest\" x-text=\"'ID: ' + c.id\"></span></div></div><div class=\"flex items-center gap-2\"><button type=\"button\" @click=\"removeFromWall(c.id)\" class=\"btn btn-ghost btn-sm text-error btn-square hover:bg-error/10\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z\" clip-rule=\"evenodd\"></path></svg></button></div></div></template><div x-show=\"wallContainers.length === 0\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -272,7 +272,7 @@ func WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboar
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "LinkNewContainer"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 106, Col: 153}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 108, Col: 153}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -285,13 +285,13 @@ func WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboar
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "ChooseAContainer"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 109, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 111, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</option><template x-for=\"c in availableContainers.filter(ac => !wallContainers.some(wc => wc.id === ac.id))\" :key=\"c.id\"><option :value=\"c.id\" x-text=\"c.name\"></option></template></select> <button type=\"button\" class=\"btn btn-md btn-primary px-6\" :disabled=\"!selectedAddId\" @click=\"addToWall()\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</option><template x-for=\"c in availableContainers.filter(ac => !wallContainers.some(wc => wc.id === ac.id))\" :key=\"c.id\"><option :value=\"c.id\" x-text=\"c.name + ((c.controller_id && !c.controller_id.Valid) ? ' (Standalone)' : '')\"></option></template></select> <button type=\"button\" class=\"btn btn-md btn-primary px-6\" :disabled=\"!selectedAddId\" @click=\"addToWall()\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -302,7 +302,7 @@ func WallEdit(user auth.User, wall db.Wall, wallContainers []components.Dashboar
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "AddToWall"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 121, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/pages/wall_edit.templ`, Line: 123, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {

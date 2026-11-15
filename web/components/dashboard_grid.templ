@@ -28,6 +28,7 @@ type DashboardContainer struct {
 	SegmentID        int64          `json:"segment_id"`
 	ControllerName   string         `json:"controller_name"`
 	ControllerOnline bool           `json:"controller_online"`
+	IsStandalone     bool           `json:"is_standalone"`
 	Bins             []DashboardBin `json:"bins"`
 }
 
@@ -36,6 +37,12 @@ type DashboardWall struct {
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
 	Containers  []DashboardContainer `json:"containers"`
+}
+
+var stockColorVars = map[string]string{
+	"critical": "var(--color-stock-critical)",
+	"low":      "var(--color-stock-low)",
+	"ok":       "var(--color-stock-ok)",
 }
 
 // GetStatusKeys returns the unique, sorted statuses for this bin
@@ -54,65 +61,46 @@ func (b DashboardBin) GetStatusKeys() []string {
 	return keys
 }
 
-// GetClass returns standard Tailwind utility classes for single-color bins.
+// GetClass returns base utility classes for bins (colors are applied dynamically via GetStyle CSS variables).
 func (b DashboardBin) GetClass() string {
 	keys := b.GetStatusKeys()
 
-	// Empty Bin
 	if len(keys) == 0 {
-		return "bg-base-200"
+		return "bg-base-200 border-base-300 text-base-content"
 	}
 
-	// Single Status -> Use DaisyUI Utility Classes
-	if len(keys) == 1 {
-		switch keys[0] {
-		case "critical":
-			return "bg-error text-error-content"
-		case "low":
-			return "bg-warning text-warning-content"
-		case "ok":
-			return "bg-success text-success-content"
-		}
-	}
-
-	// Multiple Statuses -> Handled by GetStyle()
-	return ""
+	return "border-base-content/25 text-white"
 }
 
-// GetStyle returns the gradient string for multi-status bins.
+// GetStyle returns positioning plus custom-property stock health colors/gradients so Settings pickers take effect live.
 func (b DashboardBin) GetStyle() string {
 	keys := b.GetStatusKeys()
+	pos := fmt.Sprintf("grid-column: %d; grid-row: %d;", b.GridX+1, b.GridY+1)
 
-	// Single colors are handled by classes, so we return grid position only
-	if len(keys) <= 1 {
-		return fmt.Sprintf("grid-column: %d; grid-row: %d;", b.GridX+1, b.GridY+1)
+	if len(keys) == 0 {
+		return pos
 	}
 
-	// Map for Gradients (DaisyUI 5 Standard Variables)
-	colorMap := map[string]string{
-		"critical": "var(--color-error)",
-		"low":      "var(--color-warning)",
-		"ok":       "var(--color-success)",
+	if len(keys) == 1 {
+		if colorVar, ok := stockColorVars[keys[0]]; ok {
+			return fmt.Sprintf("%s background-color: %s;", pos, colorVar)
+		}
+		return pos
 	}
 
 	bgStyle := ""
-
-	// Two Colors (Split Diagonal)
 	if len(keys) == 2 {
-		c1 := colorMap[keys[0]]
-		c2 := colorMap[keys[1]]
+		c1 := stockColorVars[keys[0]]
+		c2 := stockColorVars[keys[1]]
 		bgStyle = fmt.Sprintf("background: linear-gradient(135deg, %s 50%%, %s 50%%);", c1, c2)
-	}
-
-	// Three Colors (Pie Chart)
-	if len(keys) >= 3 {
-		c1 := colorMap[keys[0]]
-		c2 := colorMap[keys[1]]
-		c3 := colorMap[keys[2]]
+	} else if len(keys) >= 3 {
+		c1 := stockColorVars[keys[0]]
+		c2 := stockColorVars[keys[1]]
+		c3 := stockColorVars[keys[2]]
 		bgStyle = fmt.Sprintf("background: conic-gradient(%s 0deg 120deg, %s 120deg 240deg, %s 240deg 360deg);", c1, c2, c3)
 	}
 
-	return fmt.Sprintf("grid-column: %d; grid-row: %d; %s", b.GridX+1, b.GridY+1, bgStyle)
+	return fmt.Sprintf("%s %s", pos, bgStyle)
 }
 
 templ DashboardGrid(ctrl DashboardController) {
@@ -137,7 +125,12 @@ templ DashboardGrid(ctrl DashboardController) {
 					for _, container := range ctrl.Containers {
 						<div class="flex flex-col gap-2">
 							<div class="flex items-center justify-between px-1">
-								<h3 class="font-bold text-sm uppercase tracking-wider opacity-80">{ container.Name }</h3>
+								<div class="flex items-center gap-2">
+									<h3 class="font-bold text-sm uppercase tracking-wider opacity-80">{ container.Name }</h3>
+									if container.IsStandalone {
+										<span class="badge badge-xs badge-ghost uppercase">Standalone</span>
+									}
+								</div>
 								<div class="text-sm font-mono opacity-40">ID: { fmt.Sprintf("%d", container.ID) }</div>
 							</div>
 							<div class="overflow-x-auto bg-base-100 rounded-lg border border-base-300 p-4 shadow-sm">
@@ -148,11 +141,15 @@ templ DashboardGrid(ctrl DashboardController) {
 									for _, bin := range container.Bins {
 										<a
 											href={ templ.SafeURL(fmt.Sprintf("/parts?bin=%d", bin.ID)) }
-											class={ "w-12 h-12 rounded-md border border-base-300 flex items-center justify-center text-xs font-bold shadow-sm hover:scale-110 hover:shadow-md hover:z-10 hover:border-base-content/50 transition-all duration-200 cursor-pointer " + bin.GetClass() }
+											class={ "w-12 h-12 rounded-md border flex items-center justify-center text-xs font-bold shadow-sm hover:scale-110 hover:shadow-md hover:z-10 hover:border-base-content/60 transition-all duration-200 cursor-pointer " + bin.GetClass() }
 											style={ bin.GetStyle() }
 											title={ bin.Name }
 										>
-											<span class="drop-shadow-md filter invert-0 grayscale-0 brightness-100">{ bin.Name }</span>
+											if len(bin.GetStatusKeys()) > 0 {
+												<span class="px-1.5 py-0.5 rounded bg-neutral/75 text-white text-[11px] font-bold leading-none shadow-sm">{ bin.Name }</span>
+											} else {
+												<span>{ bin.Name }</span>
+											}
 										</a>
 									}
 								</div>
@@ -161,10 +158,10 @@ templ DashboardGrid(ctrl DashboardController) {
 					}
 					<div class="flex justify-end mt-2 pt-4 border-t border-base-content/5">
 						<div class="flex gap-4 px-4 py-2 rounded-full border border-base-300 shadow-sm text-xs font-bold uppercase tracking-wider">
-							<div class="flex flex-row items-center gap-2"><div class="w-2 h-2 rounded-full bg-success"></div>OK</div>
-							<div class="flex flex-row items-center gap-2"><div class="w-2 h-2 rounded-full bg-warning"></div>Low</div>
-							<div class="flex flex-row items-center gap-2"><div class="w-2 h-2 rounded-full bg-error"></div>Critical</div>
-							<div class="flex flex-row items-center gap-2"><div class="w-2 h-2 rounded-full bg-base-200 border border-base-300"></div>Empty</div>
+							<div class="flex flex-row items-center gap-2"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-ok);"></div>OK</div>
+							<div class="flex flex-row items-center gap-2"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-low);"></div>Low</div>
+							<div class="flex flex-row items-center gap-2"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-critical);"></div>Critical</div>
+							<div class="flex flex-row items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-base-200 border border-base-300"></div>Empty</div>
 						</div>
 					</div>
 				</div>

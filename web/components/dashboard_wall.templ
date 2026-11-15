@@ -15,9 +15,17 @@ templ DashboardContainerCard(container DashboardContainer) {
 			<div class="flex justify-between items-start mb-2">
 				<div class="flex flex-col">
 					<h2 class="font-bold text-sm uppercase tracking-wider opacity-50 group-hover:opacity-100 transition-opacity">{ container.Name }</h2>
-					<span class="text-[12px] opacity-40 uppercase tracking-widest">{ container.ControllerName } • { i18n.T(ctx, "Segment") } { fmt.Sprintf("%d", container.SegmentID) }</span>
+					if container.IsStandalone {
+						<span class="text-[12px] opacity-50 uppercase tracking-widest">Standalone Storage</span>
+					} else {
+						<span class="text-[12px] opacity-40 uppercase tracking-widest">{ container.ControllerName } • { i18n.T(ctx, "Segment") } { fmt.Sprintf("%d", container.SegmentID) }</span>
+					}
 				</div>
-				<div class={ "badge badge-xs", templ.KV("badge-success", container.ControllerOnline), templ.KV("badge-error", !container.ControllerOnline) }></div>
+				if container.IsStandalone {
+					<div class="badge badge-xs badge-ghost" title="Standalone"></div>
+				} else {
+					<div class={ "badge badge-xs", templ.KV("badge-success", container.ControllerOnline), templ.KV("badge-error", !container.ControllerOnline) }></div>
+				}
 			</div>
 			<div class="flex items-center gap-4 mt-4 bg-base-200 p-3 rounded-lg border border-base-300 shadow-inner">
 				<!-- Stock Health Indicator (Color Wheel Style) -->
@@ -35,15 +43,19 @@ templ DashboardContainerCard(container DashboardContainer) {
 					<div>
 						<h3 class="font-bold text-md uppercase tracking-wider">{ container.Name }</h3>
 						<div class="flex gap-4 text-sm opacity-80 uppercase tracking-widest mt-1">
-							<span>{ i18n.T(ctx, "Controller") }: { container.ControllerName }</span>
-							<span>{ i18n.T(ctx, "Segment") }: { fmt.Sprintf("%d", container.SegmentID) }</span>
-							<span>
-								if container.ControllerOnline {
-									<span class="text-success font-bold">{ i18n.T(ctx, "Online") }</span>
-								} else {
-									<span class="text-error font-bold">{ i18n.T(ctx, "Offline") }</span>
-								}
-							</span>
+							if container.IsStandalone {
+								<span class="badge badge-sm badge-ghost uppercase">Standalone Storage</span>
+							} else {
+								<span>{ i18n.T(ctx, "Controller") }: { container.ControllerName }</span>
+								<span>{ i18n.T(ctx, "Segment") }: { fmt.Sprintf("%d", container.SegmentID) }</span>
+								<span>
+									if container.ControllerOnline {
+										<span class="text-success font-bold">{ i18n.T(ctx, "Online") }</span>
+									} else {
+										<span class="text-error font-bold">{ i18n.T(ctx, "Offline") }</span>
+									}
+								</span>
+							}
 						</div>
 					</div>
 					<form method="dialog">
@@ -56,20 +68,24 @@ templ DashboardContainerCard(container DashboardContainer) {
 							for _, bin := range container.Bins {
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("/parts?bin=%d", bin.ID)) }
-									class={ "w-12 h-12 rounded-md border border-base-300 flex items-center justify-center text-xs font-bold shadow-sm hover:scale-110 hover:shadow-md hover:z-10 hover:border-base-content/50 transition-all duration-200 cursor-pointer " + bin.GetClass() }
+									class={ "w-12 h-12 rounded-md border flex items-center justify-center text-xs font-bold shadow-sm hover:scale-110 hover:shadow-md hover:z-10 hover:border-base-content/60 transition-all duration-200 cursor-pointer " + bin.GetClass() }
 									style={ bin.GetStyle() }
 									title={ bin.Name }
 								>
-									<span class="drop-shadow-md filter invert-0 grayscale-0 brightness-100">{ bin.Name }</span>
+									if len(bin.GetStatusKeys()) > 0 {
+										<span class="px-1.5 py-0.5 rounded bg-neutral/75 text-white text-[11px] font-bold leading-none shadow-sm">{ bin.Name }</span>
+									} else {
+										<span>{ bin.Name }</span>
+									}
 								</a>
 							}
 						</div>
 					</div>
 					<div class="modal-action justify-between items-center mt-6 pt-6 border-t border-base-200">
 						<div class="flex gap-4 text-sm font-bold uppercase tracking-wider">
-							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-success"></div>{ i18n.T(ctx, "LegendOK") }</div>
-							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-warning"></div>{ i18n.T(ctx, "LegendLow") }</div>
-							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-error"></div>{ i18n.T(ctx, "LegendCritical") }</div>
+							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-ok);"></div>{ i18n.T(ctx, "LegendOK") }</div>
+							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-low);"></div>{ i18n.T(ctx, "LegendLow") }</div>
+							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full border border-base-content/20" style="background-color: var(--color-stock-critical);"></div>{ i18n.T(ctx, "LegendCritical") }</div>
 							<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-base-200 border border-base-300"></div>{ i18n.T(ctx, "LegendEmpty") }</div>
 						</div>
 					</div>
@@ -96,35 +112,24 @@ templ StockHealthIndicator(bins []DashboardBin) {
 		}
 		sort.Strings(keys)
 
-		classes := "w-14 h-14 rounded-full border border-500/10 border-base-300 shadow-inner flex items-center justify-center overflow-hidden"
+		classes := "w-14 h-14 rounded-full border border-base-content/20 shadow-inner flex items-center justify-center overflow-hidden"
 		style := ""
 
 		if len(keys) == 0 {
 			classes += " bg-base-200"
 		} else if len(keys) == 1 {
-			switch keys[0] {
-			case "critical":
-				classes += " bg-error"
-			case "low":
-				classes += " bg-warning"
-			case "ok":
-				classes += " bg-success"
+			if c, ok := stockColorVars[keys[0]]; ok {
+				style = fmt.Sprintf("background-color: %s;", c)
 			}
 		} else {
-			colorMap := map[string]string{
-				"critical": "var(--color-error)",
-				"low":      "var(--color-warning)",
-				"ok":       "var(--color-success)",
-			}
-
 			if len(keys) == 2 {
-				c1 := colorMap[keys[0]]
-				c2 := colorMap[keys[1]]
+				c1 := stockColorVars[keys[0]]
+				c2 := stockColorVars[keys[1]]
 				style = fmt.Sprintf("background: linear-gradient(135deg, %s 50%%, %s 50%%);", c1, c2)
 			} else if len(keys) >= 3 {
-				c1 := colorMap[keys[0]]
-				c2 := colorMap[keys[1]]
-				c3 := colorMap[keys[2]]
+				c1 := stockColorVars[keys[0]]
+				c2 := stockColorVars[keys[1]]
+				c3 := stockColorVars[keys[2]]
 				style = fmt.Sprintf("background: conic-gradient(%s 0deg 120deg, %s 120deg 240deg, %s 240deg 360deg);", c1, c2, c3)
 			}
 		}
