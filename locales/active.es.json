@@ -925,5 +925,128 @@
   },
   "Confirm": {
     "other": "Confirmar"
+  },
+  "Action": {
+    "other": "Acción"
+  },
+  "Data": {
+    "other": "Datos"
+  },
+  "Description": {
+    "other": "Descripción"
+  },
+  "Details": {
+    "other": "Detalles"
+  },
+  "Edit": {
+    "other": "Editar"
+  },
+  "End Date": {
+    "other": "Fecha de fin"
+  },
+  "Start Date": {
+    "other": "Fecha de inicio"
+  },
+  "View": {
+    "other": "Ver"
+  },
+  "admin": {
+    "other": "Admin"
+  },
+  "editor": {
+    "other": "Editor"
+  },
+  "viewer": {
+    "other": "Visualizador"
+  },
+  "BULK_DELETE": {
+    "other": "ELIMINACIÓN_MASIVA"
+  },
+  "IMPORT": {
+    "other": "IMPORTAR"
+  },
+  "BACKUP": {
+    "other": "RESPALDO"
+  },
+  "RESTORE": {
+    "other": "RESTAURAR"
+  },
+  "STOCK_ADD": {
+    "other": "AGREGAR_STOCK"
+  },
+  "STOCK_INC": {
+    "other": "INCREMENTAR_STOCK"
+  },
+  "STOCK_DEC": {
+    "other": "REDUCIR_STOCK"
+  },
+  "STOCK_MOVE": {
+    "other": "MOVER_STOCK"
+  },
+  "STOCK_MERGE": {
+    "other": "FUSIONAR_STOCK"
+  },
+  "STOCK_REMOVE": {
+    "other": "QUITAR_STOCK"
+  },
+  "PARTS": {
+    "other": "PIEZAS"
+  },
+  "STOCK": {
+    "other": "STOCK"
+  },
+  "HARDWARE": {
+    "other": "HARDWARE"
+  },
+  "WALL": {
+    "other": "MURO"
+  },
+  "SYSTEM": {
+    "other": "SISTEMA"
+  },
+  "PROJECT": {
+    "other": "PROYECTO"
+  },
+  "Projects": {
+    "other": "Proyectos"
+  },
+  "NavProjects": {
+    "other": "Proyectos"
+  },
+  "APITokens": {
+    "other": "Tokens de API"
+  },
+  "StandaloneContainers": {
+    "other": "Contenedores independientes"
+  },
+  "DiscoverWLED": {
+    "other": "Descubrir WLED"
+  },
+  "ParseBarcode": {
+    "other": "Analizar código"
+  },
+  "CreateToken": {
+    "other": "Crear token"
+  },
+  "RevokeToken": {
+    "other": "Revocar token"
+  },
+  "BuildProject": {
+    "other": "Construir proyecto"
+  },
+  "LocateAll": {
+    "other": "Localizar todo"
+  },
+  "PickMode": {
+    "other": "Modo de selección"
+  },
+  "ImportBOM": {
+    "other": "Importar BOM"
+  },
+  "Shortage": {
+    "other": "Faltante"
+  },
+  "TokenCreatedWarning": {
+    "other": "Asegúrate de copiar tu token de API ahora. ¡No podrás volver a verlo!"
   }
 }

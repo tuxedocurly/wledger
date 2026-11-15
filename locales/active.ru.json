@@ -907,5 +907,128 @@
   },
   "Confirm": {
     "other": "Подтвердить"
+  },
+  "Action": {
+    "other": "Действие"
+  },
+  "Data": {
+    "other": "Данные"
+  },
+  "Description": {
+    "other": "Описание"
+  },
+  "Details": {
+    "other": "Подробности"
+  },
+  "Edit": {
+    "other": "Редактировать"
+  },
+  "End Date": {
+    "other": "Дата окончания"
+  },
+  "Start Date": {
+    "other": "Дата начала"
+  },
+  "View": {
+    "other": "Просмотр"
+  },
+  "admin": {
+    "other": "Администратор"
+  },
+  "editor": {
+    "other": "Редактор"
+  },
+  "viewer": {
+    "other": "Наблюдатель"
+  },
+  "BULK_DELETE": {
+    "other": "МАССОВОЕ_УДАЛЕНИЕ"
+  },
+  "IMPORT": {
+    "other": "ИМПОРТ"
+  },
+  "BACKUP": {
+    "other": "РЕЗЕРВНАЯ_КОПИЯ"
+  },
+  "RESTORE": {
+    "other": "ВОССТАНОВЛЕНИЕ"
+  },
+  "STOCK_ADD": {
+    "other": "ДОБАВЛЕНИЕ_ЗАПАСА"
+  },
+  "STOCK_INC": {
+    "other": "УВЕЛИЧЕНИЕ_ЗАПАСА"
+  },
+  "STOCK_DEC": {
+    "other": "УМЕНЬШЕНИЕ_ЗАПАСА"
+  },
+  "STOCK_MOVE": {
+    "other": "ПЕРЕМЕЩЕНИЕ_ЗАПАСА"
+  },
+  "STOCK_MERGE": {
+    "other": "ОБЪЕДИНЕНИЕ_ЗАПАСА"
+  },
+  "STOCK_REMOVE": {
+    "other": "УДАЛЕНИЕ_ЗАПАСА"
+  },
+  "PARTS": {
+    "other": "ДЕТАЛИ"
+  },
+  "STOCK": {
+    "other": "ЗАПАСЫ"
+  },
+  "HARDWARE": {
+    "other": "ОБОРУДОВАНИЕ"
+  },
+  "WALL": {
+    "other": "СТЕНА"
+  },
+  "SYSTEM": {
+    "other": "СИСТЕМА"
+  },
+  "PROJECT": {
+    "other": "ПРОЕКТ"
+  },
+  "Projects": {
+    "other": "Проекты"
+  },
+  "NavProjects": {
+    "other": "Проекты"
+  },
+  "APITokens": {
+    "other": "API-токены"
+  },
+  "StandaloneContainers": {
+    "other": "Автономные контейнеры"
+  },
+  "DiscoverWLED": {
+    "other": "Найти WLED"
+  },
+  "ParseBarcode": {
+    "other": "Распознать штрихкод"
+  },
+  "CreateToken": {
+    "other": "Создать токен"
+  },
+  "RevokeToken": {
+    "other": "Отозвать токен"
+  },
+  "BuildProject": {
+    "other": "Собрать проект"
+  },
+  "LocateAll": {
+    "other": "Найти все"
+  },
+  "PickMode": {
+    "other": "Режим сборки"
+  },
+  "ImportBOM": {
+    "other": "Импорт спецификации"
+  },
+  "Shortage": {
+    "other": "Нехватка"
+  },
+  "TokenCreatedWarning": {
+    "other": "Обязательно скопируйте ваш API-токен сейчас. Вы больше не сможете увидеть его снова!"
   }
 }

@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build, Generate & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned templ and sqlc
+        run: |
+          go install github.com/a-h/templ/cmd/templ@v0.3.977
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
+
+      - name: Build Tailwind CSS
+        run: npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/css/output.css --minify
+
+      - name: Verify sqlc and templ generation
+        run: |
+          sqlc generate
+          templ generate
+          git diff --exit-code
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run race-enabled Go test suite
+        run: go test -race -count=1 ./...
+
+      - name: Verify pure-Go (CGO_ENABLED=0) build and tests
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          go test -count=1 ./...
+          go build -trimpath -ldflags="-s -w" -o /tmp/wledger-ci ./cmd/server
+          rm -f /tmp/wledger-ci
+
+  docs:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        run: npm ci
+
+      - name: Build Docusaurus site
+        run: npm run build

@@ -1,71 +1,50 @@
 # Stage 1: Build CSS with Tailwind
-FROM node:23-alpine AS css-builder
+FROM node:22-alpine AS css-builder
 WORKDIR /build
 
-# Install dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy web directory (needed for templ files scanning by tailwind)
 COPY web ./web
-
-# Generate CSS
 RUN npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/css/output.css --minify
 
-# Stage 2: Build Go Binary
+# Stage 2: Build Go Binary (Pure-Go SQLite, no CGO/gcc required)
 FROM golang:1.25-alpine AS go-builder
 WORKDIR /build
 
-# Install build dependencies (CGO requires gcc/musl-dev)
-RUN apk add --no-cache gcc musl-dev
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.977
 
-# Install templ
-RUN go install github.com/a-h/templ/cmd/templ@latest
-
-# Copy modules manifests
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
 COPY . .
-
-# Generate templ files
-RUN templ generate
-
-# Build binary
-# CGO_ENABLED=1 is required for go-sqlite3
-RUN CGO_ENABLED=1 go build -ldflags="-s -w" -tags fts5 -o wledger ./cmd/server
-
-# Stage 3: Runtime
-FROM alpine:latest
-WORKDIR /wledger
-
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
-
-# Copy binary
-COPY --from=go-builder /build/wledger .
-
-# Copy static files (including the one generated in Node stage)
-# First copy all static files from source (images, js)
-COPY --from=go-builder /build/web/static ./web/static
-# Then overwrite the CSS with the minified version from css-builder
 COPY --from=css-builder /build/web/static/css/output.css ./web/static/css/output.css
 
-# Copy locales
-COPY --from=go-builder /build/locales ./locales
+RUN templ generate
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o wledger ./cmd/server
 
-# Copy database schema for migrations
-COPY --from=go-builder /build/sql/schema ./sql/schema
+# Stage 3: Minimal Non-Root Runtime
+FROM alpine:3.21
+WORKDIR /wledger
 
-# Create necessary directories
-RUN mkdir -p data app/uploads app/logs
+RUN apk add --no-cache ca-certificates tzdata curl \
+	&& addgroup -S -g 10001 wledger \
+	&& adduser -S -D -H -u 10001 -G wledger wledger
 
-# Expose port
+COPY --from=go-builder --chown=wledger:wledger /build/wledger ./wledger
+
+# Ensure writable data, uploads, and runtime log directories exist for non-root user
+# (static assets, locales, and SQL migrations are embedded directly inside the binary)
+RUN mkdir -p /wledger/data /wledger/app/uploads /wledger/app/logs \
+	&& chown -R wledger:wledger /wledger
+
+USER wledger
+
 EXPOSE 8080
 
-# Define volumes for persistence
-VOLUME ["/wledger/data", "/wledger/app/uploads", "/wledger/app/logs"]
+VOLUME ["/wledger/data", "/wledger/app/uploads"]
 
-# Run
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+	CMD sh -c 'port="${WLEDGER_PORT:-8080}"; port="${port##*:}"; if [ -n "${WLEDGER_TLS_CERT:-}${WLEDGER_TLS_KEY:-}" ] || [ "${WLEDGER_TLS_SELF_SIGNED:-false}" = "true" ]; then curl -fsSLk "https://127.0.0.1:${port}/login" >/dev/null; else curl -fsSL "http://127.0.0.1:${port}/login" >/dev/null; fi'
+
 CMD ["./wledger"]

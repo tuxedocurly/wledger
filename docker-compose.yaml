@@ -1,35 +1,39 @@
 services:
-  # The name of the service internal to Docker network (can be used by other containers to talk to this one)
   wledger:
-    # The image to download and run.
-    # Format: user/repository:tag
-    # "latest" means it will grab the most recent build from Docker Hub.
     image: tuxedomakes/wledger:latest
-
-    # A custom name for the container instance.
-    # This makes it easier to find when running commands like 'docker ps' or 'docker logs wledger'.
     container_name: wledger
 
     ports:
-      # Maps ports in the format "HOST:CONTAINER"
-      # 8080 (Left): The port you open on your computer (http://localhost:8080)
-      # 8080 (Right): The port the app inside the container is listening on
+      # Maps HOST:CONTAINER (adjust if overriding WLEDGER_PORT)
       - "8080:8080"
 
+    # Optional environment configuration (all have safe defaults when unset):
+    # environment:
+    #   # Server listen port or address (default: 8080)
+    #   WLEDGER_PORT: "8080"
+    #
+    #   # Built-in self-signed ECDSA P-256 HTTPS (persisted in /wledger/data/tls).
+    #   # Recommended on LAN so mobile camera barcode scanning & clipboard APIs work over HTTPS.
+    #   WLEDGER_TLS_SELF_SIGNED: "true"
+    #
+    #   # Or provide custom TLS certificate/key paths inside the container:
+    #   # WLEDGER_TLS_CERT: "/wledger/data/tls/cert.pem"
+    #   # WLEDGER_TLS_KEY: "/wledger/data/tls/key.pem"
+    #
+    #   # Reverse proxy support: trust X-Forwarded-For / X-Real-IP headers and mark session cookies Secure
+    #   # WLEDGER_TRUST_PROXY: "true"
+    #   # WLEDGER_COOKIE_SECURE: "true"
+    #
+    #   # Optional storage path overrides (defaults shown):
+    #   # WLEDGER_DATA_DIR: "/wledger/data"
+    #   # WLEDGER_DB_PATH: "/wledger/data/wledger.db"
+    #   # WLEDGER_UPLOADS_DIR: "/wledger/app/uploads"
+
     volumes:
-      # Maps files in the format "HOST_PATH:CONTAINER_PATH"
-      # Persists data so it isn't lost when the container updates or deletes.
-
-      # Map the local './data' folder to the internal '/wledger/data' database folder
+      # Persist SQLite database and generated TLS certificates
+      # Note: container runs as non-root UID 10001; ensure host directories are writable
       - ./data:/wledger/data
-
-      # Map the local './uploads' folder to where the app stores user uploaded files
+      # Persist uploaded part images and datasheets/documents
       - ./uploads:/wledger/app/uploads
 
-      # Map the local './logs' folder so you can read log files without entering the container
-      - ./logs:/wledger/app/logs
-
-    # Restart policy
-    # "unless-stopped" means the container will automatically start up if the server reboots
-    # or if the app crashes, but NOT if you manually run 'docker-compose down'.
     restart: unless-stopped

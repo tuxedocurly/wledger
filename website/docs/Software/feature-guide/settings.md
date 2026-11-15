@@ -5,7 +5,7 @@ sidebar_position: 6
 
 # Settings
 
-The Settings panel is the control center for your WLEDger instance. Here you can manage user accounts, configure guest access, set the default timeout for the `part locate` action, backup and restore your database, and change your password.
+The Settings panel is the control center for your WLEDger instance. Manage users and roles, create scoped **Personal Access Tokens** for the REST API, configure guest read access, customize locate automation and colors, back up or restore your system, and update your password.
 
 <a href="/img/settings_page.png" target="_blank">
    <img src="/img/settings_page.png" style={{maxWidth: '600px', width:
@@ -14,88 +14,63 @@ The Settings panel is the control center for your WLEDger instance. Here you can
 
 ## User Management
 
-Manage who has access to your inventory.
+Admins can create, delete, and force password resets on user accounts.
 
-When adding a new user, you must specify their `email`, `role`, and `default password`. On first login, a new user is forced to change their password from the one you set.
+* **Password Policy:** All passwords (initial setup, user creation, forced reset, and self-service password change) require **8–72 bytes** and are hashed with bcrypt cost `12`.
+* **Force Reset:** Newly created users (and users flagged with Force Reset) must choose a new password on their next login.
 
 ## Roles & Permissions
 
-Permissions are assigned via fixed roles. This simplifies administration by ensuring consistent access levels across your organization.
-
-### Permission Matrix
-
 | Feature | Admin | Editor | Viewer | Guest |
 | :--- | :---: | :---: | :---: | :---: |
-| **Search & View Inventory** | ✅ | ✅ | ✅ | ✅ |
-| **Locate (Light up LEDs)** | ✅ | ✅ | ✅ | ✅ |
-| **Add/Edit/Delete Parts** | ✅ | ✅ | ❌ | ❌ |
-| **Adjust Stock Levels** | ✅ | ✅ | ❌ | ❌ |
-| **Manage Hardware (WLED)** | ✅ | ❌ | ❌ | ❌ |
-| **Manage Users & Security** | ✅ | ❌ | ❌ | ❌ |
-| **System Backups/Restore** | ✅ | ❌ | ❌ | ❌ |
+| **Search & View Inventory / Projects** | ✅ | ✅ | ✅ | ✅ |
+| **Locate (Light up WLED Bins)** | ✅ | ✅ | ✅ | ✅ |
+| **Add / Edit / Delete Parts & BOMs** | ✅ | ✅ | ❌ | ❌ |
+| **Adjust Stock & Build Projects** | ✅ | ✅ | ❌ | ❌ |
+| **Manage Hardware (WLED & Containers)** | ✅ | ❌ | ❌ | ❌ |
+| **Manage Users, Settings & Backups** | ✅ | ❌ | ❌ | ❌ |
 
-:::info
-**Guest Access:** If "Guest Mode" is enabled in settings, unauthenticated users on your network will automatically receive the **Guest** role permissions.
+:::info Guest Access
+When **Require Login for Read-Only Access** is **disabled**, unauthenticated visitors receive read-only **Guest** permissions (including viewing inventory and locating parts). When enabled, all routes—including uploaded images and datasheets under `/uploads/*`—require authentication.
 :::
-
-
-### Admin Actions
-
-There are two actions admins can take on other user accounts.
-
-  1. Force a password reset
-  2. Delete a user account
-
-:::info
-Admins can delete other Admin accounts, but cannot force a password reset for other admins.
-:::
-
-## General Settings
-
-These settings affect the overall look and feel of the application for all users.
-
-### Require Login for Read-Only Access
-
-If this setting is enabled, non-authenticated users will be able to view your inventory and locate parts. The cannot create, update, or delete any part of your inventory.
-
-When enabled, a user must have an account with an explicit role to interact with WLEDger.
-
-### Enable Debug Logs
-
-When enabled, more verbose server logs are enabled. This setting is off by default. Generally, this should only be enabled if you need to troubleshoot your WLEDger install, or are filing a bug.
 
 ---
 
-## Hardware Automation
+## Personal Access Tokens (API Tokens)
 
-### Auto Turn-Off "Locate" LED
+Generate scoped **Personal Access Tokens** (`wlg_...`) in Settings to authenticate against the [REST API v1](./api.md):
 
-By default, this is enabled. It controls the time, in seconds, that an LED remains on when the `locate part` action is performed.
+1. Enter a descriptive **Name** (e.g., `KiCad Sync Script`), choose a **Scope** (`read`, `write`, or `admin`), and set an optional expiration in days.
+2. Click **Create Token**.
+3. **Copy the token immediately** from the one-time reveal banner — WLEDger stores only a **SHA-256 hash** (`token_hash`) and cannot display the plaintext token again.
+4. A token's effective permissions are bounded by both its chosen scope and your account role (for example, a `viewer` user cannot obtain `write` or `admin` access via a token).
+5. Revoke any token at any time from the tokens table.
 
-When disabled, LEDs stay on indefinitely. You can turn off LEDs by using the `Turn Off All LED` buttons in the `sidebar`
+---
 
-## Interface Colors
+## General Settings
 
-Use this to customize the LED color used when using the `locate part` action. You may also customize the LED color used to indicate the stock level: `OK`, `LOW`, `CRITICAL`
+* **Require Login for Read-Only Access:** Requires login for viewing parts, dashboards, and uploaded images/documents.
+* **Enable Debug Logs:** Toggles verbose `DEBUG` structured JSON logging at runtime without restarting the server.
+
+---
+
+## Hardware Automation & Colors
+
+* **Auto-Turn Off "Locate" LED:** Sets how many seconds locate LEDs stay illuminated before restoring the controller's prior WLED state, activating its Idle Preset, or turning LEDs off.
+* **Interface Colors:** Customize hex colors for **Locate Action**, **Stock Level: OK**, **Stock Level: Low**, and **Stock Level: Critical**. Changes dynamically update both the Dashboard UI CSS variables and WLED bin colors (when stock-health locate coloring is enabled).
 
 ---
 
 ## Backup & Restore
 
-Tools for backing up and restoring your database.
-
 | Action | Purpose |
 | :--- | :--- |
-| **Create Backup** | Triggers an immediate download of your system data (`.zip`). This includes all parts, users, settings, logs, templates, and images/documents. |
-| **Restore Database** | Upload a previously saved backup. **Destructive Action.** |
-
-
-:::warning
-Restoring a backup is a destructive action. That is, it will replace your current database, including users, entirely.
-:::
+| **Create Backup** | Downloads a portable `.zip` archive containing your full V2 database (parts, projects/BOMs, hardware, containers, walls, users, settings, audit logs, prompts) and uploaded images/documents. |
+| **Restore Backup** | Atomically replaces the active database and uploads from a `.zip` backup (with ZipSlip & archive size protection). Clears active sessions and API tokens for security—you will be asked to log back in afterward. |
 
 ---
 
 ## Change Password
 
-You can change your account password at any time by entering your old password, followed by the new password you wish to use.
+Any authenticated user can update their password in Settings by confirming their current password and entering a new 8–72 character password.
