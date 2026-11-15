@@ -117,6 +117,7 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 			r.Get("/hardware", h.HandleHardwareList)
 			r.Get("/hardware/{id}/status", h.HandleHardwareStatus)
 			r.Get("/hardware/{id}/grid", h.HandleHardwareGrid)
+			r.Get("/hardware/containers/{id}/configure", h.HandleContainerConfigure)
 			r.Post("/hardware/off", h.HandleGlobalOff)
 
 			// Inspiration
@@ -195,8 +196,14 @@ func NewWithOptions(ctx context.Context, mw *middleware.Manager, sessionManager 
 
 				// Hardware Configuration
 				r.Post("/hardware", h.HandleHardwareCreate)
+				r.Post("/hardware/discover", h.HandleHardwareDiscover)
+				r.Post("/hardware/{id}/update", h.HandleControllerUpdate)
 				r.Post("/hardware/{id}/delete", h.HandleHardwareDelete)
 				r.Post("/hardware/{id}/grid", h.HandleHardwareGridSave)
+				r.Post("/hardware/containers", h.HandleContainerCreateStandalone)
+				r.Post("/hardware/containers/{id}/configure", h.HandleContainerConfigureSave)
+				r.Post("/hardware/containers/{id}/delete", h.HandleContainerDelete)
+				r.Post("/hardware/containers/{id}/controller", h.HandleContainerBindController)
 
 				// System Settings Update & Backup
 				r.Post("/settings", h.HandleSettingsUpdate)

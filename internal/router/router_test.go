@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,15 +15,19 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/go-chi/chi/v5"
 	"github.com/tuxedocurly/wledger/internal/audit"
 	"github.com/tuxedocurly/wledger/internal/auth"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/documents"
 	"github.com/tuxedocurly/wledger/internal/handler"
+	"github.com/tuxedocurly/wledger/internal/hardware"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/internal/middleware"
 	"github.com/tuxedocurly/wledger/internal/parts"
 	"github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/internal/uierror"
+	"github.com/tuxedocurly/wledger/internal/wled"
 )
 
 type routerTestEnv struct {
@@ -402,5 +407,127 @@ func TestRouter_UploadsSecurityAndHeaders(t *testing.T) {
 	body, _ := io.ReadAll(recImg.Body)
 	if string(body) != "imgdata" {
 		t.Fatalf("unexpected image body: %q", string(body))
+	}
+}
+
+func TestRouter_Wave2CHardwareRoutes(t *testing.T) {
+	if err := i18n.Init(); err != nil {
+		t.Fatalf("i18n.Init: %v", err)
+	}
+	env := setupRouterTestEnv(t, true)
+	defer env.dbConn.Close()
+
+	log := slog.New(slog.DiscardHandler)
+	env.handler.Hardware = hardware.NewService(env.store, wled.NewClient(), log)
+
+	viewerHash, err := auth.HashPassword("viewer-secret-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := env.store.CreateUser(context.Background(), db.CreateUserParams{
+		Email:                  "viewer@example.com",
+		PasswordHash:           viewerHash,
+		Role:                   "viewer",
+		ChangePasswordRequired: sql.NullBool{Bool: false, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	r := NewWithOptions(ctx, env.mw, env.sm, env.handler, Options{UploadsDir: env.uploads})
+
+	// Verify POST /hardware/discover is registered on the router.
+	foundDiscover := false
+	if err := chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		if method == http.MethodPost && route == "/hardware/discover" {
+			foundDiscover = true
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("chi.Walk: %v", err)
+	}
+	if !foundDiscover {
+		t.Fatal("expected POST /hardware/discover route to be registered")
+	}
+
+	// Guest is redirected on standalone container configure read route.
+	reqGuest := httptest.NewRequest(http.MethodGet, "/hardware/containers/1/configure", nil)
+	recGuest := httptest.NewRecorder()
+	r.ServeHTTP(recGuest, reqGuest)
+	if recGuest.Code != http.StatusSeeOther || recGuest.Header().Get("Location") != "/login" {
+		t.Fatalf("guest GET /hardware/containers/1/configure expected 303 -> /login, got %d (%q)", recGuest.Code, recGuest.Header().Get("Location"))
+	}
+
+	// Viewer is forbidden (403) on all admin hardware/container mutation routes.
+	viewerCookie := loginSessionCookie(t, r, "viewer@example.com", "viewer-secret-123")
+	for _, path := range []string{
+		"/hardware/discover",
+		"/hardware/1/update",
+		"/hardware/containers",
+		"/hardware/containers/1/configure",
+		"/hardware/containers/1/controller",
+		"/hardware/containers/1/delete",
+	} {
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		req.Host = "example.com"
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+		req.AddCookie(viewerCookie)
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("viewer POST %s expected 403, got %d", path, rec.Code)
+		}
+	}
+
+	// Admin can create, read, configure, bind/unbind, and delete standalone containers, and route /hardware/{id}/update.
+	adminCookie := loginSessionCookie(t, r, "admin@example.com", "admin-secret-123")
+	postAdmin := func(path, form string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form))
+		req.Host = "example.com"
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+		req.AddCookie(adminCookie)
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+		return rec
+	}
+
+	recCreate := postAdmin("/hardware/containers", "name=Shelf+A&rows=2&cols=2")
+	if recCreate.Code != http.StatusSeeOther || !strings.HasPrefix(recCreate.Header().Get("Location"), "/hardware/containers/") {
+		t.Fatalf("POST /hardware/containers expected 303 to configure, got %d (%q)", recCreate.Code, recCreate.Header().Get("Location"))
+	}
+	configPath := recCreate.Header().Get("Location")
+
+	reqCfg := httptest.NewRequest(http.MethodGet, configPath, nil)
+	reqCfg.AddCookie(adminCookie)
+	recCfg := httptest.NewRecorder()
+	r.ServeHTTP(recCfg, reqCfg)
+	if recCfg.Code != http.StatusOK {
+		t.Fatalf("GET %s expected 200, got %d", configPath, recCfg.Code)
+	}
+
+	saveForm := url.Values{
+		"grid_data":   {"[]"},
+		"config_data": {`[{"id":1,"name":"Shelf A","segment_id":0,"config":{"sections":[{"rows":2,"cols":2,"serpentine":true,"startCorner":"top_left","direction":"horizontal"}]}}]`},
+	}.Encode()
+	recSave := postAdmin(configPath, saveForm)
+	if recSave.Code != http.StatusSeeOther || recSave.Header().Get("Location") != "/hardware" {
+		t.Fatalf("POST %s expected 303 -> /hardware, got %d (%s)", configPath, recSave.Code, recSave.Body.String())
+	}
+
+	recBind := postAdmin(strings.TrimSuffix(configPath, "/configure")+"/controller", "controller_id=")
+	if recBind.Code != http.StatusSeeOther || recBind.Header().Get("Location") != "/hardware" {
+		t.Fatalf("POST controller bind expected 303 -> /hardware, got %d", recBind.Code)
+	}
+
+	recDel := postAdmin(strings.TrimSuffix(configPath, "/configure")+"/delete", "")
+	if recDel.Code != http.StatusSeeOther || recDel.Header().Get("Location") != "/hardware" {
+		t.Fatalf("POST container delete expected 303 -> /hardware, got %d", recDel.Code)
+	}
+
+	recUpdate := postAdmin("/hardware/1/update", "name=Missing")
+	if recUpdate.Code == http.StatusNotFound || recUpdate.Code == http.StatusMethodNotAllowed {
+		t.Fatalf("POST /hardware/1/update was not routed to HandleControllerUpdate (got %d)", recUpdate.Code)
 	}
 }
