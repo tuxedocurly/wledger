@@ -175,6 +175,33 @@ templ Settings(user auth.User, s db.Setting, users []db.ListUsersRow, apiTokens 
 											<span class="text-sm opacity-70">{ i18n.T(ctx, "Seconds") }</span>
 										</div>
 									</div>
+									{{
+										pingEnabled := !s.EnableControllerPing.Valid || s.EnableControllerPing.Bool
+										pingInterval := s.ControllerPingIntervalSeconds.Int64
+										if pingInterval <= 0 {
+											pingInterval = 600
+										}
+									}}
+									<div class="form-control bg-base-100 p-4 rounded-lg border border-base-300 mt-2">
+										<label class="label cursor-pointer justify-start gap-4 mb-4">
+											<input
+												type="checkbox"
+												name="enable_controller_ping"
+												class="toggle toggle-primary"
+												if pingEnabled {
+													checked
+												}
+											/>
+											<span class="label-text font-medium">{ i18n.T(ctx, "PeriodicControllerPing") }</span>
+										</label>
+										<div class="flex items-center gap-4 pl-14">
+											<span class="text-sm opacity-70">{ i18n.T(ctx, "PingEvery") }</span>
+											<div class="join">
+												<input type="number" name="controller_ping_interval" value={ fmt.Sprintf("%d", pingInterval) } class="input input-sm input-bordered join-item w-24" min="10" max="86400"/>
+											</div>
+											<span class="text-sm opacity-70">{ i18n.T(ctx, "Seconds") }</span>
+										</div>
+									</div>
 								</div>
 								<div>
 									<h3 class="font-bold text-sm uppercase tracking-wider opacity-50 mb-4 flex items-center gap-2 border-t border-base-content/5 pt-6">

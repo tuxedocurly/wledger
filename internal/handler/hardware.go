@@ -64,6 +64,8 @@ func (h *Handler) HandleHardwareCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.triggerStatusPollerNow()
+
 	http.Redirect(w, r, "/hardware", http.StatusSeeOther)
 }
 
@@ -130,6 +132,8 @@ func (h *Handler) HandleControllerUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	h.triggerStatusPollerNow()
+
 	http.Redirect(w, r, "/hardware", http.StatusSeeOther)
 }
 
@@ -180,19 +184,25 @@ func (h *Handler) HandleHardwareDiscover(w http.ResponseWriter, r *http.Request)
 // GET /hardware/{id}/status
 func (h *Handler) HandleHardwareStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		h.UIError.Respond(w, r, err, "Invalid controller ID", http.StatusBadRequest)
+		return
+	}
 
-	online, err := h.Hardware.UpdateStatus(r.Context(), int64(id))
+	online, err := h.Hardware.UpdateStatus(r.Context(), id)
 	if err != nil {
-		h.UIError.Respond(w, r, err, "Controller not found", http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			h.UIError.Respond(w, r, err, "Controller not found", http.StatusNotFound)
+			return
+		}
+		h.UIError.Respond(w, r, err, "Failed to update controller status", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if online {
-		fmt.Fprintf(w, `<div hx-get="/hardware/%d/status" hx-trigger="every 10s" hx-swap="outerHTML" class="badge badge-success gap-2">Online</div>`, id)
-	} else {
-		fmt.Fprintf(w, `<div hx-get="/hardware/%d/status" hx-trigger="every 10s" hx-swap="outerHTML" class="badge badge-error gap-2">Offline</div>`, id)
+	if err := pages.ControllerStatusControl(id, online).Render(r.Context(), w); err != nil && h.Logger != nil {
+		h.Logger.Error("failed to render controller status control", "controller_id", id, "err", err)
 	}
 }
 

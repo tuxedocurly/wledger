@@ -170,6 +170,15 @@
   "Seconds": {
     "other": "秒"
   },
+  "PeriodicControllerPing": {
+    "other": "定期检查控制器状态"
+  },
+  "PingEvery": {
+    "other": "检查间隔："
+  },
+  "RefreshStatus": {
+    "other": "刷新状态"
+  },
   "InterfaceColors": {
     "other": "界面颜色"
   },

@@ -458,3 +458,111 @@ func TestService_NetworkErrorPropagationAndPortHonored(t *testing.T) {
 		t.Error("expected GlobalOff to propagate network error for unreachable controller")
 	}
 }
+
+func TestService_LocateMarksOfflineControllerOnline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/json/state" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	store, _ := setupWLEDTestDB(t, "wled_locate_online")
+	ctx := context.Background()
+
+	host, portStr, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+	portNum, _ := strconv.ParseInt(portStr, 10, 64)
+
+	httpCtrl, err := store.CreateController(ctx, db.CreateControllerParams{
+		Name: "OfflineHTTPCtrl", IpAddress: host, Port: sql.NullInt64{Int64: portNum, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateController http failed: %v", err)
+	}
+	if err := store.UpdateControllerInfo(ctx, db.UpdateControllerInfoParams{
+		IsOnline: sql.NullBool{Bool: false, Valid: true},
+		LedCount: 60,
+		ID:       httpCtrl.ID,
+	}); err != nil {
+		t.Fatalf("UpdateControllerInfo http failed: %v", err)
+	}
+	httpCont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name: "HTTPCont", ControllerID: sql.NullInt64{Int64: httpCtrl.ID, Valid: true}, SegmentID: 0,
+	})
+	httpBinID, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name: "B1", ContainerID: httpCont, LedIndex: sql.NullInt64{Int64: 0, Valid: true}, Width: sql.NullInt64{Int64: 1, Valid: true},
+	})
+	partID, _ := store.CreatePart(ctx, db.CreatePartParams{Name: "OnlineCheckPart"})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID: partID, BinID: sql.NullInt64{Int64: httpBinID, Valid: true}, Quantity: 3,
+	})
+
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("ListenPacket udp failed: %v", err)
+	}
+	defer pc.Close()
+	udpPort := pc.LocalAddr().(*net.UDPAddr).Port
+
+	udpCtrl, err := store.CreateController(ctx, db.CreateControllerParams{
+		Name:      "OfflineUDPCtrl",
+		IpAddress: "127.0.0.1",
+		Port:      sql.NullInt64{Int64: 80, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateController udp failed: %v", err)
+	}
+	if err := store.UpdateController(ctx, db.UpdateControllerParams{
+		ID:        udpCtrl.ID,
+		Name:      "OfflineUDPCtrl",
+		IpAddress: "127.0.0.1",
+		Port:      sql.NullInt64{Int64: 80, Valid: true},
+		UseUdp:    sql.NullBool{Bool: true, Valid: true},
+		UdpPort:   sql.NullInt64{Int64: int64(udpPort), Valid: true},
+	}); err != nil {
+		t.Fatalf("UpdateController udp failed: %v", err)
+	}
+	if err := store.UpdateControllerInfo(ctx, db.UpdateControllerInfoParams{
+		IsOnline: sql.NullBool{Bool: false, Valid: true},
+		LedCount: 30,
+		ID:       udpCtrl.ID,
+	}); err != nil {
+		t.Fatalf("UpdateControllerInfo udp failed: %v", err)
+	}
+	udpCont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name: "UDPCont", ControllerID: sql.NullInt64{Int64: udpCtrl.ID, Valid: true}, SegmentID: 0,
+	})
+	udpBinID, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name: "UB1", ContainerID: udpCont, LedIndex: sql.NullInt64{Int64: 0, Valid: true}, Width: sql.NullInt64{Int64: 1, Valid: true},
+	})
+
+	svc := NewService(store, NewClient(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	if err := svc.LocatePart(ctx, partID); err != nil {
+		t.Fatalf("LocatePart failed: %v", err)
+	}
+	gotHTTP, err := store.GetController(ctx, httpCtrl.ID)
+	if err != nil {
+		t.Fatalf("GetController http failed: %v", err)
+	}
+	if !gotHTTP.IsOnline.Bool {
+		t.Errorf("expected HTTP LocatePart to mark offline controller online, got IsOnline=%+v", gotHTTP.IsOnline)
+	}
+	if gotHTTP.LedCount != 60 {
+		t.Errorf("expected LedCount preserved at 60, got %d", gotHTTP.LedCount)
+	}
+
+	if err := svc.LocateBin(ctx, udpCtrl.ID, udpBinID); err != nil {
+		t.Fatalf("LocateBin udp failed: %v", err)
+	}
+	gotUDP, err := store.GetController(ctx, udpCtrl.ID)
+	if err != nil {
+		t.Fatalf("GetController udp failed: %v", err)
+	}
+	if gotUDP.IsOnline.Bool {
+		t.Errorf("expected fire-and-forget UDP LocateBin not to mark offline controller online")
+	}
+}

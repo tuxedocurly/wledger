@@ -57,10 +57,30 @@ func (h *Handler) HandleSettings(w http.ResponseWriter, r *http.Request) {
 
 // POST /settings
 func (h *Handler) HandleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
 	requireAuth := r.FormValue("require_auth") == "on"
 	enableTimeout := r.FormValue("enable_timeout") == "on"
 	enableDebugLogs := r.FormValue("enable_debug_logs") == "on"
 	timeout, _ := strconv.Atoi(r.FormValue("locate_timeout"))
+
+	var enablePing *bool
+	var pingInterval *int
+	if r.Form.Has("controller_ping_interval") {
+		interval, convErr := strconv.Atoi(r.FormValue("controller_ping_interval"))
+		if convErr != nil || interval <= 0 {
+			interval = 600
+		} else if interval < 10 {
+			interval = 10
+		} else if interval > 86400 {
+			interval = 86400
+		}
+		enabled := r.FormValue("enable_controller_ping") == "on"
+		enablePing = &enabled
+		pingInterval = &interval
+	} else if r.Form.Has("enable_controller_ping") {
+		enabled := r.FormValue("enable_controller_ping") == "on"
+		enablePing = &enabled
+	}
 
 	colorLocate := r.FormValue("color_locate")
 	colorOk := r.FormValue("color_ok")
@@ -70,14 +90,16 @@ func (h *Handler) HandleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	err := h.Settings.UpdateSettings(ctx, settings.UpdateSettingsParams{
-		RequireAuth:         requireAuth,
-		LocateTimeout:       timeout,
-		EnableLocateTimeout: enableTimeout,
-		EnableDebugLogs:     enableDebugLogs,
-		ColorLocate:         colorLocate,
-		ColorOk:             colorOk,
-		ColorLow:            colorLow,
-		ColorCritical:       colorCritical,
+		RequireAuth:            requireAuth,
+		LocateTimeout:          timeout,
+		EnableLocateTimeout:    enableTimeout,
+		EnableDebugLogs:        enableDebugLogs,
+		ColorLocate:            colorLocate,
+		ColorOk:                colorOk,
+		ColorLow:               colorLow,
+		ColorCritical:          colorCritical,
+		EnableControllerPing:   enablePing,
+		ControllerPingInterval: pingInterval,
 	})
 
 	if err != nil {
@@ -87,6 +109,7 @@ func (h *Handler) HandleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Update Runtime Log Level
 	logger.SetDebug(enableDebugLogs)
+	h.notifyStatusPollerSettingsChanged()
 
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }

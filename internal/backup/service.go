@@ -706,20 +706,30 @@ func (s *service) restoreData(ctx context.Context, qtx db.Querier, manifest Mani
 	if !locateColorByStock.Valid {
 		locateColorByStock = sql.NullBool{Bool: false, Valid: true}
 	}
+	enableControllerPing := manifest.Settings.EnableControllerPing
+	if !enableControllerPing.Valid {
+		enableControllerPing = sql.NullBool{Bool: true, Valid: true}
+	}
+	pingInterval := manifest.Settings.ControllerPingIntervalSeconds
+	if !pingInterval.Valid || pingInterval.Int64 <= 0 {
+		pingInterval = sql.NullInt64{Int64: 600, Valid: true}
+	}
 
 	if err := qtx.RestoreSettings(ctx, db.RestoreSettingsParams{
-		RequireAuthForRead:      manifest.Settings.RequireAuthForRead,
-		LocateTimeoutSeconds:    manifest.Settings.LocateTimeoutSeconds,
-		EnableLocateTimeout:     manifest.Settings.EnableLocateTimeout,
-		EnableDebugLogs:         manifest.Settings.EnableDebugLogs,
-		ColorLocate:             manifest.Settings.ColorLocate,
-		ColorStockOk:            manifest.Settings.ColorStockOk,
-		ColorStockLow:           manifest.Settings.ColorStockLow,
-		ColorStockCritical:      manifest.Settings.ColorStockCritical,
-		CreatedAt:               manifest.Settings.CreatedAt,
-		UpdatedAt:               manifest.Settings.UpdatedAt,
-		InspirationSeedsApplied: manifest.Settings.InspirationSeedsApplied,
-		LocateColorByStock:      locateColorByStock,
+		RequireAuthForRead:            manifest.Settings.RequireAuthForRead,
+		LocateTimeoutSeconds:          manifest.Settings.LocateTimeoutSeconds,
+		EnableLocateTimeout:           manifest.Settings.EnableLocateTimeout,
+		EnableDebugLogs:               manifest.Settings.EnableDebugLogs,
+		ColorLocate:                   manifest.Settings.ColorLocate,
+		ColorStockOk:                  manifest.Settings.ColorStockOk,
+		ColorStockLow:                 manifest.Settings.ColorStockLow,
+		ColorStockCritical:            manifest.Settings.ColorStockCritical,
+		CreatedAt:                     manifest.Settings.CreatedAt,
+		UpdatedAt:                     manifest.Settings.UpdatedAt,
+		InspirationSeedsApplied:       manifest.Settings.InspirationSeedsApplied,
+		LocateColorByStock:            locateColorByStock,
+		EnableControllerPing:          enableControllerPing,
+		ControllerPingIntervalSeconds: pingInterval,
 	}); err != nil {
 		return fmt.Errorf("settings restore: %w", err)
 	}

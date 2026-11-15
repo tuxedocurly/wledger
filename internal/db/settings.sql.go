@@ -137,7 +137,7 @@ func (q *Queries) ClearWalls(ctx context.Context) error {
 }
 
 const getSettings = `-- name: GetSettings :one
-SELECT id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout, enable_debug_logs, color_locate, color_stock_ok, color_stock_low, color_stock_critical, created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock FROM settings WHERE id = 1
+SELECT id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout, enable_debug_logs, color_locate, color_stock_ok, color_stock_low, color_stock_critical, created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock, enable_controller_ping, controller_ping_interval_seconds FROM settings WHERE id = 1
 `
 
 func (q *Queries) GetSettings(ctx context.Context) (Setting, error) {
@@ -157,6 +157,8 @@ func (q *Queries) GetSettings(ctx context.Context) (Setting, error) {
 		&i.UpdatedAt,
 		&i.InspirationSeedsApplied,
 		&i.LocateColorByStock,
+		&i.EnableControllerPing,
+		&i.ControllerPingIntervalSeconds,
 	)
 	return i, err
 }
@@ -165,9 +167,10 @@ const initSettings = `-- name: InitSettings :exec
 INSERT OR IGNORE INTO settings (
     id, require_auth_for_read, color_locate, color_stock_ok, color_stock_low,
     color_stock_critical, locate_timeout_seconds, enable_locate_timeout,
-    enable_debug_logs, inspiration_seeds_applied, locate_color_by_stock
+    enable_debug_logs, inspiration_seeds_applied, locate_color_by_stock,
+    enable_controller_ping, controller_ping_interval_seconds
 )
-VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0, 0, 0)
+VALUES (1, 1, '#0000FF', '#00FF00', '#FFFF00', '#FF0000', 10, 1, 0, 0, 0, 1, 600)
 `
 
 func (q *Queries) InitSettings(ctx context.Context) error {
@@ -190,27 +193,31 @@ const restoreSettings = `-- name: RestoreSettings :exec
 INSERT OR REPLACE INTO settings (
     id, require_auth_for_read, locate_timeout_seconds, enable_locate_timeout,
     enable_debug_logs, color_locate, color_stock_ok, color_stock_low, color_stock_critical,
-    created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock
+    created_at, updated_at, inspiration_seeds_applied, locate_color_by_stock,
+    enable_controller_ping, controller_ping_interval_seconds
 ) VALUES (
     1, ?, ?, ?,
     ?, ?, ?, ?, ?,
-    ?, ?, ?, ?
+    ?, ?, ?, ?,
+    ?, ?
 )
 `
 
 type RestoreSettingsParams struct {
-	RequireAuthForRead      sql.NullBool   `json:"require_auth_for_read"`
-	LocateTimeoutSeconds    sql.NullInt64  `json:"locate_timeout_seconds"`
-	EnableLocateTimeout     sql.NullBool   `json:"enable_locate_timeout"`
-	EnableDebugLogs         sql.NullBool   `json:"enable_debug_logs"`
-	ColorLocate             sql.NullString `json:"color_locate"`
-	ColorStockOk            sql.NullString `json:"color_stock_ok"`
-	ColorStockLow           sql.NullString `json:"color_stock_low"`
-	ColorStockCritical      sql.NullString `json:"color_stock_critical"`
-	CreatedAt               sql.NullTime   `json:"created_at"`
-	UpdatedAt               sql.NullTime   `json:"updated_at"`
-	InspirationSeedsApplied sql.NullBool   `json:"inspiration_seeds_applied"`
-	LocateColorByStock      sql.NullBool   `json:"locate_color_by_stock"`
+	RequireAuthForRead            sql.NullBool   `json:"require_auth_for_read"`
+	LocateTimeoutSeconds          sql.NullInt64  `json:"locate_timeout_seconds"`
+	EnableLocateTimeout           sql.NullBool   `json:"enable_locate_timeout"`
+	EnableDebugLogs               sql.NullBool   `json:"enable_debug_logs"`
+	ColorLocate                   sql.NullString `json:"color_locate"`
+	ColorStockOk                  sql.NullString `json:"color_stock_ok"`
+	ColorStockLow                 sql.NullString `json:"color_stock_low"`
+	ColorStockCritical            sql.NullString `json:"color_stock_critical"`
+	CreatedAt                     sql.NullTime   `json:"created_at"`
+	UpdatedAt                     sql.NullTime   `json:"updated_at"`
+	InspirationSeedsApplied       sql.NullBool   `json:"inspiration_seeds_applied"`
+	LocateColorByStock            sql.NullBool   `json:"locate_color_by_stock"`
+	EnableControllerPing          sql.NullBool   `json:"enable_controller_ping"`
+	ControllerPingIntervalSeconds sql.NullInt64  `json:"controller_ping_interval_seconds"`
 }
 
 func (q *Queries) RestoreSettings(ctx context.Context, arg RestoreSettingsParams) error {
@@ -227,6 +234,8 @@ func (q *Queries) RestoreSettings(ctx context.Context, arg RestoreSettingsParams
 		arg.UpdatedAt,
 		arg.InspirationSeedsApplied,
 		arg.LocateColorByStock,
+		arg.EnableControllerPing,
+		arg.ControllerPingIntervalSeconds,
 	)
 	return err
 }
@@ -267,16 +276,20 @@ SET
     enable_locate_timeout = COALESCE(?3, enable_locate_timeout), 
     enable_debug_logs = COALESCE(?4, enable_debug_logs),
     locate_color_by_stock = COALESCE(?5, locate_color_by_stock),
+    enable_controller_ping = COALESCE(?6, enable_controller_ping),
+    controller_ping_interval_seconds = COALESCE(?7, controller_ping_interval_seconds),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = 1
 `
 
 type UpdateGeneralSettingsParams struct {
-	RequireAuthForRead   sql.NullBool  `json:"require_auth_for_read"`
-	LocateTimeoutSeconds sql.NullInt64 `json:"locate_timeout_seconds"`
-	EnableLocateTimeout  sql.NullBool  `json:"enable_locate_timeout"`
-	EnableDebugLogs      sql.NullBool  `json:"enable_debug_logs"`
-	LocateColorByStock   sql.NullBool  `json:"locate_color_by_stock"`
+	RequireAuthForRead            sql.NullBool  `json:"require_auth_for_read"`
+	LocateTimeoutSeconds          sql.NullInt64 `json:"locate_timeout_seconds"`
+	EnableLocateTimeout           sql.NullBool  `json:"enable_locate_timeout"`
+	EnableDebugLogs               sql.NullBool  `json:"enable_debug_logs"`
+	LocateColorByStock            sql.NullBool  `json:"locate_color_by_stock"`
+	EnableControllerPing          sql.NullBool  `json:"enable_controller_ping"`
+	ControllerPingIntervalSeconds sql.NullInt64 `json:"controller_ping_interval_seconds"`
 }
 
 func (q *Queries) UpdateGeneralSettings(ctx context.Context, arg UpdateGeneralSettingsParams) error {
@@ -286,6 +299,8 @@ func (q *Queries) UpdateGeneralSettings(ctx context.Context, arg UpdateGeneralSe
 		arg.EnableLocateTimeout,
 		arg.EnableDebugLogs,
 		arg.LocateColorByStock,
+		arg.EnableControllerPing,
+		arg.ControllerPingIntervalSeconds,
 	)
 	return err
 }

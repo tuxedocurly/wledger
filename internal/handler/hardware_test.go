@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/hardware"
+	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/internal/middleware"
 	"github.com/tuxedocurly/wledger/internal/settings"
 	"github.com/tuxedocurly/wledger/internal/uierror"
@@ -319,6 +320,7 @@ func TestHandler_ControllerValidationEditAndStatusBadge(t *testing.T) {
 	h, s, ctx := setupHardwareHandlerTest(t, "handler_ctrl_val", rt)
 
 	r := chi.NewRouter()
+	r.Get("/hardware", h.HandleHardwareList)
 	r.Post("/hardware", h.HandleHardwareCreate)
 	r.Post("/hardware/{id}/update", h.HandleControllerUpdate)
 	r.Get("/hardware/{id}/status", h.HandleHardwareStatus)
@@ -365,12 +367,53 @@ func TestHandler_ControllerValidationEditAndStatusBadge(t *testing.T) {
 		t.Errorf("controller update fields did not persist: %+v", updated)
 	}
 
-	// Status badge returns hx-swap="outerHTML" to prevent nested .badge duplication
-	reqStatus := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/hardware/%d/status", cRow.ID), nil).WithContext(ctx)
+	// Status control renders outerHTML target + manual refresh button without automatic polling
+	if err := i18n.Init(); err != nil {
+		t.Fatalf("i18n.Init failed: %v", err)
+	}
+	uiCtx := i18n.WithLocalizer(ctx, "en")
+
+	reqList := httptest.NewRequest(http.MethodGet, "/hardware", nil).WithContext(uiCtx)
+	rrList := httptest.NewRecorder()
+	r.ServeHTTP(rrList, reqList)
+	if rrList.Code != http.StatusOK {
+		t.Fatalf("expected 200 on GET /hardware, got %d", rrList.Code)
+	}
+	listBody := rrList.Body.String()
+	wantID := fmt.Sprintf("controller-status-%d", cRow.ID)
+	if !strings.Contains(listBody, wantID) {
+		t.Errorf("expected GET /hardware to contain %q", wantID)
+	}
+	if strings.Contains(listBody, "every 10s") {
+		t.Errorf("expected GET /hardware not to contain client polling trigger every 10s")
+	}
+
+	reqStatus := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/hardware/%d/status", cRow.ID), nil).WithContext(uiCtx)
 	rrStatus := httptest.NewRecorder()
 	r.ServeHTTP(rrStatus, reqStatus)
-	if rrStatus.Code != http.StatusOK || !strings.Contains(rrStatus.Body.String(), `hx-swap="outerHTML"`) {
-		t.Errorf("expected outerHTML badge snippet, got code=%d body=%q", rrStatus.Code, rrStatus.Body.String())
+	statusBody := rrStatus.Body.String()
+	if rrStatus.Code != http.StatusOK || !strings.Contains(statusBody, `hx-swap="outerHTML"`) || !strings.Contains(statusBody, wantID) {
+		t.Errorf("expected outerHTML status control %q, got code=%d body=%q", wantID, rrStatus.Code, statusBody)
+	}
+	if strings.Contains(statusBody, "every 10s") {
+		t.Errorf("expected status snippet not to include client polling trigger every 10s, got %q", statusBody)
+	}
+	if !strings.Contains(statusBody, "Refresh Status") {
+		t.Errorf("expected status snippet to include manual refresh control, got %q", statusBody)
+	}
+
+	reqInvalid := httptest.NewRequest(http.MethodGet, "/hardware/abc/status", nil).WithContext(uiCtx)
+	rrInvalid := httptest.NewRecorder()
+	r.ServeHTTP(rrInvalid, reqInvalid)
+	if rrInvalid.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 Bad Request for non-numeric controller ID, got %d", rrInvalid.Code)
+	}
+
+	reqMissing := httptest.NewRequest(http.MethodGet, "/hardware/999999/status", nil).WithContext(uiCtx)
+	rrMissing := httptest.NewRecorder()
+	r.ServeHTTP(rrMissing, reqMissing)
+	if rrMissing.Code != http.StatusNotFound {
+		t.Errorf("expected 404 Not Found for missing controller ID, got %d", rrMissing.Code)
 	}
 }
 

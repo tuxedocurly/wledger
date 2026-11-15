@@ -188,6 +188,15 @@
   "Seconds": {
     "other": "Seconds"
   },
+  "PeriodicControllerPing": {
+    "other": "Periodic Controller Status Ping"
+  },
+  "PingEvery": {
+    "other": "Ping every:"
+  },
+  "RefreshStatus": {
+    "other": "Refresh Status"
+  },
   "InterfaceColors": {
     "other": "Interface Colors"
   },

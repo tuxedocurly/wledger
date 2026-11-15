@@ -170,6 +170,15 @@
   "Seconds": {
     "other": "Segundos"
   },
+  "PeriodicControllerPing": {
+    "other": "Verificação Periódica de Status do Controlador"
+  },
+  "PingEvery": {
+    "other": "Verificar a cada:"
+  },
+  "RefreshStatus": {
+    "other": "Atualizar Status"
+  },
   "InterfaceColors": {
     "other": "Cores da Interface"
   },

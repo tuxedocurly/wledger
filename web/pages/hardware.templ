@@ -6,6 +6,7 @@ import (
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/i18n"
 	"github.com/tuxedocurly/wledger/web/components"
+	"github.com/tuxedocurly/wledger/web/icons"
 	"github.com/tuxedocurly/wledger/web/layouts"
 )
 
@@ -91,14 +92,7 @@ templ Hardware(user auth.User, controllers []db.Controller, containers []db.GetA
 									</a>
 								</div>
 							</div>
-							<div
-								hx-get={ fmt.Sprintf("/hardware/%d/status", c.ID) }
-								hx-trigger="load, every 10s"
-								hx-swap="outerHTML"
-								class="badge badge-ghost text-xs"
-							>
-								{ i18n.T(ctx, "Checking") }
-							</div>
+							@ControllerStatusControl(c.ID, c.IsOnline.Bool)
 						</div>
 						<div class="flex flex-wrap gap-1.5 text-[11px] font-mono opacity-70 mb-2">
 							<span class="badge badge-sm badge-ghost">{ fmt.Sprintf("%d LEDs", c.LedCount) }</span>
@@ -410,4 +404,26 @@ templ DiscoverResults(items []DiscoveryResultItem) {
 			}
 		</div>
 	}
+}
+
+templ ControllerStatusControl(id int64, online bool) {
+	<div id={ fmt.Sprintf("controller-status-%d", id) } class="inline-flex items-center gap-1.5 shrink-0">
+		if online {
+			<span class="badge badge-success gap-2 text-xs">{ i18n.T(ctx, "Online") }</span>
+		} else {
+			<span class="badge badge-error gap-2 text-xs">{ i18n.T(ctx, "Offline") }</span>
+		}
+		<button
+			type="button"
+			hx-get={ fmt.Sprintf("/hardware/%d/status", id) }
+			hx-target={ fmt.Sprintf("#controller-status-%d", id) }
+			hx-swap="outerHTML"
+			hx-disabled-elt="this"
+			class="btn btn-ghost btn-xs btn-circle opacity-70 hover:opacity-100"
+			title={ i18n.T(ctx, "RefreshStatus") }
+			aria-label={ i18n.T(ctx, "RefreshStatus") }
+		>
+			@icons.RefreshCcw(templ.Attributes{"class": "w-3.5 h-3.5 [.htmx-request_&]:animate-spin"})
+		</button>
+	</div>
 }

@@ -308,6 +308,8 @@ func TestTemplates_SafeConfirmAndNoHardcodedDefaultPassword(t *testing.T) {
 				"HardwareAutomation": "Hardware",
 				"AutoTurnOffLocateLED": "Auto Off",
 				"TurnOffAfter": "After",
+				"PeriodicControllerPing": "Periodic Controller Ping",
+				"PingEvery": "Check every:",
 				"Seconds": "sec",
 				"CustomIndicatorColors": "Colors",
 				"SaveAllSettings": "Save",
@@ -369,5 +371,8 @@ func TestTemplates_SafeConfirmAndNoHardcodedDefaultPassword(t *testing.T) {
 	}
 	if strings.Contains(setHTML, "return confirm('") {
 		t.Fatal("unsafe single-quoted inline confirm() string interpolation still present")
+	}
+	if !strings.Contains(setHTML, `name="enable_controller_ping"`) || !strings.Contains(setHTML, `name="controller_ping_interval"`) {
+		t.Fatal("expected controller ping settings controls in Settings template")
 	}
 }

@@ -72,7 +72,7 @@ templ PartsList(user auth.User, parts []PartView, search string, page int, binID
 					</div>
 				</div>
 			</div>
-			<div id="parts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12 items-start">
+			<div id="parts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12 items-stretch">
 				if len(parts) == 0 && page == 1 {
 					@components.EmptyState(i18n.T(ctx, "NoPartsFound"), i18n.TD(ctx, "NoPartsMatching", map[string]interface{}{"Search": search}), "📦") {
 						if search != "" {
@@ -114,7 +114,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64, filters
 	for _, part := range parts {
 		<div
 			onclick={ navigateTo(fmt.Sprintf("/parts/%d", part.ID)) }
-			class="card bg-base-200 shadow-xl hover:shadow-2xl hover:z-50 transition-all cursor-pointer block group relative"
+			class="card bg-base-200 shadow-xl hover:shadow-2xl hover:z-50 transition-all cursor-pointer flex flex-col h-full group relative"
 		>
 			<div class="absolute top-2 left-2 z-30" @click.stop>
 				<input
@@ -125,7 +125,7 @@ templ PartCards(parts []PartView, search string, page int, binID *int64, filters
 					@change={ fmt.Sprintf("toggleSelection(%d)", part.ID) }
 				/>
 			</div>
-			<figure class="h-48 bg-base-300 relative overflow-hidden">
+			<figure class="h-48 shrink-0 bg-base-300 relative overflow-hidden">
 				if part.ImagePath.Valid && part.ImagePath.String != "" {
 					<img
 						src={ ImageThumbURL(part.ImagePath.String) }
@@ -136,18 +136,18 @@ templ PartCards(parts []PartView, search string, page int, binID *int64, filters
 					<div class="flex items-center justify-center w-full h-full text-4xl opacity-30 transform transition-transform duration-500 group-hover:scale-110 grayscale">📷</div>
 				}
 			</figure>
-			<div class="card-body p-4 relative z-10 bg-base-200">
-				<h2 class="card-title text-base justify-between">
-					<span>
+			<div class="card-body p-4 relative z-10 bg-base-200 flex-1 flex flex-col min-w-0">
+				<h2 class="card-title text-base items-start justify-between gap-2 min-h-[3rem]">
+					<span class="line-clamp-2 break-words min-w-0" title={ part.Name }>
 						{ part.Name }
-						if part.IsFavorite.Bool {
-							<span class="text-warning text-xs ml-1">★</span>
-						}
 					</span>
+					if part.IsFavorite.Bool {
+						<span class="text-warning text-xs shrink-0 mt-1">★</span>
+					}
 				</h2>
 				<div x-data="{ isClamped: false, showPopup: false }" class="relative" @mouseleave="showPopup = false">
 					<div
-						class="line-clamp-2"
+						class="line-clamp-2 min-h-[2.5rem] break-words"
 						@mouseenter="$el.scrollHeight > $el.clientHeight ? (isClamped = true, showPopup = true) : (isClamped = false)"
 					>
 						<p class="text-sm opacity-70">{ part.Description.String }</p>
@@ -162,12 +162,16 @@ templ PartCards(parts []PartView, search string, page int, binID *int64, filters
 						<p class="text-sm">{ part.Description.String }</p>
 					</div>
 				</div>
-				<div class="flex justify-between items-end mt-4">
-					<div class="flex flex-col">
-						<span class="text-sm font-mono opacity-50"># { part.PartNumber.String }</span>
-						<span class="badge badge-info font-semibold mt-1">{ i18n.T(ctx, "Stock") }: { fmt.Sprintf("%d", part.TotalStock) }</span>
+				<div class="flex justify-between items-end gap-2 mt-auto pt-3">
+					<div class="flex flex-col min-w-0 flex-1">
+						if part.PartNumber.Valid && part.PartNumber.String != "" {
+							<span class="text-sm font-mono opacity-50 truncate block h-5" title={ part.PartNumber.String }># { part.PartNumber.String }</span>
+						} else {
+							<span class="text-sm font-mono opacity-50 block h-5"></span>
+						}
+						<span class="badge badge-info font-semibold mt-1 shrink-0">{ i18n.T(ctx, "Stock") }: { fmt.Sprintf("%d", part.TotalStock) }</span>
 					</div>
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-2 shrink-0">
 						if part.OrphanedStock > 0 {
 							@components.OrphanedStockWarning()
 						}

@@ -58,6 +58,30 @@ func TestService_SettingsFlow(t *testing.T) {
 	if settings.ColorLocate.String != "#FF0000" {
 		t.Errorf("expected #FF0000, got %s", settings.ColorLocate.String)
 	}
+	if !settings.EnableControllerPing.Valid || !settings.EnableControllerPing.Bool {
+		t.Errorf("expected EnableControllerPing to remain true when omitted, got %+v", settings.EnableControllerPing)
+	}
+	if settings.ControllerPingIntervalSeconds.Int64 != 600 {
+		t.Errorf("expected ControllerPingIntervalSeconds to remain 600 when omitted, got %d", settings.ControllerPingIntervalSeconds.Int64)
+	}
+
+	pingOff := false
+	pingInterval := 120
+	params.EnableControllerPing = &pingOff
+	params.ControllerPingInterval = &pingInterval
+	if err := s.UpdateSettings(ctx, params); err != nil {
+		t.Fatalf("failed to update ping settings: %v", err)
+	}
+	settings, err = s.GetSettings(ctx)
+	if err != nil {
+		t.Fatalf("failed to get settings after ping update: %v", err)
+	}
+	if settings.EnableControllerPing.Bool {
+		t.Error("expected EnableControllerPing to be false after update")
+	}
+	if settings.ControllerPingIntervalSeconds.Int64 != 120 {
+		t.Errorf("expected ControllerPingIntervalSeconds=120, got %d", settings.ControllerPingIntervalSeconds.Int64)
+	}
 }
 
 func TestService_UserFlow(t *testing.T) {

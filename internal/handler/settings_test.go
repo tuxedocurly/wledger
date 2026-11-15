@@ -66,6 +66,7 @@ func TestHandleSettingsUpdate(t *testing.T) {
 	form.Add("color_ok", "#00FF00")
 	form.Add("color_low", "#FFFF00")
 	form.Add("color_critical", "#FF0000")
+	form.Add("controller_ping_interval", "120")
 
 	req := httptest.NewRequest(http.MethodPost, "/settings", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -84,6 +85,60 @@ func TestHandleSettingsUpdate(t *testing.T) {
 	}
 	if settings.LocateTimeoutSeconds.Int64 != 15 {
 		t.Errorf("expected locate_timeout to be 15, got %d", settings.LocateTimeoutSeconds.Int64)
+	}
+	if !settings.EnableControllerPing.Valid || settings.EnableControllerPing.Bool {
+		t.Errorf("expected EnableControllerPing false when checkbox omitted with ping interval form field, got %+v", settings.EnableControllerPing)
+	}
+	if settings.ControllerPingIntervalSeconds.Int64 != 120 {
+		t.Errorf("expected controller_ping_interval to be 120, got %d", settings.ControllerPingIntervalSeconds.Int64)
+	}
+
+	// Verify clamping below minimum (3 -> 10) when re-enabling ping.
+	formLow := url.Values{}
+	formLow.Add("enable_controller_ping", "on")
+	formLow.Add("controller_ping_interval", "3")
+	reqLow := httptest.NewRequest(http.MethodPost, "/settings", strings.NewReader(formLow.Encode()))
+	reqLow.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrLow := httptest.NewRecorder()
+	h.HandleSettingsUpdate(rrLow, reqLow)
+	if rrLow.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 on low interval update, got %d", rrLow.Code)
+	}
+	settings, _ = s.GetSettings(context.Background())
+	if !settings.EnableControllerPing.Bool || settings.ControllerPingIntervalSeconds.Int64 != 10 {
+		t.Errorf("expected enabled=true clamped interval=10, got enabled=%+v interval=%d", settings.EnableControllerPing, settings.ControllerPingIntervalSeconds.Int64)
+	}
+
+	// Verify clamping above maximum (999999 -> 86400).
+	formHigh := url.Values{}
+	formHigh.Add("enable_controller_ping", "on")
+	formHigh.Add("controller_ping_interval", "999999")
+	reqHigh := httptest.NewRequest(http.MethodPost, "/settings", strings.NewReader(formHigh.Encode()))
+	reqHigh.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrHigh := httptest.NewRecorder()
+	h.HandleSettingsUpdate(rrHigh, reqHigh)
+	if rrHigh.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 on high interval update, got %d", rrHigh.Code)
+	}
+	settings, _ = s.GetSettings(context.Background())
+	if settings.ControllerPingIntervalSeconds.Int64 != 86400 {
+		t.Errorf("expected interval clamped to 86400, got %d", settings.ControllerPingIntervalSeconds.Int64)
+	}
+
+	// Partial form POST omitting controller ping fields must preserve existing ping configuration.
+	partial := url.Values{}
+	partial.Add("require_auth", "on")
+	partial.Add("locate_timeout", "20")
+	reqPartial := httptest.NewRequest(http.MethodPost, "/settings", strings.NewReader(partial.Encode()))
+	reqPartial.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rrPartial := httptest.NewRecorder()
+	h.HandleSettingsUpdate(rrPartial, reqPartial)
+	if rrPartial.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 on partial update, got %d", rrPartial.Code)
+	}
+	settings, _ = s.GetSettings(context.Background())
+	if !settings.EnableControllerPing.Bool || settings.ControllerPingIntervalSeconds.Int64 != 86400 {
+		t.Errorf("expected partial POST to preserve ping settings (true, 86400), got enabled=%+v interval=%d", settings.EnableControllerPing, settings.ControllerPingIntervalSeconds.Int64)
 	}
 }
 
