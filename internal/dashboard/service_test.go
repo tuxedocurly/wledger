@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/tuxedocurly/wledger/internal/db"
 )
 
@@ -48,7 +47,7 @@ func TestService_GetGrid(t *testing.T) {
 	c, _ := store.CreateController(ctx, db.CreateControllerParams{Name: "Ctrl A", IpAddress: "1.1.1.1"})
 	
 	cont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
-		Name: "Cont", ControllerID: c.ID, SegmentID: 0,
+		Name: "Cont", ControllerID: sql.NullInt64{Int64: c.ID, Valid: true}, SegmentID: 0,
 	})
 
 	// Create Bin

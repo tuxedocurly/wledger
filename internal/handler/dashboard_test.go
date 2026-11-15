@@ -27,7 +27,7 @@ func TestNewDashboardViewModel(t *testing.T) {
 	// Mock Data
 	// Controller B: Bin (1,1) - Critical
 	c2, _ := s.CreateController(ctx, db.CreateControllerParams{Name: "Controller B", IpAddress: "2.2.2.2"})
-	cont2, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "C2", ControllerID: c2.ID, SegmentID: 0})
+	cont2, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "C2", ControllerID: sql.NullInt64{Int64: c2.ID, Valid: true}, SegmentID: 0})
 
 	b10Row, _ := s.CreateBin(ctx, db.CreateBinParams{
 		Name:        "Bin 10",
@@ -42,7 +42,7 @@ func TestNewDashboardViewModel(t *testing.T) {
 
 	// Controller A: Bin (0,0) - OK
 	c1, _ := s.CreateController(ctx, db.CreateControllerParams{Name: "Controller A", IpAddress: "1.1.1.1"})
-	cont1, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "C1", ControllerID: c1.ID, SegmentID: 0})
+	cont1, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "C1", ControllerID: sql.NullInt64{Int64: c1.ID, Valid: true}, SegmentID: 0})
 
 	b1, _ := s.CreateBin(ctx, db.CreateBinParams{
 		Name:        "Bin 1",

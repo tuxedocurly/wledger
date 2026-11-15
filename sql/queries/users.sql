@@ -48,3 +48,6 @@ INSERT INTO sessions (token, data, expiry) VALUES (?, ?, ?);
 DELETE FROM sessions WHERE token = ?;
 -- name: CleanupSessions :exec
 DELETE FROM sessions WHERE expiry < ?;
+
+-- name: ClearSessions :exec
+DELETE FROM sessions;

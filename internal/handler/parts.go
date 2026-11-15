@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -226,7 +227,7 @@ func (h *Handler) HandleDocDelete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleBinOptions(w http.ResponseWriter, r *http.Request) {
 	cid, _ := strconv.Atoi(r.URL.Query().Get("controller_id"))
 
-	containers, err := h.Queries.GetContainersByController(r.Context(), int64(cid))
+	containers, err := h.Queries.GetContainersByController(r.Context(), sql.NullInt64{Int64: int64(cid), Valid: true})
 	if err != nil {
 		h.Logger.Error("failed to fetch containers", "err", err, "controller_id", cid)
 		components.BinOptions([]db.Bin{}).Render(r.Context(), w)

@@ -30,7 +30,7 @@ func MigrateLegacyLedIndices(ctx context.Context, store db.Store, logger *slog.L
 		}
 
 		for _, controller := range controllers {
-			containers, err := q.GetContainersByController(ctx, controller.ID)
+			containers, err := q.GetContainersByController(ctx, sql.NullInt64{Int64: controller.ID, Valid: true})
 			if err != nil {
 				return err
 			}

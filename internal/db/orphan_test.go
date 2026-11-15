@@ -27,7 +27,7 @@ func TestOrphanedStock(t *testing.T) {
 	// Create Container
 	container, err := q.CreateContainer(ctx, db.CreateContainerParams{
 		Name:         "TestContainer",
-		ControllerID: ctrl.ID,
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
 		SegmentID:    0,
 	})
 	if err != nil {

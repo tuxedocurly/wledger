@@ -2,54 +2,74 @@
 SELECT * FROM parts WHERE id = ?;
 
 -- name: ListParts :many
-SELECT p.*, 
-    CAST(COALESCE(SUM(pa.quantity), 0) AS INTEGER) as total_stock,
-    CAST(COALESCE(SUM(CASE WHEN pa.bin_id IS NOT NULL THEN pa.quantity ELSE 0 END), 0) AS INTEGER) as valid_stock,
-    CAST(COALESCE(SUM(CASE WHEN pa.bin_id IS NULL THEN pa.quantity ELSE 0 END), 0) AS INTEGER) as orphaned_stock,
-    (SELECT pa2.bin_id 
-     FROM part_assignments pa2 
-     WHERE pa2.part_id = p.id AND pa2.quantity > 0 
-     ORDER BY pa2.quantity DESC, pa2.id ASC 
-     LIMIT 1) as locate_bin_id,
-    COALESCE((SELECT c2.id 
-     FROM part_assignments pa2 
-     JOIN bins b2 ON pa2.bin_id = b2.id
-     JOIN containers cont2 ON b2.container_id = cont2.id
-     JOIN controllers c2 ON cont2.controller_id = c2.id
-     WHERE pa2.part_id = p.id AND pa2.quantity > 0 
-     ORDER BY pa2.quantity DESC, pa2.id ASC 
-     LIMIT 1), 0) as locate_controller_id
+WITH stock_totals AS (
+    SELECT
+        part_id,
+        SUM(quantity) AS total_stock,
+        SUM(CASE WHEN bin_id IS NOT NULL THEN quantity ELSE 0 END) AS valid_stock,
+        SUM(CASE WHEN bin_id IS NULL THEN quantity ELSE 0 END) AS orphaned_stock
+    FROM part_assignments
+    GROUP BY part_id
+)
+SELECT p.*,
+    CAST(COALESCE(st.total_stock, 0) AS INTEGER) AS total_stock,
+    CAST(COALESCE(st.valid_stock, 0) AS INTEGER) AS valid_stock,
+    CAST(COALESCE(st.orphaned_stock, 0) AS INTEGER) AS orphaned_stock
 FROM parts p
-LEFT JOIN part_assignments pa ON p.id = pa.part_id
-WHERE (sqlc.narg('bin_id') IS NULL OR pa.bin_id = sqlc.narg('bin_id'))
-GROUP BY p.id
+LEFT JOIN stock_totals st ON p.id = st.part_id
+WHERE (
+    sqlc.narg('bin_id') IS NULL
+    OR EXISTS (
+        SELECT 1 FROM part_assignments pa
+        WHERE pa.part_id = p.id AND pa.bin_id = sqlc.narg('bin_id')
+    )
+)
+AND (
+    sqlc.narg('controller_id') IS NULL
+    OR EXISTS (
+        SELECT 1 FROM part_assignments pa
+        JOIN bins b ON pa.bin_id = b.id
+        JOIN containers cont ON b.container_id = cont.id
+        WHERE pa.part_id = p.id AND cont.controller_id = sqlc.narg('controller_id')
+    )
+)
 ORDER BY p.name
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: SearchParts :many
-SELECT p.*, 
-    CAST(COALESCE(SUM(pa.quantity), 0) AS INTEGER) as total_stock,
-    CAST(COALESCE(SUM(CASE WHEN pa.bin_id IS NOT NULL THEN pa.quantity ELSE 0 END), 0) AS INTEGER) as valid_stock,
-    CAST(COALESCE(SUM(CASE WHEN pa.bin_id IS NULL THEN pa.quantity ELSE 0 END), 0) AS INTEGER) as orphaned_stock,
-    (SELECT pa2.bin_id 
-     FROM part_assignments pa2 
-     WHERE pa2.part_id = p.id AND pa2.quantity > 0 
-     ORDER BY pa2.quantity DESC, pa2.id ASC 
-     LIMIT 1) as locate_bin_id,
-    COALESCE((SELECT c2.id 
-     FROM part_assignments pa2 
-     JOIN bins b2 ON pa2.bin_id = b2.id
-     JOIN containers cont2 ON b2.container_id = cont2.id
-     JOIN controllers c2 ON cont2.controller_id = c2.id
-     WHERE pa2.part_id = p.id AND pa2.quantity > 0 
-     ORDER BY pa2.quantity DESC, pa2.id ASC 
-     LIMIT 1), 0) as locate_controller_id
+WITH stock_totals AS (
+    SELECT
+        part_id,
+        SUM(quantity) AS total_stock,
+        SUM(CASE WHEN bin_id IS NOT NULL THEN quantity ELSE 0 END) AS valid_stock,
+        SUM(CASE WHEN bin_id IS NULL THEN quantity ELSE 0 END) AS orphaned_stock
+    FROM part_assignments
+    GROUP BY part_id
+)
+SELECT p.*,
+    CAST(COALESCE(st.total_stock, 0) AS INTEGER) AS total_stock,
+    CAST(COALESCE(st.valid_stock, 0) AS INTEGER) AS valid_stock,
+    CAST(COALESCE(st.orphaned_stock, 0) AS INTEGER) AS orphaned_stock
 FROM parts_fts fts
 JOIN parts p ON fts.rowid = p.id
-LEFT JOIN part_assignments pa ON p.id = pa.part_id
+LEFT JOIN stock_totals st ON p.id = st.part_id
 WHERE parts_fts MATCH sqlc.arg('query')
-  AND (sqlc.narg('bin_id') IS NULL OR pa.bin_id = sqlc.narg('bin_id'))
-GROUP BY p.id, fts.rank
+  AND (
+      sqlc.narg('bin_id') IS NULL
+      OR EXISTS (
+          SELECT 1 FROM part_assignments pa
+          WHERE pa.part_id = p.id AND pa.bin_id = sqlc.narg('bin_id')
+      )
+  )
+  AND (
+      sqlc.narg('controller_id') IS NULL
+      OR EXISTS (
+          SELECT 1 FROM part_assignments pa
+          JOIN bins b ON pa.bin_id = b.id
+          JOIN containers cont ON b.container_id = cont.id
+          WHERE pa.part_id = p.id AND cont.controller_id = sqlc.narg('controller_id')
+      )
+  )
 ORDER BY fts.rank
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
@@ -182,6 +202,9 @@ WHERE id = ?;
 
 -- name: UpdatePartAssignmentQuantity :exec
 UPDATE part_assignments SET quantity = ? WHERE part_id = ? AND bin_id = ?;
+
+-- name: UpdatePartAssignmentQuantityByID :exec
+UPDATE part_assignments SET quantity = ? WHERE id = ?;
 
 -- name: DeletePartAssignment :exec
 DELETE FROM part_assignments WHERE part_id = ? AND bin_id = ?;

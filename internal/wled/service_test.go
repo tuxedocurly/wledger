@@ -64,7 +64,7 @@ func TestService_Locate(t *testing.T) {
 
 		cont, err := store.CreateContainer(ctx, db.CreateContainerParams{
 			Name:         "Cont",
-			ControllerID: c.ID,
+			ControllerID: sql.NullInt64{Int64: c.ID, Valid: true},
 			SegmentID:    0,
 		})
 		if err != nil {

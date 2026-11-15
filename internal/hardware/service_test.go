@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/tuxedocurly/wledger/internal/db"
 	"github.com/tuxedocurly/wledger/internal/wled"
 )
@@ -63,14 +62,14 @@ func TestService_DeleteController(t *testing.T) {
 	// Create Container
 	cont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
 		Name:         "Default",
-		ControllerID: c.ID,
+		ControllerID: sql.NullInt64{Int64: c.ID, Valid: true},
 		SegmentID:    0,
 	})
 
 	// Add a bin
 	store.CreateBin(ctx, db.CreateBinParams{
-		Name:         "Bin 1",
-		ContainerID:  cont,
+		Name:        "Bin 1",
+		ContainerID: cont,
 	})
 
 	err := s.DeleteController(ctx, c.ID)
@@ -78,10 +77,18 @@ func TestService_DeleteController(t *testing.T) {
 		t.Errorf("failed to delete: %v", err)
 	}
 
-	// Verify cascade
+	// Verify container is orphaned and bin is preserved (v2 ON DELETE SET NULL)
+	contRow, err := store.GetContainer(ctx, cont)
+	if err != nil {
+		t.Fatalf("expected container to remain orphaned: %v", err)
+	}
+	if contRow.ControllerID.Valid {
+		t.Errorf("expected container controller_id to be NULL, got %d", contRow.ControllerID.Int64)
+	}
+
 	var count int
 	dbConn.QueryRow("SELECT count(*) FROM bins").Scan(&count)
-	if count != 0 {
-		t.Errorf("expected 0 bins, got %d", count)
+	if count != 1 {
+		t.Errorf("expected 1 preserved bin, got %d", count)
 	}
 }

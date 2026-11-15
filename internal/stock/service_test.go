@@ -47,9 +47,9 @@ func TestService(t *testing.T) {
 	ctrl, _ := s.CreateController(ctx, db.CreateControllerParams{Name: "Ctrl1", IpAddress: "1.2.3.4"})
 	
 	cont, _ := s.CreateContainer(ctx, db.CreateContainerParams{
-		Name: "Container1",
-		ControllerID: ctrl.ID,
-		SegmentID: 0,
+		Name:         "Container1",
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
+		SegmentID:    0,
 	})
 
 	bin1ID, _ := s.CreateBin(ctx, db.CreateBinParams{Name: "A1", ContainerID: cont, LedIndex: sql.NullInt64{Int64: 0, Valid: true}})
@@ -161,7 +161,7 @@ func TestMoveStock_SameBin(t *testing.T) {
 	// Setup
 	s.CreateUser(context.Background(), db.CreateUserParams{Email: "admin@test.com", Role: "admin"})
 	ctrl, _ := s.CreateController(ctx, db.CreateControllerParams{Name: "Ctrl1", IpAddress: "1.2.3.4"})
-	cont, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "Container1", ControllerID: ctrl.ID})
+	cont, _ := s.CreateContainer(ctx, db.CreateContainerParams{Name: "Container1", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}})
 	bin1ID, _ := s.CreateBin(ctx, db.CreateBinParams{Name: "A1", ContainerID: cont})
 	
 	partID, _ := s.CreatePart(ctx, db.CreatePartParams{Name: "Stock Part"})
