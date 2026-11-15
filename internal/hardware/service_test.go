@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/hardware/mapper"
 	"github.com/tuxedocurly/wledger/internal/wled"
 )
 
@@ -428,4 +429,117 @@ func TestService_StandaloneContainerCRUDAndBind(t *testing.T) {
 func jsonInt(v int64) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+func TestService_SaveGrid_XYContainer(t *testing.T) {
+	svc, store, _ := setupIsolatedTest(t, "hw_xy_save", nil)
+	ctx := context.Background()
+
+	ctrl, err := store.CreateController(ctx, db.CreateControllerParams{
+		Name:      "XY-Ctrl",
+		IpAddress: "10.0.0.88",
+	})
+	if err != nil {
+		t.Fatalf("CreateController failed: %v", err)
+	}
+
+	// Start with a standard grid container holding a bin and a part assignment.
+	cfgGrid, _ := json.Marshal([]map[string]any{
+		{"id": nil, "name": "Wall", "segment_id": 0, "config": map[string]any{"type": "grid", "rows": 4, "cols": 6}},
+	})
+	binsGrid := `[{"container_index":0,"x":2,"y":1,"led_index":8,"width":2,"name":"C2"}]`
+	if _, err := svc.SaveGrid(ctx, ctrl.ID, binsGrid, string(cfgGrid)); err != nil {
+		t.Fatalf("initial grid SaveGrid failed: %v", err)
+	}
+
+	conts, _ := svc.GetContainers(ctx, ctrl.ID)
+	if len(conts) != 1 {
+		t.Fatalf("expected 1 container, got %d", len(conts))
+	}
+	contID := conts[0].ID
+
+	gridBins, _ := svc.GetBinsByContainer(ctx, contID)
+	if len(gridBins) != 1 {
+		t.Fatalf("expected 1 bin, got %d", len(gridBins))
+	}
+	origBinID := gridBins[0].ID
+
+	partID, err := store.CreatePart(ctx, db.CreatePartParams{Name: "10k Resistor"})
+	if err != nil {
+		t.Fatalf("CreatePart failed: %v", err)
+	}
+	if err := store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{
+		PartID:   partID,
+		BinID:    sql.NullInt64{Int64: origBinID, Valid: true},
+		Quantity: 25,
+	}); err != nil {
+		t.Fatalf("CreatePartAssignment failed: %v", err)
+	}
+
+	// Convert container to "xy" with explicit starts and y_reverse=true.
+	cfgXY, _ := json.Marshal([]map[string]any{
+		{
+			"id":         contID,
+			"name":       "XY Wall",
+			"segment_id": 0,
+			"config": map[string]any{
+				"type":        "xy",
+				"rows":        4,
+				"cols":        6,
+				"x_start_led": 0,
+				"x_reverse":   false,
+				"y_start_led": 6,
+				"y_reverse":   true,
+			},
+		},
+	})
+	binsXY := `[{"container_index":0,"x":2,"y":1,"led_index":8,"width":2,"name":"C2"},{"container_index":0,"x":5,"y":3,"led_index":null,"width":1,"name":"F4"}]`
+	totalLEDs, err := svc.SaveGrid(ctx, ctrl.ID, binsXY, string(cfgXY))
+	if err != nil {
+		t.Fatalf("xy SaveGrid failed: %v", err)
+	}
+	if totalLEDs != 10 {
+		t.Errorf("expected totalLEDs = 10 (6 cols + 4 rows), got %d", totalLEDs)
+	}
+
+	// Verify config_json round-tripped XY settings.
+	updatedCont, err := store.GetContainer(ctx, contID)
+	if err != nil {
+		t.Fatalf("GetContainer failed: %v", err)
+	}
+	var parsedCfg mapper.ContainerConfig
+	if err := json.Unmarshal([]byte(updatedCont.ConfigJson.String), &parsedCfg); err != nil {
+		t.Fatalf("unmarshal config_json failed: %v", err)
+	}
+	if parsedCfg.Type != "xy" || parsedCfg.Rows != 4 || parsedCfg.Cols != 6 ||
+		parsedCfg.XStartLed == nil || *parsedCfg.XStartLed != 0 || parsedCfg.XReverse ||
+		parsedCfg.YStartLed == nil || *parsedCfg.YStartLed != 6 || !parsedCfg.YReverse {
+		t.Errorf("unexpected persisted XY config: %+v (raw=%s)", parsedCfg, updatedCont.ConfigJson.String)
+	}
+
+	// Verify bins have NULL led_index, preserve origBinID and assignment.
+	savedBins, _ := svc.GetBinsByContainer(ctx, contID)
+	if len(savedBins) != 2 {
+		t.Fatalf("expected 2 saved bins, got %d", len(savedBins))
+	}
+	foundOrig := false
+	for _, b := range savedBins {
+		if b.LedIndex.Valid {
+			t.Errorf("expected XY bin %s led_index to be NULL, got %d", b.Name, b.LedIndex.Int64)
+		}
+		if b.Width.Int64 != 1 {
+			t.Errorf("expected XY bin %s width 1, got %d", b.Name, b.Width.Int64)
+		}
+		if b.ID == origBinID && b.GridX.Int64 == 2 && b.GridY.Int64 == 1 {
+			foundOrig = true
+		}
+	}
+	if !foundOrig {
+		t.Errorf("expected original bin ID %d at (2,1) to be preserved on conversion to XY", origBinID)
+	}
+
+	assigns, err := store.GetPartAssignments(ctx, partID)
+	if err != nil || len(assigns) != 1 || !assigns[0].BinID.Valid || assigns[0].BinID.Int64 != origBinID || assigns[0].Quantity != 25 {
+		t.Errorf("expected stock assignment preserved after XY conversion, got %+v (err=%v)", assigns, err)
+	}
 }

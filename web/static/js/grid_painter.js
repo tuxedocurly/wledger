@@ -63,7 +63,12 @@ document.addEventListener('alpine:init', () => {
                 cols: 8,
                 total: 64,
                 start_corner: 'tl',
-                sections: [{ rows: 4, cols: 4 }]
+                sections: [{ rows: 4, cols: 4 }],
+                x_start_led: 0,
+                x_reverse: false,
+                y_start_led: 8,
+                y_reverse: false,
+                y_auto: true
             };
 
             if (!jsonStr || typeof jsonStr !== 'string') {
@@ -75,15 +80,30 @@ document.addEventListener('alpine:init', () => {
                 if (!cfg || typeof cfg !== 'object') {
                     return defaultConfig;
                 }
+                const rows = Math.max(1, Number(cfg.rows) || 8);
+                const cols = Math.max(1, Number(cfg.cols) || 8);
+                const xStart = (cfg.x_start_led !== undefined && cfg.x_start_led !== null && !Number.isNaN(Number(cfg.x_start_led)))
+                    ? Math.max(0, Number(cfg.x_start_led))
+                    : 0;
+                const defaultYStart = xStart + cols;
+                const yStart = (cfg.y_start_led !== undefined && cfg.y_start_led !== null && !Number.isNaN(Number(cfg.y_start_led)))
+                    ? Math.max(0, Number(cfg.y_start_led))
+                    : defaultYStart;
+
                 return {
                     type: cfg.type || 'grid',
-                    rows: Math.max(1, Number(cfg.rows) || 8),
-                    cols: Math.max(1, Number(cfg.cols) || 8),
+                    rows: rows,
+                    cols: cols,
                     total: Math.max(1, Number(cfg.total) || 64),
                     start_corner: cfg.start_corner || 'tl',
                     sections: Array.isArray(cfg.sections) && cfg.sections.length > 0
                         ? cfg.sections.map(s => ({ rows: Math.max(1, Number(s.rows) || 4), cols: Math.max(1, Number(s.cols) || 4) }))
-                        : [{ rows: 4, cols: 4 }]
+                        : [{ rows: 4, cols: 4 }],
+                    x_start_led: xStart,
+                    x_reverse: Boolean(cfg.x_reverse),
+                    y_start_led: yStart,
+                    y_reverse: Boolean(cfg.y_reverse),
+                    y_auto: yStart === defaultYStart
                 };
             } catch (e) {
                 console.warn('Error parsing container config:', e);
@@ -123,10 +143,55 @@ document.addEventListener('alpine:init', () => {
                 id: null,
                 name: 'New Container ' + (this.containers.length + 1),
                 segment_id: 0,
-                config: { type: 'grid', rows: 8, cols: 8, total: 64, start_corner: 'tl', sections: [{ rows: 4, cols: 4 }] }
+                config: {
+                    type: 'grid',
+                    rows: 8,
+                    cols: 8,
+                    total: 64,
+                    start_corner: 'tl',
+                    sections: [{ rows: 4, cols: 4 }],
+                    x_start_led: 0,
+                    x_reverse: false,
+                    y_start_led: 8,
+                    y_reverse: false,
+                    y_auto: true
+                }
             });
             this.selectedContainerIndex = this.containers.length - 1;
             this.selectedCellKey = null;
+        },
+
+        onLayoutTypeChange() {
+            const c = this.currentContainer;
+            if (!c || !c.config || c.config.type !== 'xy') return;
+
+            c.config.rows = Math.max(1, Number(c.config.rows) || 1);
+            c.config.cols = Math.max(1, Number(c.config.cols) || 1);
+            if (this.selectedContainerIndex > 0 && Number(c.config.x_start_led) === 0 && c.config.y_auto) {
+                const offset = this.getSegmentStartOffset(this.selectedContainerIndex);
+                c.config.x_start_led = offset;
+                c.config.y_start_led = offset + c.config.cols;
+            } else {
+                this.onXYDimensionsChange();
+            }
+
+            Object.keys(this.cells).forEach(key => {
+                const parsed = this.parseCellKey(key);
+                if (!parsed || parsed.cIdx !== this.selectedContainerIndex) return;
+                this.cells[key] = {
+                    led_index: null,
+                    width: 1,
+                    name: this.cells[key].name
+                };
+            });
+        },
+
+        onXYDimensionsChange() {
+            const c = this.currentContainer;
+            if (!c || !c.config || c.config.type !== 'xy' || !c.config.y_auto) return;
+            const xStart = Math.max(0, Number(c.config.x_start_led) || 0);
+            const cols = Math.max(1, Number(c.config.cols) || 1);
+            c.config.y_start_led = xStart + cols;
         },
 
         removeContainer(idx) {
@@ -161,11 +226,24 @@ document.addEventListener('alpine:init', () => {
         getRenderSections(cIdx) {
             const cfg = this.containers[cIdx].config;
             if (cfg.type === 'linear') return [{ rows: 1, cols: Math.max(1, Number(cfg.total) || 1) }];
-            if (cfg.type === 'grid') return [{ rows: Math.max(1, Number(cfg.rows) || 1), cols: Math.max(1, Number(cfg.cols) || 1) }];
+            if (cfg.type === 'grid' || cfg.type === 'xy') return [{ rows: Math.max(1, Number(cfg.rows) || 1), cols: Math.max(1, Number(cfg.cols) || 1) }];
             return (cfg.sections || []).map(s => ({
                 rows: Math.max(1, Number(s.rows) || 1),
                 cols: Math.max(1, Number(s.cols) || 1)
             }));
+        },
+
+        getXYPair(cIdx, x, y) {
+            const cfg = this.containers[cIdx].config;
+            const cols = Math.max(1, Number(cfg.cols) || 1);
+            const rows = Math.max(1, Number(cfg.rows) || 1);
+            const xStart = Math.max(0, Number(cfg.x_start_led) || 0);
+            const yStart = (cfg.y_start_led !== undefined && cfg.y_start_led !== null && !Number.isNaN(Number(cfg.y_start_led)))
+                ? Math.max(0, Number(cfg.y_start_led))
+                : (xStart + cols);
+            const xLed = xStart + (cfg.x_reverse ? (cols - 1 - x) : x);
+            const yLed = yStart + (cfg.y_reverse ? (rows - 1 - y) : y);
+            return { xLed, yLed };
         },
 
         cellXY(secCols, oneBasedIdx) {
@@ -191,6 +269,10 @@ document.addEventListener('alpine:init', () => {
             const key = this.cellKey(cIdx, secIdx, x, y);
             const cell = this.cells[key];
             if (!cell) return '';
+            if (this.containers[cIdx].config.type === 'xy' && !this.isStandalone) {
+                const pair = this.getXYPair(cIdx, x, y);
+                return `X${pair.xLed}·Y${pair.yLed}`;
+            }
             if (cell.led_index === null || cell.led_index === undefined) return 'BIN';
             return cell.led_index;
         },
@@ -203,6 +285,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         getContainerTotalLeds(cIdx) {
+            const cfg = this.containers[cIdx].config;
+            if (cfg.type === 'xy') {
+                return Math.max(1, Number(cfg.cols) || 1) + Math.max(1, Number(cfg.rows) || 1);
+            }
             const sections = this.getRenderSections(cIdx);
             let mappedMax = 0;
             let totalWidth = 0;
@@ -245,8 +331,9 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const width = Math.max(1, Number(this.defaultBinWidth) || 1);
-            const nextIndex = this.isStandalone ? null : this.getNextAvailableLedIndex(cIdx, width);
+            const isXY = this.containers[cIdx].config.type === 'xy';
+            const width = isXY ? 1 : Math.max(1, Number(this.defaultBinWidth) || 1);
+            const nextIndex = (this.isStandalone || isXY) ? null : this.getNextAvailableLedIndex(cIdx, width);
             const name = this.generateName(cIdx, secIdx, x, y);
             this.cells[key] = {
                 led_index: nextIndex,
@@ -287,6 +374,24 @@ document.addEventListener('alpine:init', () => {
                 const w = Math.max(1, Number(cell.width) || 1);
                 for (let offset = 0; offset < w; offset++) {
                     used.add(start + offset);
+                }
+            });
+
+            this.containers.forEach(container => {
+                if (!container || container.segment_id !== targetSegment || !container.config || container.config.type !== 'xy') {
+                    return;
+                }
+                const cols = Math.max(1, Number(container.config.cols) || 1);
+                const rows = Math.max(1, Number(container.config.rows) || 1);
+                const xStart = Math.max(0, Number(container.config.x_start_led) || 0);
+                const yStart = (container.config.y_start_led !== undefined && container.config.y_start_led !== null && !Number.isNaN(Number(container.config.y_start_led)))
+                    ? Math.max(0, Number(container.config.y_start_led))
+                    : (xStart + cols);
+                for (let offset = 0; offset < cols; offset++) {
+                    used.add(xStart + offset);
+                }
+                for (let offset = 0; offset < rows; offset++) {
+                    used.add(yStart + offset);
                 }
             });
 
@@ -345,6 +450,24 @@ document.addEventListener('alpine:init', () => {
             const cfg = this.containers[cIdx].config;
 
             this.clearContainerCells(cIdx);
+
+            if (mode === 'xy' || cfg.type === 'xy') {
+                const sections = this.getRenderSections(cIdx);
+                sections.forEach((sec, secIdx) => {
+                    for (let y = 0; y < sec.rows; y++) {
+                        for (let x = 0; x < sec.cols; x++) {
+                            const key = this.cellKey(cIdx, secIdx, x, y);
+                            this.cells[key] = {
+                                led_index: null,
+                                width: 1,
+                                name: this.generateName(cIdx, secIdx, x, y)
+                            };
+                        }
+                    }
+                });
+                this.selectedCellKey = null;
+                return;
+            }
 
             const binWidth = Math.max(1, Number(this.defaultBinWidth) || 1);
             let ledCounter = this.getSegmentStartOffset(cIdx);
@@ -423,8 +546,9 @@ document.addEventListener('alpine:init', () => {
                             const cell = this.cells[key];
                             if (!cell) continue;
 
+                            const isXY = c.config.type === 'xy';
                             const rawLed = cell.led_index;
-                            const ledIndex = (rawLed === null || rawLed === undefined || rawLed === '')
+                            const ledIndex = (isXY || rawLed === null || rawLed === undefined || rawLed === '')
                                 ? null
                                 : Math.max(0, Number(rawLed));
 
@@ -433,7 +557,7 @@ document.addEventListener('alpine:init', () => {
                                 x: x,
                                 y: y + globalYOffset,
                                 led_index: ledIndex,
-                                width: Math.max(1, Number(cell.width) || 1),
+                                width: isXY ? 1 : Math.max(1, Number(cell.width) || 1),
                                 name: cell.name
                             });
                         }
@@ -445,22 +569,37 @@ document.addEventListener('alpine:init', () => {
         },
 
         exportContainerData() {
-            return this.containers.map(c => ({
-                id: c.id,
-                name: c.name,
-                segment_id: Number(c.segment_id) || 0,
-                config: {
+            return this.containers.map(c => {
+                const cols = Math.max(1, Number(c.config.cols) || 1);
+                const rows = Math.max(1, Number(c.config.rows) || 1);
+                const config = {
                     type: c.config.type || 'grid',
-                    rows: Math.max(1, Number(c.config.rows) || 1),
-                    cols: Math.max(1, Number(c.config.cols) || 1),
+                    rows: rows,
+                    cols: cols,
                     total: Math.max(1, Number(c.config.total) || 1),
                     start_corner: c.config.start_corner || 'tl',
                     sections: (c.config.sections || []).map(s => ({
                         rows: Math.max(1, Number(s.rows) || 1),
                         cols: Math.max(1, Number(s.cols) || 1)
                     }))
+                };
+                if (config.type === 'xy') {
+                    const xStart = Math.max(0, Number(c.config.x_start_led) || 0);
+                    const yStart = (c.config.y_start_led !== undefined && c.config.y_start_led !== null && !Number.isNaN(Number(c.config.y_start_led)))
+                        ? Math.max(0, Number(c.config.y_start_led))
+                        : (xStart + cols);
+                    config.x_start_led = xStart;
+                    config.x_reverse = Boolean(c.config.x_reverse);
+                    config.y_start_led = yStart;
+                    config.y_reverse = Boolean(c.config.y_reverse);
                 }
-            }));
+                return {
+                    id: c.id,
+                    name: c.name,
+                    segment_id: Number(c.segment_id) || 0,
+                    config: config
+                };
+            });
         }
     }));
 });

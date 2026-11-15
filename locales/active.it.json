@@ -854,6 +854,9 @@
   "Compound": {
     "other": "Composto"
   },
+  "XYCrosshair": {
+    "other": "Mirino X/Y (2 Strisce)"
+  },
   "DataStartPosition": {
     "other": "Posizione Inizio Dati"
   },

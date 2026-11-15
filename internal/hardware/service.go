@@ -653,10 +653,16 @@ func (s *service) SaveGrid(ctx context.Context, controllerID int64, gridDataJSON
 			}
 		}
 
-		for i := range inputContainers {
-			containerLEDMax, err := syncContainerBins(ctx, q, containerIDMap[i], binsForContainer(inputBins, i))
+		for i, c := range inputContainers {
+			isXY := c.Config.Type == "xy"
+			containerLEDMax, err := syncContainerBins(ctx, q, containerIDMap[i], sanitizeContainerBins(binsForContainer(inputBins, i), isXY))
 			if err != nil {
 				return err
+			}
+			if isXY {
+				if extent := mapper.ContainerMaxLEDExtent(c.Config); extent > containerLEDMax {
+					containerLEDMax = extent
+				}
 			}
 			if containerLEDMax > totalLedCount {
 				totalLedCount = containerLEDMax
@@ -713,7 +719,7 @@ func (s *service) SaveStandaloneGrid(ctx context.Context, containerID int64, gri
 			return fmt.Errorf("failed to update standalone container %d: %w", containerID, err)
 		}
 
-		maxLED, err := syncContainerBins(ctx, q, containerID, binsForContainer(inputBins, 0))
+		maxLED, err := syncContainerBins(ctx, q, containerID, sanitizeContainerBins(binsForContainer(inputBins, 0), c.Config.Type == "xy"))
 		if err != nil {
 			return err
 		}
@@ -749,6 +755,19 @@ func binsForContainer(inputBins []binInJSON, containerIdx int) []binInJSON {
 		if b.ContainerIndex == containerIdx {
 			out = append(out, b)
 		}
+	}
+	return out
+}
+
+func sanitizeContainerBins(bins []binInJSON, isXY bool) []binInJSON {
+	if !isXY {
+		return bins
+	}
+	out := make([]binInJSON, len(bins))
+	for i, b := range bins {
+		b.LedIndex = nil
+		b.Width = 1
+		out[i] = b
 	}
 	return out
 }

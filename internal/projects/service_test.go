@@ -711,3 +711,90 @@ func sumPartStock(t *testing.T, ctx context.Context, store db.Store, partID int6
 	}
 	return sum
 }
+
+func TestLocateProjectBOM_XYAndGridContainers(t *testing.T) {
+	_, store, ctx := setupProjectsTestDB(t)
+
+	var mu sync.Mutex
+	var payloads []map[string]any
+	httpClient := &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]any
+			_ = json.Unmarshal(body, &payload)
+			mu.Lock()
+			payloads = append(payloads, payload)
+			mu.Unlock()
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(`{"on":true}`)),
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+
+	wClient := wled.NewClientWithHTTPClient(httpClient)
+	svc := NewService(store, &mockWLEDService{}, discardLogger(), WithWLEDClient(wClient))
+
+	ctrl, _ := store.CreateController(ctx, db.CreateControllerParams{
+		Name: "MixedWall", IpAddress: "10.0.0.42", Port: sql.NullInt64{Int64: 80, Valid: true},
+	})
+	xyCont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name: "XY Drawer", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}, SegmentID: 0,
+		ConfigJson: sql.NullString{String: `{"type":"xy","rows":4,"cols":6,"x_start_led":0,"y_start_led":6}`, Valid: true},
+	})
+	gridCont, _ := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name: "Grid Tray", ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true}, SegmentID: 0,
+		ConfigJson: sql.NullString{String: `{"type":"grid","rows":2,"cols":4}`, Valid: true},
+	})
+
+	xyBin, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name: "XY-D3", ContainerID: xyCont,
+		LedIndex: sql.NullInt64{Valid: false},
+		Width:    sql.NullInt64{Int64: 1, Valid: true},
+		GridX:    sql.NullInt64{Int64: 3, Valid: true}, // X = 3
+		GridY:    sql.NullInt64{Int64: 2, Valid: true}, // Y = 6 + 2 = 8
+	})
+	gridBin, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name: "G-A1", ContainerID: gridCont,
+		LedIndex: sql.NullInt64{Int64: 12, Valid: true},
+		Width:    sql.NullInt64{Int64: 2, Valid: true},
+		GridX:    sql.NullInt64{Int64: 0, Valid: true},
+		GridY:    sql.NullInt64{Int64: 0, Valid: true},
+	})
+
+	xyPart, _ := store.CreatePart(ctx, db.CreatePartParams{Name: "XY Part"})
+	gridPart, _ := store.CreatePart(ctx, db.CreatePartParams{Name: "Grid Part"})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: xyPart, BinID: sql.NullInt64{Int64: xyBin, Valid: true}, Quantity: 5})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: gridPart, BinID: sql.NullInt64{Int64: gridBin, Valid: true}, Quantity: 5})
+
+	proj, _ := svc.CreateProject(ctx, CreateProjectRequest{Name: "Mixed BOM"})
+	_, _ = svc.AddBOMItem(ctx, AddBOMItemRequest{ProjectID: proj.ID, PartID: &xyPart, Designator: "U1", QuantityPerBoard: 1})
+	_, _ = svc.AddBOMItem(ctx, AddBOMItemRequest{ProjectID: proj.ID, PartID: &gridPart, Designator: "R1", QuantityPerBoard: 1})
+
+	detail, err := svc.GetProjectDetail(ctx, proj.ID, 1)
+	if err != nil {
+		t.Fatalf("GetProjectDetail failed: %v", err)
+	}
+	if detail.LocatableBinCount != 2 {
+		t.Fatalf("expected LocatableBinCount=2 (1 XY + 1 Grid), got %d", detail.LocatableBinCount)
+	}
+	for _, it := range detail.Items {
+		if len(it.Locations) != 1 || !it.Locations[0].HasLED {
+			t.Errorf("expected HasLED=true for BOM item %s location, got %+v", it.Designator, it.Locations)
+		}
+	}
+
+	if err := svc.LocateBOM(ctx, proj.ID); err != nil {
+		t.Fatalf("LocateBOM failed: %v", err)
+	}
+	if len(payloads) != 1 {
+		t.Fatalf("expected 1 batched WLED request, got %d", len(payloads))
+	}
+	seg0 := payloads[0]["seg"].([]any)[0].(map[string]any)
+	rawBytes, _ := json.Marshal(seg0["i"])
+	iStr := string(rawBytes)
+	if !strings.Contains(iStr, "3,4,[") || !strings.Contains(iStr, "8,9,[") || !strings.Contains(iStr, "12,14,[") {
+		t.Fatalf("expected XY indices 3 and 8 plus grid range [12,14) in batched payload, got %s", iStr)
+	}
+}

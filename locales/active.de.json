@@ -854,6 +854,9 @@
   "Compound": {
     "other": "Verbund"
   },
+  "XYCrosshair": {
+    "other": "X/Y-Fadenkreuz (2 Streifen)"
+  },
   "DataStartPosition": {
     "other": "Daten-Startposition"
   },

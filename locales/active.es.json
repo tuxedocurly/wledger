@@ -872,6 +872,9 @@
   "Compound": {
     "other": "Compuesto"
   },
+  "XYCrosshair": {
+    "other": "Cruceta X/Y (2 Tiras)"
+  },
   "DataStartPosition": {
     "other": "Posición de Inicio de Datos"
   },

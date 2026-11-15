@@ -854,6 +854,9 @@
   "Compound": {
     "other": "复合"
   },
+  "XYCrosshair": {
+    "other": "X/Y 十字定位 (双灯带)"
+  },
   "DataStartPosition": {
     "other": "数据起始位置"
   },

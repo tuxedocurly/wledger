@@ -391,11 +391,14 @@ SELECT
     b.name as bin_name,
     b.led_index,
     b.width,
+    b.grid_x,
+    b.grid_y,
     c.name as controller_name,
     c.id as controller_id,
     c.ip_address as controller_ip,
     cont.name as container_name,
-    cont.id as container_id
+    cont.id as container_id,
+    cont.config_json as container_config
 FROM part_assignments pa
 LEFT JOIN bins b ON pa.bin_id = b.id
 LEFT JOIN containers cont ON b.container_id = cont.id
@@ -404,17 +407,20 @@ WHERE pa.part_id = ?
 `
 
 type GetPartAssignmentsRow struct {
-	ID             int64          `json:"id"`
-	Quantity       int64          `json:"quantity"`
-	BinID          sql.NullInt64  `json:"bin_id"`
-	BinName        sql.NullString `json:"bin_name"`
-	LedIndex       sql.NullInt64  `json:"led_index"`
-	Width          sql.NullInt64  `json:"width"`
-	ControllerName sql.NullString `json:"controller_name"`
-	ControllerID   sql.NullInt64  `json:"controller_id"`
-	ControllerIp   sql.NullString `json:"controller_ip"`
-	ContainerName  sql.NullString `json:"container_name"`
-	ContainerID    sql.NullInt64  `json:"container_id"`
+	ID              int64          `json:"id"`
+	Quantity        int64          `json:"quantity"`
+	BinID           sql.NullInt64  `json:"bin_id"`
+	BinName         sql.NullString `json:"bin_name"`
+	LedIndex        sql.NullInt64  `json:"led_index"`
+	Width           sql.NullInt64  `json:"width"`
+	GridX           sql.NullInt64  `json:"grid_x"`
+	GridY           sql.NullInt64  `json:"grid_y"`
+	ControllerName  sql.NullString `json:"controller_name"`
+	ControllerID    sql.NullInt64  `json:"controller_id"`
+	ControllerIp    sql.NullString `json:"controller_ip"`
+	ContainerName   sql.NullString `json:"container_name"`
+	ContainerID     sql.NullInt64  `json:"container_id"`
+	ContainerConfig sql.NullString `json:"container_config"`
 }
 
 func (q *Queries) GetPartAssignments(ctx context.Context, partID int64) ([]GetPartAssignmentsRow, error) {
@@ -433,11 +439,14 @@ func (q *Queries) GetPartAssignments(ctx context.Context, partID int64) ([]GetPa
 			&i.BinName,
 			&i.LedIndex,
 			&i.Width,
+			&i.GridX,
+			&i.GridY,
 			&i.ControllerName,
 			&i.ControllerID,
 			&i.ControllerIp,
 			&i.ContainerName,
 			&i.ContainerID,
+			&i.ContainerConfig,
 		); err != nil {
 			return nil, err
 		}

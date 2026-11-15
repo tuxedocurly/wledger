@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/hardware/mapper"
 	"github.com/tuxedocurly/wledger/internal/parts"
 	"github.com/tuxedocurly/wledger/internal/stock"
 	"github.com/tuxedocurly/wledger/web/pages"
@@ -1154,8 +1155,18 @@ func (h *apiHandler) resolveFirstControllerBin(ctx context.Context, controllerID
 	if len(bins) == 0 {
 		return 0, errors.New("controller has no configured bins to locate")
 	}
+
+	xyContainers := make(map[int64]bool)
+	if containers, cErr := h.loadContainers(ctx); cErr == nil {
+		for _, cont := range containers {
+			if cont.ControllerID.Valid && cont.ControllerID.Int64 == controllerID && mapper.IsXYConfig(cont.ConfigJson) {
+				xyContainers[cont.ID] = true
+			}
+		}
+	}
+
 	for _, b := range bins {
-		if b.LedIndex.Valid {
+		if b.LedIndex.Valid || (xyContainers[b.ContainerID] && b.GridX.Valid && b.GridY.Valid) {
 			return b.ID, nil
 		}
 	}

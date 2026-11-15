@@ -566,3 +566,199 @@ func TestService_LocateMarksOfflineControllerOnline(t *testing.T) {
 		t.Errorf("expected fire-and-forget UDP LocateBin not to mark offline controller online")
 	}
 }
+
+func TestService_LocateXY_HTTPAndUDP(t *testing.T) {
+	rec := &recordedState{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/json/state" {
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]any
+			_ = json.Unmarshal(body, &payload)
+			rec.record(string(body), payload)
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer srv.Close()
+
+	store, _ := setupWLEDTestDB(t, "wled_locate_xy")
+	ctx := context.Background()
+
+	_ = store.UpdateColors(ctx, db.UpdateColorsParams{
+		ColorLocate:        sql.NullString{String: "#0000FF", Valid: true},
+		ColorStockOk:       sql.NullString{String: "#00FF00", Valid: true},
+		ColorStockLow:      sql.NullString{String: "#FFA500", Valid: true},
+		ColorStockCritical: sql.NullString{String: "#FF0000", Valid: true},
+	})
+
+	host, portStr, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+	portNum, _ := strconv.ParseInt(portStr, 10, 64)
+
+	ctrl, err := store.CreateController(ctx, db.CreateControllerParams{
+		Name:      "XY-HTTP",
+		IpAddress: host,
+		Port:      sql.NullInt64{Int64: portNum, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateController failed: %v", err)
+	}
+
+	contID, err := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "XY Wall",
+		ControllerID: sql.NullInt64{Int64: ctrl.ID, Valid: true},
+		SegmentID:    0,
+		ConfigJson:   sql.NullString{String: `{"type":"xy","rows":4,"cols":6}`, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateContainer failed: %v", err)
+	}
+
+	// Standalone XY container must not be located even when coords are set.
+	standaloneXY, _ := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name:       "Standalone XY",
+		SegmentID:  0,
+		ConfigJson: sql.NullString{String: `{"type":"xy","rows":4,"cols":6}`, Valid: true},
+	})
+
+	binLit, err := store.CreateBin(ctx, db.CreateBinParams{
+		Name:        "C4",
+		ContainerID: contID,
+		LedIndex:    sql.NullInt64{Valid: false},
+		Width:       sql.NullInt64{Int64: 1, Valid: true},
+		GridX:       sql.NullInt64{Int64: 2, Valid: true}, // X = 0 + 2 = 2
+		GridY:       sql.NullInt64{Int64: 3, Valid: true}, // Y = 6 + 3 = 9
+	})
+	if err != nil {
+		t.Fatalf("CreateBin lit failed: %v", err)
+	}
+	binZero, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name:        "A1",
+		ContainerID: contID,
+		LedIndex:    sql.NullInt64{Valid: false},
+		Width:       sql.NullInt64{Int64: 1, Valid: true},
+		GridX:       sql.NullInt64{Int64: 0, Valid: true},
+		GridY:       sql.NullInt64{Int64: 0, Valid: true},
+	})
+	binStandalone, _ := store.CreateBin(ctx, db.CreateBinParams{
+		Name:        "S1",
+		ContainerID: standaloneXY,
+		LedIndex:    sql.NullInt64{Valid: false},
+		Width:       sql.NullInt64{Int64: 1, Valid: true},
+		GridX:       sql.NullInt64{Int64: 1, Valid: true},
+		GridY:       sql.NullInt64{Int64: 1, Valid: true},
+	})
+
+	partID, _ := store.CreatePart(ctx, db.CreatePartParams{
+		Name:              "ESP32-S3",
+		ReorderLevel:      sql.NullInt64{Int64: 5, Valid: true},
+		MinStockThreshold: sql.NullInt64{Int64: 1, Valid: true},
+	})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Int64: binLit, Valid: true}, Quantity: 12})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Int64: binZero, Valid: true}, Quantity: 0})
+	_ = store.CreatePartAssignment(ctx, db.CreatePartAssignmentParams{PartID: partID, BinID: sql.NullInt64{Int64: binStandalone, Valid: true}, Quantity: 50})
+
+	svc := NewService(store, NewClient(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	// 1. LocateBin on XY container lights both X=2 and Y=9.
+	if err := svc.LocateBin(ctx, ctrl.ID, binLit); err != nil {
+		t.Fatalf("LocateBin XY failed: %v", err)
+	}
+	if len(rec.raws) != 1 {
+		t.Fatalf("expected 1 payload from LocateBin, got %d", len(rec.raws))
+	}
+	binPayload := rec.raws[0]
+	if !strings.Contains(binPayload, `,2,3,[0,0,255]`) || !strings.Contains(binPayload, `,9,10,[0,0,255]`) {
+		t.Errorf("expected XY LocateBin to light X=2 and Y=9 with [0,0,255], got %s", binPayload)
+	}
+
+	// 2. LocatePart on XY container with stock-health enabled uses OK color [0,255,0] and skips qty=0 & standalone.
+	_ = store.UpdateGeneralSettings(ctx, db.UpdateGeneralSettingsParams{
+		LocateColorByStock: sql.NullBool{Bool: true, Valid: true},
+	})
+	if err := svc.LocatePart(ctx, partID); err != nil {
+		t.Fatalf("LocatePart XY failed: %v", err)
+	}
+	if len(rec.raws) != 2 {
+		t.Fatalf("expected 2 payloads after LocatePart, got %d", len(rec.raws))
+	}
+	partPayload := rec.raws[1]
+	if !strings.Contains(partPayload, `,2,3,[0,255,0]`) || !strings.Contains(partPayload, `,9,10,[0,255,0]`) {
+		t.Errorf("expected XY LocatePart to light X=2 and Y=9 with stock-ok [0,255,0], got %s", partPayload)
+	}
+	if strings.Contains(partPayload, `,0,1,[0,255,0]`) || strings.Contains(partPayload, `,1,2,[0,255,0]`) || strings.Contains(partPayload, `,7,8,[0,255,0]`) {
+		t.Errorf("expected qty=0 and standalone XY bins to remain unlit, got %s", partPayload)
+	}
+
+	// 3. UDP DNRGB mode with custom offsets + reverse wiring on both axes.
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("ListenPacket failed: %v", err)
+	}
+	defer pc.Close()
+	udpAddr := pc.LocalAddr().(*net.UDPAddr)
+
+	ctrlUDP, err := store.CreateController(ctx, db.CreateControllerParams{
+		Name:      "XY-UDP",
+		IpAddress: "127.0.0.1",
+		Port:      sql.NullInt64{Int64: 80, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateController UDP failed: %v", err)
+	}
+	if err := store.UpdateController(ctx, db.UpdateControllerParams{
+		ID:        ctrlUDP.ID,
+		Name:      "XY-UDP",
+		IpAddress: "127.0.0.1",
+		Port:      sql.NullInt64{Int64: 80, Valid: true},
+		UseUdp:    sql.NullBool{Bool: true, Valid: true},
+		UdpPort:   sql.NullInt64{Int64: int64(udpAddr.Port), Valid: true},
+	}); err != nil {
+		t.Fatalf("UpdateController UDP failed: %v", err)
+	}
+
+	contUDP, err := store.CreateContainer(ctx, db.CreateContainerParams{
+		Name:         "Reversed XY",
+		ControllerID: sql.NullInt64{Int64: ctrlUDP.ID, Valid: true},
+		SegmentID:    0,
+		ConfigJson:   sql.NullString{String: `{"type":"xy","rows":4,"cols":6,"x_start_led":10,"x_reverse":true,"y_start_led":20,"y_reverse":true}`, Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("CreateContainer UDP failed: %v", err)
+	}
+	binUDP, err := store.CreateBin(ctx, db.CreateBinParams{
+		Name:        "B1",
+		ContainerID: contUDP,
+		LedIndex:    sql.NullInt64{Valid: false},
+		Width:       sql.NullInt64{Int64: 1, Valid: true},
+		GridX:       sql.NullInt64{Int64: 1, Valid: true}, // X = 10 + (6-1-1) = 14
+		GridY:       sql.NullInt64{Int64: 0, Valid: true}, // Y = 20 + (4-1-0) = 23
+	})
+	if err != nil {
+		t.Fatalf("CreateBin UDP failed: %v", err)
+	}
+
+	if err := svc.LocateBin(ctx, ctrlUDP.ID, binUDP); err != nil {
+		t.Fatalf("LocateBin UDP failed: %v", err)
+	}
+
+	_ = pc.SetReadDeadline(time.Now().Add(2 * time.Second))
+	buf := make([]byte, 1024)
+	n, _, err := pc.ReadFrom(buf)
+	if err != nil {
+		t.Fatalf("ReadFrom UDP failed: %v", err)
+	}
+	pkt := buf[:n]
+	if len(pkt) != 4+24*3 || pkt[0] != DNRGBProtocolID {
+		t.Fatalf("unexpected DNRGB packet len=%d header=%v (want len=76 proto=4)", len(pkt), pkt[:4])
+	}
+	for px := 0; px < 24; px++ {
+		off := 4 + px*3
+		gotRGB := [3]byte{pkt[off], pkt[off+1], pkt[off+2]}
+		wantRGB := [3]byte{0, 0, 0}
+		if px == 14 || px == 23 {
+			wantRGB = [3]byte{0, 0, 255}
+		}
+		if gotRGB != wantRGB {
+			t.Errorf("pixel %d RGB = %v, want %v", px, gotRGB, wantRGB)
+		}
+	}
+}

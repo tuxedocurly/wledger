@@ -854,6 +854,9 @@
   "Compound": {
     "other": "Составной"
   },
+  "XYCrosshair": {
+    "other": "X/Y перекрестие (2 ленты)"
+  },
   "DataStartPosition": {
     "other": "Начальная позиция данных"
   },
