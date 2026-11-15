@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -92,6 +93,26 @@ func TestSQLCStore(t *testing.T) {
 		}
 		if exists {
 			t.Fatal("expected expired session not to exist")
+		}
+	})
+
+	t.Run("CleanupExpired", func(t *testing.T) {
+		activeToken := "active_cleanup_token"
+		expiredToken := "expired_cleanup_token"
+		if err := sessionStore.Commit(activeToken, data, time.Now().Add(time.Hour)); err != nil {
+			t.Fatalf("commit active: %v", err)
+		}
+		if err := sessionStore.Commit(expiredToken, data, time.Now().Add(-time.Hour)); err != nil {
+			t.Fatalf("commit expired: %v", err)
+		}
+		if err := sessionStore.CleanupExpired(context.Background()); err != nil {
+			t.Fatalf("CleanupExpired failed: %v", err)
+		}
+		if _, exists, err := sessionStore.Find(activeToken); err != nil || !exists {
+			t.Fatalf("expected active token to remain, exists=%v err=%v", exists, err)
+		}
+		if _, exists, err := sessionStore.Find(expiredToken); err != nil || exists {
+			t.Fatalf("expected expired token to be deleted, exists=%v err=%v", exists, err)
 		}
 	})
 }

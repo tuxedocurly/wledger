@@ -109,6 +109,11 @@ func (h *Handler) HandleSetupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := auth.ValidatePassword(password); err != nil {
+		h.UIError.Respond(w, r, err, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Hash password
 	hash, err := auth.HashPassword(password)
 	if err != nil {
@@ -168,7 +173,12 @@ func (h *Handler) HandleForceResetPost(w http.ResponseWriter, r *http.Request) {
 
 	if newPw != confirmPw {
 		h.Logger.Warn("forced password reset failed: mismatch", "user_id", userID)
-		pages.ForceReset().Render(r.Context(), w)
+		h.UIError.Respond(w, r, nil, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	if err := auth.ValidatePassword(newPw); err != nil {
+		h.UIError.Respond(w, r, err, err.Error(), http.StatusBadRequest)
 		return
 	}
 

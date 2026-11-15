@@ -113,6 +113,8 @@ func createMultipartRequest(t *testing.T, uri, method string, fields map[string]
 			if err != nil {
 				t.Fatalf("failed to encode test image: %v", err)
 			}
+		} else if strings.HasSuffix(strings.ToLower(fileName), ".pdf") {
+			io.WriteString(part, "%PDF-1.4\ndummy content for "+fileName)
 		} else {
 			io.WriteString(part, "dummy content for "+fileName)
 		}
