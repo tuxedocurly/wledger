@@ -1,0 +1,110 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/tuxedocurly/wledger/internal/auth"
+	"github.com/tuxedocurly/wledger/internal/db"
+	"github.com/tuxedocurly/wledger/internal/i18n"
+	"github.com/tuxedocurly/wledger/web/components"
+	"github.com/tuxedocurly/wledger/web/icons"
+	"github.com/tuxedocurly/wledger/web/layouts"
+)
+
+func projectStatusBadgeClass(status string) string {
+	switch status {
+	case "active":
+		return "badge-primary"
+	case "completed":
+		return "badge-success"
+	case "archived":
+		return "badge-neutral"
+	default:
+		return "badge-ghost"
+	}
+}
+
+templ ProjectsList(user auth.User, projectList []db.ListProjectsRow) {
+	@layouts.Base("Projects", user) {
+		<div class="space-y-6">
+			@components.PageHeader(
+				"Projects & BOMs",
+				"Import PCB BOMs, check build shortages across N boards, light up bins in Pick Mode, and deduct stock atomically.",
+				[]components.Breadcrumb{
+					{Label: i18n.T(ctx, "Dashboard"), URL: "/"},
+					{Label: "Projects"},
+				},
+			) {
+				if user.CanWrite() {
+					<button
+						type="button"
+						class="btn btn-primary gap-2"
+						onclick="document.getElementById('create-project-modal').showModal()"
+					>
+						@icons.Plus(templ.Attributes{"class": "w-4 h-4"})
+						New Project
+					</button>
+				}
+			}
+
+			if len(projectList) == 0 {
+				@components.EmptyState(
+					"No projects yet",
+					"Create your first PCB build or hardware assembly project to import a BOM and light up part bins.",
+					"🧩",
+				)
+			} else {
+				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+					for _, proj := range projectList {
+						<div class="card bg-base-100 shadow-md border border-base-300 hover:border-primary/40 transition-colors">
+							<div class="card-body justify-between gap-4">
+								<div class="space-y-2">
+									<div class="flex items-start justify-between gap-2">
+										<a href={ templ.SafeURL(fmt.Sprintf("/projects/%d", proj.ID)) } class="card-title text-lg hover:text-primary transition-colors">
+											@icons.Microchip(templ.Attributes{"class": "w-5 h-5 text-primary shrink-0"})
+											<span class="truncate">{ proj.Name }</span>
+										</a>
+										<span class={ "badge badge-sm uppercase", projectStatusBadgeClass(proj.Status) }>
+											{ proj.Status }
+										</span>
+									</div>
+									if proj.Description.Valid && proj.Description.String != "" {
+										<p class="text-sm opacity-75 line-clamp-2">{ proj.Description.String }</p>
+									} else {
+										<p class="text-sm opacity-40 italic">No description</p>
+									}
+								</div>
+								<div class="flex items-center justify-between pt-2 border-t border-base-200">
+									<div class="badge badge-outline gap-1 text-xs">
+										@icons.Box(templ.Attributes{"class": "w-3.5 h-3.5"})
+										{ fmt.Sprintf("%d BOM item(s)", proj.BomItemCount) }
+									</div>
+									<div class="flex items-center gap-2">
+										<a href={ templ.SafeURL(fmt.Sprintf("/projects/%d", proj.ID)) } class="btn btn-sm btn-primary btn-outline">
+											Open BOM
+										</a>
+										if user.CanWrite() {
+											<form
+												action={ templ.SafeURL(fmt.Sprintf("/projects/%d/delete", proj.ID)) }
+												method="POST"
+												data-confirm={ fmt.Sprintf("Delete project %q and all of its BOM items?", proj.Name) }
+												onsubmit="return confirm(this.dataset.confirm);"
+											>
+												<button type="submit" class="btn btn-sm btn-ghost text-error" title={ i18n.T(ctx, "Delete") }>
+													@icons.Trash(templ.Attributes{"class": "w-4 h-4"})
+												</button>
+											</form>
+										}
+									</div>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		if user.CanWrite() {
+			@components.CreateProjectModal()
+		}
+	}
+}
