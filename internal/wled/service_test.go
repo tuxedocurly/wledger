@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
@@ -165,7 +166,9 @@ func TestService_RapidBackToBackLocateTimerReset(t *testing.T) {
 	b1, _ := store.CreateBin(ctx, db.CreateBinParams{Name: "B1", ContainerID: cont, LedIndex: sql.NullInt64{Int64: 0, Valid: true}, Width: sql.NullInt64{Int64: 1, Valid: true}})
 	b2, _ := store.CreateBin(ctx, db.CreateBinParams{Name: "B2", ContainerID: cont, LedIndex: sql.NullInt64{Int64: 3, Valid: true}, Width: sql.NullInt64{Int64: 1, Valid: true}})
 
-	svc := NewService(store, NewClient(), slog.New(slog.NewTextHandler(io.Discard, nil))).(*service)
+	client := NewClient()
+	client.primeDelay = 0
+	svc := NewService(store, client, slog.New(slog.NewTextHandler(io.Discard, nil))).(*service)
 	svc.timeoutOverride = 90 * time.Millisecond
 
 	if err := svc.LocateBin(ctx, ctrl.ID, b1); err != nil {
@@ -178,21 +181,21 @@ func TestService_RapidBackToBackLocateTimerReset(t *testing.T) {
 		t.Fatalf("Locate 2 failed: %v", err)
 	}
 
-	// At t=105ms (past first timer's 90ms deadline), locate MUST still be active (only 2 payloads, no clear yet).
+	// At t=105ms (past first timer's 90ms deadline), locate MUST still be active (4 payloads: 2 per locate, no clear yet).
 	time.Sleep(60 * time.Millisecond)
 	snaps := rec.snapshot()
-	if len(snaps) != 2 {
-		t.Fatalf("expected timer 1 to be cancelled so only 2 locate payloads sent at t=105ms, got %d", len(snaps))
+	if len(snaps) != 4 {
+		t.Fatalf("expected timer 1 to be cancelled so only 4 locate payloads (2 per locate) sent at t=105ms, got %d", len(snaps))
 	}
 
 	// Wait past second timer's 90ms deadline; timeout should fire once and turn off LEDs.
 	time.Sleep(70 * time.Millisecond)
 	snaps = rec.snapshot()
-	if len(snaps) != 3 {
-		t.Fatalf("expected 3rd clear payload after reset timer expired, got %d", len(snaps))
+	if len(snaps) != 5 {
+		t.Fatalf("expected 5th clear payload after reset timer expired, got %d", len(snaps))
 	}
-	if on, _ := snaps[2]["on"].(bool); on {
-		t.Errorf("expected timeout clear payload to set on=false, got %v", snaps[2])
+	if on, _ := snaps[4]["on"].(bool); on {
+		t.Errorf("expected timeout clear payload to set on=false, got %v", snaps[4])
 	}
 }
 
@@ -267,19 +270,46 @@ func TestService_SnapshotRestoreAndMultiSegmentClear(t *testing.T) {
 		t.Errorf("expected exactly 1 /json snapshot capture across active session, got %d", gets)
 	}
 
-	// Verify locate payload forces fx=0, black wipe, and turns off non-located segments (1 and 2).
+	// Verify locate payload sequence: Step 1 primes all 3 segments (fx=0, frz=false, turns off 1 & 2, no "i");
+	// Step 2 sends individual LEDs ("i") for active segment 0 without re-mutating fx/col/bri/on.
 	snaps := rec.snapshot()
+	if len(snaps) < 2 {
+		t.Fatalf("expected at least 2 locate payloads (prime + pixel), got %d", len(snaps))
+	}
 	segsRaw, _ := snaps[0]["seg"].([]any)
 	if len(segsRaw) != 3 {
-		t.Fatalf("expected 3 segments (0, 1, 2) in locate payload to prevent bleed, got %d", len(segsRaw))
+		t.Fatalf("expected 3 segments (0, 1, 2) in prime locate payload to prevent bleed, got %d", len(segsRaw))
 	}
 	seg0 := segsRaw[0].(map[string]any)
-	if seg0["fx"] != float64(0) || seg0["on"] != true {
-		t.Errorf("expected active seg 0 with on=true and fx=0, got %v", seg0)
+	if seg0["fx"] != float64(0) || seg0["on"] != true || seg0["frz"] != false {
+		t.Errorf("expected primed seg 0 with on=true, fx=0, frz=false, got %v", seg0)
+	}
+	if _, hasI := seg0["i"]; hasI {
+		t.Errorf("expected primed seg 0 not to contain individual pixel array i, got %v", seg0)
 	}
 	seg1 := segsRaw[1].(map[string]any)
 	if seg1["on"] != false {
 		t.Errorf("expected idle seg 1 to be forced off, got %v", seg1)
+	}
+	if _, hasI := seg1["i"]; hasI {
+		t.Errorf("expected idle seg 1 prime payload not to contain i, got %v", seg1)
+	}
+
+	pixelSegs, _ := snaps[1]["seg"].([]any)
+	if len(pixelSegs) != 1 {
+		t.Fatalf("expected 1 active segment in pixel payload, got %d", len(pixelSegs))
+	}
+	pixelSeg0 := pixelSegs[0].(map[string]any)
+	if _, hasI := pixelSeg0["i"]; !hasI {
+		t.Errorf("expected pixel payload seg 0 to contain individual LED array i, got %v", pixelSeg0)
+	}
+	for _, key := range []string{"fx", "col", "bri", "on"} {
+		if _, exists := pixelSeg0[key]; exists {
+			t.Errorf("expected pixel payload seg 0 not to re-mutate %q, got %v", key, pixelSeg0)
+		}
+	}
+	if !strings.Contains(rec.raws[1], ",5,8,[") {
+		t.Errorf("expected pixel payload seg 0 to light [5, 8), got %s", rec.raws[1])
 	}
 
 	// GlobalOff restores saved snapshot (including bri=120, ps=3, and unfreezing frz=false).
@@ -388,14 +418,17 @@ func TestService_LocatePart_BatchSkipAndStockHealthColor(t *testing.T) {
 
 	svc := NewService(store, NewClient(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 
-	// Uniform color locate: all active attached bins batched in ONE /json/state call, skipping qty=0 and standalone.
+	// Uniform color locate: all active attached bins batched (prime + pixel payloads), skipping qty=0 and standalone.
 	if err := svc.LocatePart(ctx, partID); err != nil {
 		t.Fatalf("LocatePart failed: %v", err)
 	}
-	if len(rec.snapshot()) != 1 {
-		t.Fatalf("expected single batched HTTP payload for controller, got %d", len(rec.snapshot()))
+	if len(rec.snapshot()) != 2 {
+		t.Fatalf("expected 2 payloads (prime + pixel) for batched controller locate, got %d", len(rec.snapshot()))
 	}
-	rawUniform := rec.raws[0]
+	if strings.Contains(rec.raws[0], `"i":`) {
+		t.Errorf("expected prime payload not to contain individual pixels i, got %s", rec.raws[0])
+	}
+	rawUniform := rec.raws[1]
 	if strings.Contains(rawUniform, ",0,1,[0,0,255]") {
 		t.Errorf("expected qty=0 bin (LED 0) to be skipped, payload=%s", rawUniform)
 	}
@@ -410,10 +443,10 @@ func TestService_LocatePart_BatchSkipAndStockHealthColor(t *testing.T) {
 	if err := svc.LocatePart(ctx, partID); err != nil {
 		t.Fatalf("LocatePart stock-health mode failed: %v", err)
 	}
-	if len(rec.snapshot()) != 2 {
-		t.Fatalf("expected 2 total payloads, got %d", len(rec.snapshot()))
+	if len(rec.snapshot()) != 4 {
+		t.Fatalf("expected 4 total payloads, got %d", len(rec.snapshot()))
 	}
-	rawHealth := rec.raws[1]
+	rawHealth := rec.raws[3]
 	// #445566 -> [68,85,102]; #112233 -> [17,34,51]; #778899 -> [119,136,153]
 	if !strings.Contains(rawHealth, "[68,85,102]") || !strings.Contains(rawHealth, "[17,34,51]") || !strings.Contains(rawHealth, "[119,136,153]") {
 		t.Errorf("expected low, ok, and critical stock colors in payload, got: %s", rawHealth)
@@ -658,14 +691,14 @@ func TestService_LocateXY_HTTPAndUDP(t *testing.T) {
 
 	svc := NewService(store, NewClient(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 
-	// 1. LocateBin on XY container lights both X=2 and Y=9.
+	// 1. LocateBin on XY container lights both X=2 and Y=9 (prime + pixel payloads).
 	if err := svc.LocateBin(ctx, ctrl.ID, binLit); err != nil {
 		t.Fatalf("LocateBin XY failed: %v", err)
 	}
-	if len(rec.raws) != 1 {
-		t.Fatalf("expected 1 payload from LocateBin, got %d", len(rec.raws))
+	if len(rec.raws) != 2 {
+		t.Fatalf("expected 2 payloads (prime + pixel) from LocateBin, got %d", len(rec.raws))
 	}
-	binPayload := rec.raws[0]
+	binPayload := rec.raws[1]
 	if !strings.Contains(binPayload, `,2,3,[0,0,255]`) || !strings.Contains(binPayload, `,9,10,[0,0,255]`) {
 		t.Errorf("expected XY LocateBin to light X=2 and Y=9 with [0,0,255], got %s", binPayload)
 	}
@@ -677,10 +710,10 @@ func TestService_LocateXY_HTTPAndUDP(t *testing.T) {
 	if err := svc.LocatePart(ctx, partID); err != nil {
 		t.Fatalf("LocatePart XY failed: %v", err)
 	}
-	if len(rec.raws) != 2 {
-		t.Fatalf("expected 2 payloads after LocatePart, got %d", len(rec.raws))
+	if len(rec.raws) != 4 {
+		t.Fatalf("expected 4 payloads after LocatePart, got %d", len(rec.raws))
 	}
-	partPayload := rec.raws[1]
+	partPayload := rec.raws[3]
 	if !strings.Contains(partPayload, `,2,3,[0,255,0]`) || !strings.Contains(partPayload, `,9,10,[0,255,0]`) {
 		t.Errorf("expected XY LocatePart to light X=2 and Y=9 with stock-ok [0,255,0], got %s", partPayload)
 	}
@@ -761,4 +794,220 @@ func TestService_LocateXY_HTTPAndUDP(t *testing.T) {
 			t.Errorf("pixel %d RGB = %v, want %v", px, gotRGB, wantRGB)
 		}
 	}
+}
+
+func TestClient_LightRangesTwoStepPrimeThenPixels(t *testing.T) {
+	t.Run("primes then sends individual pixels after settle delay", func(t *testing.T) {
+		type capturedReq struct {
+			at      time.Time
+			raw     string
+			payload map[string]any
+		}
+		var (
+			mu   sync.Mutex
+			reqs []capturedReq
+		)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/json/state" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]any
+			if err := json.Unmarshal(body, &payload); err != nil {
+				t.Errorf("invalid JSON payload: %v", err)
+			}
+			mu.Lock()
+			reqs = append(reqs, capturedReq{
+				at:      time.Now(),
+				raw:     string(body),
+				payload: payload,
+			})
+			mu.Unlock()
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer srv.Close()
+
+		host, portStr, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+		portNum, _ := strconv.ParseInt(portStr, 10, 64)
+
+		client := NewClient()
+		client.primeDelay = 25 * time.Millisecond
+
+		err := client.LightRangesWithPort(
+			context.Background(),
+			host,
+			sql.NullInt64{Int64: portNum, Valid: true},
+			64,
+			[]int{0, 1},
+			map[int][]LEDRange{
+				0: {{Start: 14, Count: 1, RGB: [3]byte{0, 0, 255}}},
+			},
+		)
+		if err != nil {
+			t.Fatalf("LightRangesWithPort failed: %v", err)
+		}
+
+		mu.Lock()
+		got := append([]capturedReq(nil), reqs...)
+		mu.Unlock()
+
+		if len(got) != 2 {
+			t.Fatalf("expected 2 /json/state requests, got %d", len(got))
+		}
+		if elapsed := got[1].at.Sub(got[0].at); elapsed < 20*time.Millisecond {
+			t.Errorf("expected >= 20ms settle delay between prime and pixel requests, got %v", elapsed)
+		}
+
+		// Verify Step 1 (prime) payload.
+		p1 := got[0].payload
+		if p1["on"] != true || p1["bri"] != float64(255) || p1["live"] != false || p1["tt"] != float64(0) {
+			t.Errorf("unexpected Step 1 top-level fields: %v", p1)
+		}
+		segs1, _ := p1["seg"].([]any)
+		if len(segs1) != 2 {
+			t.Fatalf("expected 2 segments in Step 1 payload, got %d", len(segs1))
+		}
+		s0 := segs1[0].(map[string]any)
+		if s0["id"] != float64(0) || s0["on"] != true || s0["bri"] != float64(255) || s0["fx"] != float64(0) || s0["frz"] != false {
+			t.Errorf("unexpected Step 1 seg 0 fields: %v", s0)
+		}
+		if _, hasI := s0["i"]; hasI {
+			t.Errorf("expected Step 1 seg 0 not to have i, got %v", s0)
+		}
+		col0, _ := json.Marshal(s0["col"])
+		if string(col0) != "[[0,0,0]]" {
+			t.Errorf("expected Step 1 seg 0 col [[0,0,0]], got %s", col0)
+		}
+
+		s1 := segs1[1].(map[string]any)
+		if s1["id"] != float64(1) || s1["on"] != false || s1["fx"] != float64(0) || s1["frz"] != false {
+			t.Errorf("unexpected Step 1 seg 1 fields: %v", s1)
+		}
+		if _, hasI := s1["i"]; hasI {
+			t.Errorf("expected Step 1 seg 1 not to have i, got %v", s1)
+		}
+		col1, _ := json.Marshal(s1["col"])
+		if string(col1) != "[[0,0,0]]" {
+			t.Errorf("expected Step 1 seg 1 col [[0,0,0]], got %s", col1)
+		}
+
+		// Verify Step 2 (pixels) payload.
+		p2 := got[1].payload
+		if p2["tt"] != float64(0) {
+			t.Errorf("expected Step 2 tt=0, got %v", p2["tt"])
+		}
+		for _, topKey := range []string{"on", "bri", "live"} {
+			if _, exists := p2[topKey]; exists {
+				t.Errorf("expected Step 2 not to re-send top-level %q, got %v", topKey, p2)
+			}
+		}
+		segs2, _ := p2["seg"].([]any)
+		if len(segs2) != 1 {
+			t.Fatalf("expected 1 active segment in Step 2 payload, got %d", len(segs2))
+		}
+		ps0 := segs2[0].(map[string]any)
+		if ps0["id"] != float64(0) {
+			t.Errorf("expected Step 2 seg id=0, got %v", ps0["id"])
+		}
+		for _, segKey := range []string{"on", "bri", "fx", "col", "frz"} {
+			if _, exists := ps0[segKey]; exists {
+				t.Errorf("expected Step 2 seg 0 not to contain %q, got %v", segKey, ps0)
+			}
+		}
+		indRaw, _ := json.Marshal(ps0["i"])
+		if string(indRaw) != `[0,64,[0,0,0],14,15,[0,0,255]]` {
+			t.Errorf("expected Step 2 i array [0,64,[0,0,0],14,15,[0,0,255]], got %s", indRaw)
+		}
+	})
+
+	t.Run("aborts before pixel request on prime error", func(t *testing.T) {
+		var (
+			mu       sync.Mutex
+			reqCount int
+		)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			reqCount++
+			mu.Unlock()
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer srv.Close()
+
+		host, portStr, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+		portNum, _ := strconv.ParseInt(portStr, 10, 64)
+
+		client := NewClient()
+		client.primeDelay = 25 * time.Millisecond
+
+		err := client.LightRangesWithPort(
+			context.Background(),
+			host,
+			sql.NullInt64{Int64: portNum, Valid: true},
+			64,
+			[]int{0},
+			map[int][]LEDRange{0: {{Start: 0, Count: 1, RGB: [3]byte{255, 0, 0}}}},
+		)
+		if err == nil {
+			t.Fatal("expected error when Step 1 prime returns HTTP 500")
+		}
+
+		mu.Lock()
+		gotCount := reqCount
+		mu.Unlock()
+		if gotCount != 1 {
+			t.Errorf("expected only 1 request when prime fails, got %d", gotCount)
+		}
+	})
+
+	t.Run("aborts before pixel request on context cancellation during settle delay", func(t *testing.T) {
+		var (
+			mu           sync.Mutex
+			reqCount     int
+			firstReqSeen = make(chan struct{})
+			markSeen     sync.Once
+		)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			reqCount++
+			mu.Unlock()
+			markSeen.Do(func() { close(firstReqSeen) })
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer srv.Close()
+
+		host, portStr, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+		portNum, _ := strconv.ParseInt(portStr, 10, 64)
+
+		client := NewClient()
+		client.primeDelay = 500 * time.Millisecond
+
+		ctx, cancel := context.WithCancel(context.Background())
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- client.LightRangesWithPort(
+				ctx,
+				host,
+				sql.NullInt64{Int64: portNum, Valid: true},
+				64,
+				[]int{0},
+				map[int][]LEDRange{0: {{Start: 0, Count: 1, RGB: [3]byte{255, 0, 0}}}},
+			)
+		}()
+
+		<-firstReqSeen
+		cancel()
+
+		err := <-errCh
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context.Canceled error, got %v", err)
+		}
+
+		mu.Lock()
+		gotCount := reqCount
+		mu.Unlock()
+		if gotCount != 1 {
+			t.Errorf("expected only 1 request when cancelled during settle delay, got %d", gotCount)
+		}
+	})
 }

@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	CacheDuration   = 5 * time.Second
-	DefaultHTTPPort = int64(80)
-	DefaultWipeLEDs = 5000
+	CacheDuration           = 5 * time.Second
+	DefaultHTTPPort         = int64(80)
+	DefaultWipeLEDs         = 5000
+	DefaultLocatePrimeDelay = 75 * time.Millisecond
 )
 
 var blockedSchemes = []string{
@@ -50,6 +51,7 @@ type WLEDSnapshot struct {
 type Client struct {
 	httpClient *http.Client
 	cache      sync.Map
+	primeDelay time.Duration
 }
 
 type cachedResult struct {
@@ -75,6 +77,7 @@ func newClientWithMDNSAddr(mdnsAddr string) *Client {
 			Timeout:   2500 * time.Millisecond,
 			Transport: transport,
 		},
+		primeDelay: DefaultLocatePrimeDelay,
 	}
 }
 
@@ -112,6 +115,7 @@ func NewClientWithHTTPClient(httpClient *http.Client) *Client {
 	}
 	return &Client{
 		httpClient: httpClient,
+		primeDelay: DefaultLocatePrimeDelay,
 	}
 }
 
@@ -518,8 +522,10 @@ func (c *Client) LightUpWithPort(ctx context.Context, ip string, port sql.NullIn
 	})
 }
 
-// LightRangesWithPort batches all located LED ranges per segment into one /json/state payload,
-// forces solid black background ("fx": 0) on active segments to avoid orange bleed, and turns off non-located segments.
+// LightRangesWithPort uses a two-step HTTP /json/state sequence to illuminate located LED ranges:
+// first priming power, brightness, solid black effect ("fx": 0), unfreeze ("frz": false), and off-state
+// for non-located segments; then waiting briefly so WLED completes its segment reset tick before
+// sending only individual-LED ("i") overrides for active segments.
 func (c *Client) LightRangesWithPort(ctx context.Context, ip string, port sql.NullInt64, totalLEDs int, knownSegIDs []int, bySeg map[int][]LEDRange) error {
 	wipeCount := totalLEDs
 	for _, ranges := range bySeg {
@@ -550,21 +556,31 @@ func (c *Client) LightRangesWithPort(ctx context.Context, ip string, port sql.Nu
 	}
 	sort.Ints(allSegIDs)
 
-	segPayloads := make([]map[string]any, 0, len(allSegIDs))
+	primeSegPayloads := make([]map[string]any, 0, len(allSegIDs))
+	pixelSegPayloads := make([]map[string]any, 0, len(allSegIDs))
 	for _, segID := range allSegIDs {
 		ranges := bySeg[segID]
 		if len(ranges) == 0 {
-			segPayloads = append(segPayloads, map[string]any{
+			primeSegPayloads = append(primeSegPayloads, map[string]any{
 				"id":  segID,
 				"on":  false,
 				"fx":  0,
+				"frz": false,
 				"col": [][]int{{0, 0, 0}},
-				"i":   []any{0, wipeCount, []int{0, 0, 0}},
 			})
 			continue
 		}
 
-		// Wipe the segment black first so non-located pixels do not bleed WLED boot orange.
+		primeSegPayloads = append(primeSegPayloads, map[string]any{
+			"id":  segID,
+			"on":  true,
+			"bri": 255,
+			"fx":  0,
+			"frz": false,
+			"col": [][]int{{0, 0, 0}},
+		})
+
+		// Wipe the segment black first so non-located pixels do not bleed prior colors.
 		ind := make([]any, 0, 3+len(ranges)*3)
 		ind = append(ind, 0, wipeCount, []int{0, 0, 0})
 		for _, r := range ranges {
@@ -574,24 +590,42 @@ func (c *Client) LightRangesWithPort(ctx context.Context, ip string, port sql.Nu
 			ind = append(ind, r.Start, r.Start+r.Count, []int{int(r.RGB[0]), int(r.RGB[1]), int(r.RGB[2])})
 		}
 
-		segPayloads = append(segPayloads, map[string]any{
-			"id":  segID,
-			"on":  true,
-			"bri": 255,
-			"fx":  0,
-			"col": [][]int{{0, 0, 0}},
-			"i":   ind,
+		pixelSegPayloads = append(pixelSegPayloads, map[string]any{
+			"id": segID,
+			"i":  ind,
 		})
 	}
 
-	payload := map[string]any{
+	primePayload := map[string]any{
 		"on":   true,
 		"bri":  255,
 		"live": false,
 		"tt":   0,
-		"seg":  segPayloads,
+		"seg":  primeSegPayloads,
 	}
-	return c.SetStateWithPort(ctx, ip, port, payload)
+	if err := c.SetStateWithPort(ctx, ip, port, primePayload); err != nil {
+		return err
+	}
+
+	if len(pixelSegPayloads) == 0 {
+		return nil
+	}
+
+	if c.primeDelay > 0 {
+		timer := time.NewTimer(c.primeDelay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+
+	pixelPayload := map[string]any{
+		"tt":  0,
+		"seg": pixelSegPayloads,
+	}
+	return c.SetStateWithPort(ctx, ip, port, pixelPayload)
 }
 
 // RestoreStateWithPort reapplies a pre-locate WLED snapshot, unfreezing segments when appropriate.

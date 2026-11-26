@@ -527,16 +527,20 @@ func TestPickModeLocate(t *testing.T) {
 			t.Fatalf("LocateBOM failed: %v", err)
 		}
 
-		// Expect ONE batched request to 10.0.0.10:80 (containing LED indices 1,2 and 5, NOT 9!) and ONE to 10.0.0.20:8080 (index 2).
+		// Expect TWO batched requests per controller (Step 1 prime, Step 2 pixels) containing LED indices 1,2 and 5, NOT 9.
 		mu.Lock()
 		c1Reqs := requests["10.0.0.10:80"]
 		c2Reqs := requests["10.0.0.20:8080"]
 		mu.Unlock()
 
-		if len(c1Reqs) != 1 || len(c2Reqs) != 1 {
-			t.Fatalf("expected 1 batched request per controller, got ctrl1=%d ctrl2=%d", len(c1Reqs), len(c2Reqs))
+		if len(c1Reqs) != 2 || len(c2Reqs) != 2 {
+			t.Fatalf("expected 2 batched requests (prime + pixel) per controller, got ctrl1=%d ctrl2=%d", len(c1Reqs), len(c2Reqs))
 		}
-		seg1 := c1Reqs[0]["seg"].([]any)[0].(map[string]any)
+		primeSeg1 := c1Reqs[0]["seg"].([]any)[0].(map[string]any)
+		if _, hasI := primeSeg1["i"]; hasI {
+			t.Fatalf("expected prime request seg 0 not to contain individual pixel array i, got %v", primeSeg1)
+		}
+		seg1 := c1Reqs[1]["seg"].([]any)[0].(map[string]any)
 		rawBytes, _ := json.Marshal(seg1["i"])
 		payloadStr := string(rawBytes)
 		// Indices 1,2 (width 2 starting at 1) and 5 should be lit, index 9 must NOT be lit (zero stock).
@@ -788,10 +792,14 @@ func TestLocateProjectBOM_XYAndGridContainers(t *testing.T) {
 	if err := svc.LocateBOM(ctx, proj.ID); err != nil {
 		t.Fatalf("LocateBOM failed: %v", err)
 	}
-	if len(payloads) != 1 {
-		t.Fatalf("expected 1 batched WLED request, got %d", len(payloads))
+	if len(payloads) != 2 {
+		t.Fatalf("expected 2 batched WLED requests (prime + pixel), got %d", len(payloads))
 	}
-	seg0 := payloads[0]["seg"].([]any)[0].(map[string]any)
+	primeSeg0 := payloads[0]["seg"].([]any)[0].(map[string]any)
+	if _, hasI := primeSeg0["i"]; hasI {
+		t.Fatalf("expected prime request seg 0 not to contain individual pixel array i, got %v", primeSeg0)
+	}
+	seg0 := payloads[1]["seg"].([]any)[0].(map[string]any)
 	rawBytes, _ := json.Marshal(seg0["i"])
 	iStr := string(rawBytes)
 	if !strings.Contains(iStr, "3,4,[") || !strings.Contains(iStr, "8,9,[") || !strings.Contains(iStr, "12,14,[") {
