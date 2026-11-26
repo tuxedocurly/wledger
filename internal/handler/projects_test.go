@@ -319,14 +319,10 @@ func TestProjectsHandler_LifecycleAndShortage(t *testing.T) {
 		t.Fatalf("expected 200 on Pick Mode Locate, got %d: %s", rr.Code, rr.Body.String())
 	}
 	mu.Lock()
-	payloadCount := len(wledPayloads)
-	var firstPayload string
-	if payloadCount > 0 {
-		firstPayload = wledPayloads[0]
-	}
+	payloads := append([]string(nil), wledPayloads...)
 	mu.Unlock()
-	if payloadCount != 1 || !strings.Contains(firstPayload, "\"i\":[0,") || !strings.Contains(firstPayload, ",3,") {
-		t.Fatalf("expected single batched WLED state lighting indices 0 and 3, got count=%d payload=%s", payloadCount, firstPayload)
+	if len(payloads) != 2 || strings.Contains(payloads[0], "\"i\":") || !strings.Contains(payloads[1], "\"i\":[0,") || !strings.Contains(payloads[1], ",3,") {
+		t.Fatalf("expected prime + batched WLED state lighting indices 0 and 3, got count=%d payloads=%v", len(payloads), payloads)
 	}
 
 	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/projects/%d/bom/%d/locate", projID, item1ID), nil)
